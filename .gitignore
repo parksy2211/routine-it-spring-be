@@ -124,3 +124,6 @@ Desktop.ini
 ## linux
 .directory
 .Trash
+
+# scripts
+scripts/
