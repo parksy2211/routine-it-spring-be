@@ -100,15 +100,14 @@ src/main/java/com/goormi/routine/
 │   └── aspect/                    # AOP
 │       └── LoggingAspect.java            # 로깅 AOP
 │
-├── config/                         # 설정 클래스
-│   ├── SecurityConfig.java               # Spring Security 설정
-│   ├── WebSocketConfig.java              # WebSocket 설정
-│   ├── JpaConfig.java                    # JPA 설정
-│   ├── CorsConfig.java                   # CORS 설정
-│   ├── SwaggerConfig.java                # Swagger 설정
-│   └── SchedulerConfig.java              # 스케줄러 설정
-│
-└── test/                          # 테스트 유틸
+└── config/                         # 설정 클래스
+    ├── SecurityConfig.java               # Spring Security 설정
+    ├── WebSocketConfig.java              # WebSocket 설정
+    ├── JpaConfig.java                    # JPA 설정
+    ├── CorsConfig.java                   # CORS 설정
+    ├── SwaggerConfig.java                # Swagger 설정
+    └── SchedulerConfig.java              # 스케줄러 설정
+
 ```
 
 ### 테스트 디렉토리 구조

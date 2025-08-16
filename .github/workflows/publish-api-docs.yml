@@ -1,0 +1,95 @@
+name: Publish API Documentation to GitBook
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'src/**'
+      - 'build.gradle'
+      - 'gradle/**'
+  workflow_dispatch:
+
+jobs:
+  publish-docs:
+    runs-on: ubuntu-latest
+    
+    if: github.repository == 'Goorda-Goormi/routine-it-spring-be'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 17
+          cache: 'gradle'
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build & Generate OpenAPI
+        env:
+          SPRING_PROFILES_ACTIVE: default
+        run: |
+          ./gradlew clean build -x test
+          
+          # 애플리케이션을 백그라운드에서 시작하여 OpenAPI JSON 생성
+          nohup ./gradlew bootRun --args='--spring.profiles.active=default' > app.log 2>&1 &
+          APP_PID=$!
+          
+          # 애플리케이션 시작 대기
+          echo "Waiting for application to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8080/api/health > /dev/null 2>&1; then
+              echo "Application started successfully"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "Application failed to start within 30 seconds"
+              cat app.log
+              exit 1
+            fi
+            sleep 1
+          done
+          
+          # OpenAPI JSON 다운로드
+          echo "Downloading OpenAPI JSON..."
+          curl -s http://localhost:8080/v3/api-docs > openapi.json
+          
+          # 애플리케이션 종료
+          kill $APP_PID
+          
+          # OpenAPI JSON 검증
+          if [ -s openapi.json ]; then
+            echo "OpenAPI JSON generated successfully"
+            echo "File size: $(wc -c < openapi.json) bytes"
+          else
+            echo "Failed to generate OpenAPI JSON"
+            exit 1
+          fi
+
+      - name: Install GitBook CLI
+        run: npm install -g @gitbook/cli
+
+      - name: Publish OpenAPI Spec to GitBook
+        env:
+          GITBOOK_TOKEN: ${{ secrets.GITBOOK_TOKEN }}
+        run: |
+          gitbook openapi publish \
+            --organization "${{ secrets.GITBOOK_ORG }}" \
+            --spec "${{ secrets.GITBOOK_SPEC }}" \
+            openapi.json
+
+      - name: Upload OpenAPI JSON as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-spec
+          path: openapi.json
+          retention-days: 30 
