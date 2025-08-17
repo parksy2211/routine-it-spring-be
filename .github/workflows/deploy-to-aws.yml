@@ -1,0 +1,127 @@
+name: Deploy to AWS EC2
+
+on:
+  workflow_run:
+    workflows: ["Build and Push Docker Image"]
+    types:
+      - completed
+    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      deploy_tag:
+        description: 'Docker image tag to deploy'
+        required: false
+        default: 'latest'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    
+    environment: production
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set deployment tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.deploy_tag }}"
+          else
+            TAG="main"
+          fi
+          echo "deploy_tag=$TAG" >> $GITHUB_OUTPUT
+          echo "🏷️ Deploying tag: $TAG"
+
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+
+      - name: Add EC2 to known hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          DEPLOY_TAG: ${{ steps.tag.outputs.deploy_tag }}
+        run: |
+          echo "🚀 Starting deployment to EC2..."
+          
+          ssh $EC2_USER@$EC2_HOST << 'ENDSSH'
+            set -e
+            
+            echo "📂 Navigating to application directory..."
+            cd /home/${{ secrets.EC2_USER }}/routine-it-backend || {
+              echo "❌ Application directory not found. Please run initial setup first."
+              exit 1
+            }
+            
+            echo "📥 Pulling latest Docker images..."
+            export DEPLOY_TAG=${{ steps.tag.outputs.deploy_tag }}
+            docker-compose pull
+            
+            echo "🔄 Restarting application..."
+            docker-compose down --remove-orphans
+            docker-compose up -d
+            
+            echo "⏳ Waiting for application to be ready..."
+            for i in {1..30}; do
+              if curl -f http://localhost:8080/api/health/ping > /dev/null 2>&1; then
+                echo "✅ Application is healthy!"
+                break
+              fi
+              if [ $i -eq 30 ]; then
+                echo "❌ Application failed to start within 5 minutes"
+                docker-compose logs --tail=50
+                exit 1
+              fi
+              echo "⏳ Waiting... ($i/30)"
+              sleep 10
+            done
+            
+            echo "🧹 Cleaning up old Docker images..."
+            docker image prune -f
+            
+            echo "📊 Deployment status:"
+            docker-compose ps
+          ENDSSH
+
+      - name: Health Check
+        run: |
+          echo "🔍 Running post-deployment health checks..."
+          
+          # Basic connectivity check
+          curl -f http://${{ secrets.EC2_HOST }}:8080/api/health/ping || {
+            echo "❌ Health check failed"
+            exit 1
+          }
+          
+          # Detailed health check
+          curl -s http://${{ secrets.EC2_HOST }}:8080/api/health | jq '.success' || {
+            echo "⚠️ Detailed health check inconclusive"
+          }
+          
+          echo "✅ All health checks passed!"
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "🎉 Deployment completed successfully!"
+          echo "🌐 Application is available at: http://${{ secrets.EC2_HOST }}:8080"
+          echo "📚 API Documentation: http://${{ secrets.EC2_HOST }}:8080/swagger-ui/index.html"
+          echo "🏥 Health Check: http://${{ secrets.EC2_HOST }}:8080/api/health"
+
+      - name: Notify deployment failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed! Please check the logs above."
+          echo "🔧 Troubleshooting tips:"
+          echo "  1. Check EC2 instance status"
+          echo "  2. Verify Docker service is running"
+          echo "  3. Check application logs on EC2"
+          echo "  4. Ensure all environment variables are set"
