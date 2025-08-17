@@ -74,6 +74,7 @@ bin/
 src/main/resources/application-*.properties
 !src/main/resources/application.properties
 !src/main/resources/application-ci.properties
+!src/main/resources/application-docker.properties
 
 # Environment variables
 .env
