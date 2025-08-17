@@ -47,6 +47,8 @@ jobs:
         run: ./gradlew test
 
       - name: Build application
+        env:
+          SPRING_PROFILES_ACTIVE: docker
         run: ./gradlew clean build -x test
 
       - name: Set up Docker Buildx
