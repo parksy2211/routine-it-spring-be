@@ -9,7 +9,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
-@Profile({"dev", "docker", "local", "default"})
+@Profile({"dev", "docker", "local", "default", "ci"})
 public class SecurityConfig {
 
     @Bean

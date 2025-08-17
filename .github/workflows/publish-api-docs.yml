@@ -78,12 +78,16 @@ jobs:
           
           echo "Downloading OpenAPI JSON..."
           # 사용 가능한 엔드포인트 확인
-          echo "Available endpoints:"
+          echo "Testing endpoints:"
+          echo "1. Health check ping:"
           curl -s http://localhost:8080/api/health/ping && echo ""
           
+          echo "2. Health check full:"
+          curl -s http://localhost:8080/api/health | python3 -m json.tool 2>/dev/null || echo "Failed to get health"
+          
           # OpenAPI 엔드포인트 확인
-          echo "Checking OpenAPI endpoint..."
-          curl -v http://localhost:8080/v3/api-docs 2>&1 | head -20
+          echo "3. Checking OpenAPI endpoint (should return 200):"
+          curl -I http://localhost:8080/v3/api-docs 2>&1 | head -3
           
           # OpenAPI JSON 다운로드 (여러 번 시도)
           for attempt in 1 2 3; do
