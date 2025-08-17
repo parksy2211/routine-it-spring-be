@@ -8,7 +8,14 @@ on:
       - 'build.gradle'
       - 'Dockerfile'
       - 'docker-compose.yml'
+      - '.github/workflows/**'
   workflow_dispatch:
+    inputs:
+      force_build:
+        description: 'Force build even without code changes'
+        required: false
+        default: true
+        type: boolean
 
 env:
   DOCKER_IMAGE: 46112/routine-it-backend

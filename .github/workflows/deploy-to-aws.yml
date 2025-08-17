@@ -12,6 +12,11 @@ on:
         description: 'Docker image tag to deploy'
         required: false
         default: 'latest'
+      force_deploy:
+        description: 'Force deployment without build dependency'
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   deploy:
