@@ -36,35 +36,44 @@ jobs:
 
       - name: Build & Generate OpenAPI
         env:
-          SPRING_PROFILES_ACTIVE: default
+          SPRING_PROFILES_ACTIVE: ci
         run: |
+          echo "Building application..."
           ./gradlew clean build -x test
           
+          echo "Starting application with CI profile..."
           # 애플리케이션을 백그라운드에서 시작하여 OpenAPI JSON 생성
-          nohup ./gradlew bootRun --args='--spring.profiles.active=default' > app.log 2>&1 &
+          nohup ./gradlew bootRun --args='--spring.profiles.active=ci' > app.log 2>&1 &
           APP_PID=$!
           
-          # 애플리케이션 시작 대기
           echo "Waiting for application to start..."
-          for i in {1..30}; do
+          TIMEOUT=60
+          for i in $(seq 1 $TIMEOUT); do
             if curl -s http://localhost:8080/api/health > /dev/null 2>&1; then
-              echo "Application started successfully"
+              echo "✅ Application started successfully after ${i} seconds"
               break
             fi
-            if [ $i -eq 30 ]; then
-              echo "Application failed to start within 30 seconds"
+            if [ $i -eq $TIMEOUT ]; then
+              echo "❌ Application failed to start within $TIMEOUT seconds"
+              echo "Application logs:"
               cat app.log
+              echo "Process status:"
+              ps aux | grep java || true
+              echo "Network status:"
+              netstat -tlnp | grep 8080 || true
               exit 1
             fi
             sleep 1
           done
           
-          # OpenAPI JSON 다운로드
           echo "Downloading OpenAPI JSON..."
           curl -s http://localhost:8080/v3/api-docs > openapi.json
           
-          # 애플리케이션 종료
-          kill $APP_PID
+          echo "🛑 Stopping application..."
+          kill $APP_PID || true
+          
+          # 프로세스가 완전히 종료될 때까지 대기
+          sleep 5
           
           # OpenAPI JSON 검증
           if [ -s openapi.json ]; then
@@ -76,16 +85,68 @@ jobs:
           fi
 
       - name: Install GitBook CLI
-        run: npm install -g @gitbook/cli
+        run: |
+          echo "Installing GitBook CLI..."
+          npm install -g @gitbook/cli@latest
+          echo "GitBook CLI version:"
+          gitbook --version
+
+      - name: Validate OpenAPI JSON
+        run: |
+          echo "Validating OpenAPI JSON..."
+          if [ ! -s openapi.json ]; then
+            echo "❌ OpenAPI JSON file is empty or doesn't exist"
+            exit 1
+          fi
+          
+          # OpenAPI JSON 유효성 검사
+          node -e "
+            const fs = require('fs');
+            try {
+              const data = JSON.parse(fs.readFileSync('openapi.json', 'utf8'));
+              console.log('✅ OpenAPI JSON is valid');
+              console.log('  - OpenAPI version:', data.openapi);
+              console.log('  - Title:', data.info?.title);
+              console.log('  - Version:', data.info?.version);
+              console.log('  - Paths count:', Object.keys(data.paths || {}).length);
+              console.log('  - File size:', fs.statSync('openapi.json').size, 'bytes');
+            } catch (error) {
+              console.error('❌ Invalid OpenAPI JSON:', error.message);
+              process.exit(1);
+            }
+          "
 
       - name: Publish OpenAPI Spec to GitBook
         env:
           GITBOOK_TOKEN: ${{ secrets.GITBOOK_TOKEN }}
         run: |
+          echo "📚 Publishing to GitBook..."
+          echo "Organization: ${{ secrets.GITBOOK_ORG }}"
+          echo "Spec ID: ${{ secrets.GITBOOK_SPEC }}"
+          
+          # GitBook Secrets 확인
+          if [ -z "$GITBOOK_TOKEN" ]; then
+            echo "❌ GITBOOK_TOKEN secret is not set"
+            exit 1
+          fi
+          
+          if [ -z "${{ secrets.GITBOOK_ORG }}" ]; then
+            echo "❌ GITBOOK_ORG secret is not set"
+            exit 1
+          fi
+          
+          if [ -z "${{ secrets.GITBOOK_SPEC }}" ]; then
+            echo "❌ GITBOOK_SPEC secret is not set"
+            exit 1
+          fi
+          
+          # GitBook에 업로드
           gitbook openapi publish \
             --organization "${{ secrets.GITBOOK_ORG }}" \
             --spec "${{ secrets.GITBOOK_SPEC }}" \
             openapi.json
+          
+          echo "✅ Successfully published to GitBook"
 
       - name: Upload OpenAPI JSON as Artifact
         uses: actions/upload-artifact@v4

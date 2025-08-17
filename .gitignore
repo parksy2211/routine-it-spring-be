@@ -73,7 +73,7 @@ bin/
 # Application properties with sensitive data
 src/main/resources/application-*.properties
 !src/main/resources/application.properties
-!src/main/resources/application-example.properties
+!src/main/resources/application-ci.properties
 
 # Environment variables
 .env
