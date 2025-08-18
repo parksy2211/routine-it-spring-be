@@ -1,0 +1,207 @@
+name: Publish API Documentation to GitBook
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'build.gradle'
+      - 'gradle/**'
+  workflow_dispatch:
+
+jobs:
+  publish-docs:
+    runs-on: ubuntu-latest
+    
+    if: github.repository == 'Goorda-Goormi/routine-it-spring-be'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 17
+          cache: 'gradle'
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build & Generate OpenAPI
+        env:
+          SPRING_PROFILES_ACTIVE: ci
+        run: |
+          echo "Building application..."
+          ./gradlew clean build -x test
+          
+          echo "Starting application with CI profile..."
+          # 애플리케이션을 백그라운드에서 시작하여 OpenAPI JSON 생성
+          nohup ./gradlew bootRun --args='--spring.profiles.active=ci' > app.log 2>&1 &
+          APP_PID=$!
+          
+          echo "Waiting for application to start..."
+          TIMEOUT=60
+          for i in $(seq 1 $TIMEOUT); do
+            if curl -s http://localhost:8080/api/health > /dev/null 2>&1; then
+              echo "✅ Application started successfully after ${i} seconds"
+              
+              # Health check 응답 확인
+              echo "Health check response:"
+              curl -s http://localhost:8080/api/health | head -100
+              echo ""
+              
+              break
+            fi
+            if [ $i -eq $TIMEOUT ]; then
+              echo "❌ Application failed to start within $TIMEOUT seconds"
+              echo "Application logs:"
+              cat app.log
+              echo "Process status:"
+              ps aux | grep java || true
+              echo "Network status:"
+              netstat -tlnp | grep 8080 || true
+              exit 1
+            fi
+            sleep 1
+          done
+          
+          # SpringDoc이 초기화될 시간을 추가로 제공
+          echo "Waiting for SpringDoc to initialize..."
+          sleep 5
+          
+          echo "Downloading OpenAPI JSON..."
+          # 사용 가능한 엔드포인트 확인
+          echo "Testing endpoints:"
+          echo "1. Health check ping:"
+          curl -s http://localhost:8080/api/health/ping && echo ""
+          
+          echo "2. Health check full:"
+          curl -s http://localhost:8080/api/health | python3 -m json.tool 2>/dev/null || echo "Failed to get health"
+          
+          # OpenAPI 엔드포인트 확인
+          echo "3. Checking OpenAPI endpoint (should return 200):"
+          curl -I http://localhost:8080/v3/api-docs 2>&1 | head -3
+          
+          # OpenAPI JSON 다운로드 (여러 번 시도)
+          for attempt in 1 2 3; do
+            echo "Attempt $attempt to download OpenAPI JSON..."
+            curl -s http://localhost:8080/v3/api-docs -o openapi.json
+            
+            if [ -s openapi.json ] && grep -q '"openapi"' openapi.json; then
+              echo "Successfully downloaded on attempt $attempt"
+              break
+            fi
+            
+            if [ $attempt -lt 3 ]; then
+              echo "Retrying in 3 seconds..."
+              sleep 3
+            fi
+          done
+          
+          # 파일 내용 확인
+          echo "OpenAPI JSON content (first 500 chars):"
+          head -c 500 openapi.json || echo "File is empty"
+          echo ""
+          
+          echo "🛑 Stopping application..."
+          kill $APP_PID || true
+          
+          # 프로세스가 완전히 종료될 때까지 대기
+          sleep 5
+          
+          # OpenAPI JSON 검증
+          if [ -s openapi.json ]; then
+            # 실제 JSON인지 확인
+            if grep -q '"openapi"' openapi.json; then
+              echo "✅ OpenAPI JSON generated successfully"
+              echo "File size: $(wc -c < openapi.json) bytes"
+            else
+              echo "❌ File exists but doesn't contain valid OpenAPI spec"
+              echo "Full content:"
+              cat openapi.json
+              exit 1
+            fi
+          else
+            echo "❌ Failed to generate OpenAPI JSON (file is empty)"
+            echo "Checking application logs for errors:"
+            tail -50 app.log
+            exit 1
+          fi
+
+      - name: Install GitBook CLI
+        run: |
+          echo "Installing GitBook CLI..."
+          npm install -g @gitbook/cli@latest
+          echo "GitBook CLI version:"
+          gitbook --version
+
+      - name: Validate OpenAPI JSON
+        run: |
+          echo "Validating OpenAPI JSON..."
+          if [ ! -s openapi.json ]; then
+            echo "❌ OpenAPI JSON file is empty or doesn't exist"
+            exit 1
+          fi
+          
+          # OpenAPI JSON 유효성 검사
+          node -e "
+            const fs = require('fs');
+            try {
+              const data = JSON.parse(fs.readFileSync('openapi.json', 'utf8'));
+              console.log('✅ OpenAPI JSON is valid');
+              console.log('  - OpenAPI version:', data.openapi);
+              console.log('  - Title:', data.info?.title);
+              console.log('  - Version:', data.info?.version);
+              console.log('  - Paths count:', Object.keys(data.paths || {}).length);
+              console.log('  - File size:', fs.statSync('openapi.json').size, 'bytes');
+            } catch (error) {
+              console.error('❌ Invalid OpenAPI JSON:', error.message);
+              process.exit(1);
+            }
+          "
+
+      - name: Publish OpenAPI Spec to GitBook
+        env:
+          GITBOOK_TOKEN: ${{ secrets.GITBOOK_TOKEN }}
+        run: |
+          echo "📚 Publishing to GitBook..."
+          echo "Organization: ${{ secrets.GITBOOK_ORG }}"
+          echo "Spec ID: ${{ secrets.GITBOOK_SPEC }}"
+          
+          # GitBook Secrets 확인
+          if [ -z "$GITBOOK_TOKEN" ]; then
+            echo "❌ GITBOOK_TOKEN secret is not set"
+            exit 1
+          fi
+          
+          if [ -z "${{ secrets.GITBOOK_ORG }}" ]; then
+            echo "❌ GITBOOK_ORG secret is not set"
+            exit 1
+          fi
+          
+          if [ -z "${{ secrets.GITBOOK_SPEC }}" ]; then
+            echo "❌ GITBOOK_SPEC secret is not set"
+            exit 1
+          fi
+          
+          # GitBook에 업로드
+          gitbook openapi publish \
+            --organization "${{ secrets.GITBOOK_ORG }}" \
+            --spec "${{ secrets.GITBOOK_SPEC }}" \
+            openapi.json
+          
+          echo "✅ Successfully published to GitBook"
+
+      - name: Upload OpenAPI JSON as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-spec
+          path: openapi.json
+          retention-days: 30 
