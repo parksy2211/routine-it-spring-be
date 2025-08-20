@@ -95,10 +95,15 @@ public class Group {
         return group;
     }
 
-    public void addMember(User user) {
+    public GroupMember addMember(User user) {
         GroupMember groupMember = GroupMember.createGroupMember
                 (this, user, GroupMemberRole.MEMBER, GroupMemberStatus.PENDING);
         this.groupMembers.add(groupMember);
+        return groupMember;
+    }
+
+    public void removeMember(User user) {
+        this.groupMembers.removeIf(groupMember -> groupMember.getUser().equals(user));
     }
 
     public void addLeader(User user) {
