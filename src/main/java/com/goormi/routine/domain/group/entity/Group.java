@@ -19,14 +19,11 @@ public class Group {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long groupId;
 
-    @Column(nullable = false)
-    private Long leaderId;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id")
-    private Member member;
+    @JoinColumn(name = "leader_id")
+    private User leader;
 
-    @OneToMany(mappedBy = "groupMembers",cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "group",cascade = CascadeType.ALL, orphanRemoval = true)
     private final List<GroupMember> groupMembers = new ArrayList<>();
 
     @Column(nullable = false)
@@ -65,12 +62,11 @@ public class Group {
 
     // 생성자
     @Builder
-    private Group(Long leaderId, Member member,String groupName, String description,
+    private Group(User leader, String groupName, String description,
                   GroupType groupType, LocalTime alarmTime, String authDays,
                   String category, String groupImageUrl, Integer maxMembers ) {
         //basicInfo
-        this.leaderId = leaderId;
-        this.member = member;
+        this.leader = leader;
         this.groupName = groupName;
         this.description = description;
         this.groupType = groupType;
@@ -80,18 +76,18 @@ public class Group {
         //optionalInfo
         this.category = category;
         this.groupImageUrl = groupImageUrl;
-        this.maxMembers = (maxMembers != null ? maxMembers : 50);
+        this.maxMembers = maxMembers;
     }
 
-    public static Group createGroup(Long leaderId, String groupName, String description, GroupType groupType) {
+    public static Group createGroup(User leader, String groupName, String description, GroupType groupType) {
         Group group = Group.builder()
-                .leaderId(leaderId)
+                .leader(leader)
                 .groupName(groupName)
                 .description(description)
                 .groupType(groupType)
                 .build();
 
-        // 생성 초기값은 여기서 일괄 세팅
+        // 생성 초기값은 여기서 세팅
         group.createdAt = LocalDateTime.now();
         group.updatedAt = group.createdAt;
         group.isActive = true;
@@ -99,16 +95,16 @@ public class Group {
         return group;
     }
 
-    public void addMember(Member member) {
+    public void addMember(User user) {
         GroupMember groupMember = GroupMember.createGroupMember
-                (this, member, GroupMemberRole.MEMBER, GroupMemberStatus.PENDING);
-        groupMembers.add(groupMember);
+                (this, user, GroupMemberRole.MEMBER, GroupMemberStatus.PENDING);
+        this.groupMembers.add(groupMember);
     }
 
-    public void addLeader(Member member) {
+    public void addLeader(User user) {
         GroupMember groupLeader = GroupMember.createGroupMember
-                (this,  member, GroupMemberRole.LEADER,  GroupMemberStatus.JOINED);
-        groupMembers.add(groupLeader);
+                (this, user, GroupMemberRole.LEADER,  GroupMemberStatus.JOINED);
+        this.groupMembers.add(groupLeader);
     }
 
     public void updateBasicInfo(String name, String description, GroupType groupType) {
@@ -128,7 +124,7 @@ public class Group {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void updateOptionalInfo(String category, String groupImageUrl, int maxMembers) {
+    public void updateOtherInfo(String category, String groupImageUrl, int maxMembers) {
         this.category = category;
         this.groupImageUrl = groupImageUrl;
         this.maxMembers = maxMembers;

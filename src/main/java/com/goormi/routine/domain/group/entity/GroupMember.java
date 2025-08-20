@@ -22,8 +22,8 @@ public class GroupMember {
     private Group group;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
-    private Member member;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -40,17 +40,17 @@ public class GroupMember {
 
 
     @Builder
-    private GroupMember(Group group, Member member, GroupMemberRole role, GroupMemberStatus status) {
+    private GroupMember(Group group, User user, GroupMemberRole role, GroupMemberStatus status) {
         this.group = group;
-        this.member = member;
+        this.user = user;
         this.role = role;
         this.status = status;
     }
 
-    public static GroupMember createGroupMember (Group group, Member member, GroupMemberRole role, GroupMemberStatus status) {
+    public static GroupMember createGroupMember (Group group, User user, GroupMemberRole role, GroupMemberStatus status) {
         GroupMember groupMember = GroupMember.builder()
                 .group(group)
-                .member(member)
+                .user(user)
                 .role(role)
                 .status(status)
                 .build();
