@@ -107,6 +107,10 @@ public class Group {
         this.groupMembers.add(groupLeader);
     }
 
+    public int getCurrentMemberCount() {
+        return this.groupMembers.size();
+    }
+
     public void updateBasicInfo(String name, String description, GroupType groupType) {
         if (name == null || name.isBlank()) {
             throw new  IllegalArgumentException("name cannot be null or blank");
