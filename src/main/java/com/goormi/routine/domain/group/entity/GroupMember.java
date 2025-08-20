@@ -42,6 +42,7 @@ public class GroupMember {
     @Builder
     private GroupMember(Group group, Member member, GroupMemberRole role, GroupMemberStatus status) {
         this.group = group;
+        this.member = member;
         this.role = role;
         this.status = status;
     }

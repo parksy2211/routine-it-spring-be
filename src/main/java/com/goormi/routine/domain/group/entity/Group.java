@@ -65,11 +65,12 @@ public class Group {
 
     // 생성자
     @Builder
-    private Group(Long leaderId, String groupName, String description,
+    private Group(Long leaderId, Member member,String groupName, String description,
                   GroupType groupType, LocalTime alarmTime, String authDays,
                   String category, String groupImageUrl, Integer maxMembers ) {
         //basicInfo
         this.leaderId = leaderId;
+        this.member = member;
         this.groupName = groupName;
         this.description = description;
         this.groupType = groupType;
