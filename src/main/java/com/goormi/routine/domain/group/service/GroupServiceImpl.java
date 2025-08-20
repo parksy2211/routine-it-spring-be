@@ -76,7 +76,6 @@ public class GroupServiceImpl implements GroupService {
 
     // -- Update
     @Override
-    @Transactional
     public GroupResponse updateGroupInfo(User user, Long groupId, GroupUpdateRequest request) {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new IllegalArgumentException(groupId + " is not found"));
@@ -94,7 +93,6 @@ public class GroupServiceImpl implements GroupService {
 
     // -- Delete
     @Override
-    @Transactional
     public void deleteGroup(User user, Long groupId){
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new IllegalArgumentException(groupId + " is not found"));
