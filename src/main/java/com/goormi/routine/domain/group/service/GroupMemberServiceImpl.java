@@ -21,11 +21,10 @@ public class GroupMemberServiceImpl implements GroupMemberService {
     private final GroupMemberRepository groupMemberRepository;
     private final GroupRepository groupRepository;
 
-    // -- Create
-    // 그룹에 멤버 가입
+    // 그룹에 멤버가 참여 신청시 펜딩으로 추가
     @Override
     public GroupMemberResponse addMember(User user, GroupJoinRequest request) {
-        Group group = groupRepository.findByGroupId(request.getGroupId())
+        Group group = groupRepository.findById(request.getGroupId())
                 .orElseThrow(()->new IllegalArgumentException("Group not found"));
 
         Optional<GroupMember> existingMember = groupMemberRepository
@@ -43,8 +42,6 @@ public class GroupMemberServiceImpl implements GroupMemberService {
         }
 
         GroupMember groupMember = group.addMember(user); // PENDING
-        groupRepository.save(group);
-        groupMemberRepository.save(groupMember);
 
         return GroupMemberResponse.from(groupMember);
     }
@@ -53,7 +50,7 @@ public class GroupMemberServiceImpl implements GroupMemberService {
     @Override
     @Transactional(readOnly = true)
     public List<GroupMemberResponse> getGroupsByRole(Long groupId, GroupMemberRole role) {
-        Group group = groupRepository.findByGroupId(groupId)
+        Group group = groupRepository.findById(groupId)
                 .orElseThrow(()->new IllegalArgumentException("Group not found"));
 
         List<GroupMember> groupMembers = groupMemberRepository.findAllByGroupAndRole(group, role);
@@ -65,7 +62,7 @@ public class GroupMemberServiceImpl implements GroupMemberService {
     @Override
     @Transactional(readOnly = true)
     public List<GroupMemberResponse> getGroupsByStatus(Long groupId, GroupMemberStatus status) {
-        Group group = groupRepository.findByGroupId(groupId)
+        Group group = groupRepository.findById(groupId)
                 .orElseThrow(()->new IllegalArgumentException("Group not found"));
 
         List<GroupMember> groupMembers = groupMemberRepository.findAllByGroupAndStatus(group, status);
@@ -78,54 +75,55 @@ public class GroupMemberServiceImpl implements GroupMemberService {
     // -- Update
     @Override
     public GroupMemberResponse updateMemberStatus(User leader, LeaderAnswerRequest request) {
-        if(!Objects.equals(leader.getId(), request.getLeaderId())){
-            throw new IllegalArgumentException(" is not the leader of this member");
-        }
-        Group group = groupRepository.findByGroupId(request.getGroupId())
-                .orElseThrow(()->new IllegalArgumentException("Group not found"));
+        Group group = validateLeader(leader, request);
 
-        GroupMember groupMember = groupMemberRepository.findByMemberId(request.getTargetMemberId())
-                .orElseThrow(()->new IllegalArgumentException("Member not found"));
-
-        if (!Objects.equals(groupMember.getGroup().getGroupId(), request.getGroupId())) {
-            throw new IllegalArgumentException("해당 그룹의 멤버가 아님");
-        }
+        GroupMember groupMember = validateMember(request);
 
         groupMember.changeStatus(request.getStatus()); // JOINED, BLOCKED, LEFT
 
         if (request.getStatus() == GroupMemberStatus.BLOCKED || request.getStatus() == GroupMemberStatus.LEFT) {
-            group.removeMember(leader);
-            groupRepository.save(group);
+            group.removeMember(groupMember.getUser());
         }
 
-        groupMemberRepository.save(groupMember);
         return GroupMemberResponse.from(groupMember);
     }
 
     @Override
-    public GroupMemberResponse updateMemberRole(User user, LeaderAnswerRequest request) {
-        if(!Objects.equals(user.getId(), request.getLeaderId())){
+    public GroupMemberResponse updateMemberRole(User leader, LeaderAnswerRequest request) {
+        validateLeader(leader, request);
+
+        GroupMember groupMember = validateMember(request);
+
+        groupMember.changeRole(request.getRole()); // LEADER, MEMBER
+
+        return GroupMemberResponse.from(groupMember);
+    }
+
+    private Group validateLeader(User leader, LeaderAnswerRequest request) {
+        Group group = groupRepository.findById(request.getGroupId())
+                .orElseThrow(()->new IllegalArgumentException("Group not found"));
+
+        if(!Objects.equals(leader.getId(), group.getLeader().getId())){
             throw new IllegalArgumentException(" is not the leader of this member");
         }
+        return group;
+    }
 
-        GroupMember groupMember = groupMemberRepository.findByMemberId(request.getTargetMemberId())
+    private GroupMember validateMember(LeaderAnswerRequest request) {
+        GroupMember groupMember = groupMemberRepository.findById(request.getTargetMemberId())
                 .orElseThrow(()->new IllegalArgumentException("Member not found"));
 
         if (!Objects.equals(groupMember.getGroup().getGroupId(), request.getGroupId())) {
             throw new IllegalArgumentException("해당 그룹의 멤버가 아님");
         }
-
-        groupMember.changeRole(request.getRole()); // LEADER, MEMBER
-        groupMemberRepository.save(groupMember);
-
-        return GroupMemberResponse.from(groupMember);
+        return groupMember;
     }
 
     // -- Delete
     @Override
     public void delete(User user, Long groupMemberId) { // 본인이 탈퇴하는 것, 리더는 블락 사용
 
-        GroupMember groupMember = groupMemberRepository.findByMemberId(groupMemberId)
+        GroupMember groupMember = groupMemberRepository.findById(groupMemberId)
                 .orElseThrow(() -> new IllegalArgumentException("Member not found"));
 
         if (!Objects.equals(user.getId(), groupMember.getUser().getId())) {

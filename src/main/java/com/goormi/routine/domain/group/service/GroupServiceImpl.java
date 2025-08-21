@@ -87,7 +87,6 @@ public class GroupServiceImpl implements GroupService {
         group.updateTimeInfo(request.getAlarmTime(), request.getAuthDays());
         group.updateOtherInfo(request.getCategory(), request.getImageUrl(), request.getMaxMembers());
 
-        groupRepository.save(group);
         return GroupResponse.from(group);
     }
 
@@ -101,7 +100,7 @@ public class GroupServiceImpl implements GroupService {
             throw new IllegalArgumentException("권한이 없습니다.");
         }
         group.deactivate(); // 비활성화 후 일정기간 후 삭제?
-        groupRepository.delete(group);
+//        groupRepository.delete(group);
     }
 
 }
