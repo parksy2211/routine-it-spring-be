@@ -80,14 +80,22 @@ public class GroupMemberServiceImpl implements GroupMemberService {
     @Override
     public GroupMemberResponse updateMemberStatus(User leader, LeaderAnswerRequest request) {
         Group group = validateLeader(leader, request);
-
         GroupMember groupMember = validateMember(request);
 
-        groupMember.changeStatus(request.getStatus()); // JOINED, BLOCKED, LEFT
+        GroupMemberStatus oldStatus = groupMember.getStatus();
+        GroupMemberStatus newStatus = request.getStatus();
 
-        if (request.getStatus() == GroupMemberStatus.BLOCKED || request.getStatus() == GroupMemberStatus.LEFT) {
-            group.removeMember(groupMember.getUser());
+        if (oldStatus == GroupMemberStatus.JOINED) {
+            if (newStatus != GroupMemberStatus.JOINED) {
+                group.minusMemberCnt();
+            }
         }
+        else{
+            if (newStatus == GroupMemberStatus.JOINED) {
+                group.addMemberCnt();
+            }
+        }
+        groupMember.changeStatus(newStatus); // JOINED, BLOCKED, LEFT
 
         return GroupMemberResponse.from(groupMember);
     }
@@ -132,6 +140,10 @@ public class GroupMemberServiceImpl implements GroupMemberService {
         GroupMember groupMember = groupMemberRepository.findByGroupAndUser(group, user)
                 .orElseThrow(()-> new IllegalArgumentException("Group Member not found"));
 
-        groupMemberRepository.delete(groupMember);
+        if (groupMember.getRole() == GroupMemberRole.LEADER) {
+            throw new IllegalArgumentException("리더는 떠날 수 없습니다. 리더를 위임해주세요");
+        }
+        groupMember.changeStatus(GroupMemberStatus.LEFT);
+//        groupMemberRepository.delete(groupMember);
     }
 }

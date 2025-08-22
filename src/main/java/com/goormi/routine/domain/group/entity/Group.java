@@ -49,6 +49,7 @@ public class Group {
     private String groupImageUrl;
 
     private int maxMembers;
+    private int currentMemberCnt;
 
 
     @Column(nullable = false, updatable = false)
@@ -102,18 +103,21 @@ public class Group {
         return groupMember;
     }
 
-    public void removeMember(User user) {
-        this.groupMembers.removeIf(groupMember -> groupMember.getUser().equals(user));
-    }
-
     public void addLeader(User user) {
         GroupMember groupLeader = GroupMember.createGroupMember
                 (this, user, GroupMemberRole.LEADER,  GroupMemberStatus.JOINED);
+        addMemberCnt();
         this.groupMembers.add(groupLeader);
     }
 
-    public int getCurrentMemberCount() {
-        return this.groupMembers.size();
+    public void addMemberCnt() {
+        if (this.getCurrentMemberCnt() >= this.getMaxMembers()) {
+            throw new IllegalArgumentException("최대 멤버수를 초과할 수 없습니다.");
+        }
+        this.currentMemberCnt++;
+    }
+    public void minusMemberCnt() {
+        this.currentMemberCnt--;
     }
 
     public void updateBasicInfo(String name, String description, GroupType groupType) {
