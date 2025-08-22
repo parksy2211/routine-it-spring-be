@@ -23,16 +23,24 @@ public class GroupServiceImpl implements GroupService {
     // -- create
     @Override
     public GroupResponse createGroup(User leader, GroupCreateRequest request) {
-        // User leader = userRepository.findById(userId); 밑의 메소드들도 userFind 후 작업하도록 수정해야함.
+        // User leader = userRepository.findById(userId);
 
-        Group group = Group.createGroup(leader,
-                request.getGroupName(),
-                request.getGroupDescription(),
-                request.getGroupType());
+        Group group = Group.builder()
+                .leader(leader)
+                .groupName(request.getGroupName())
+                .description(request.getGroupDescription())
+                .groupType(request.getGroupType())
+                .alarmTime(request.getAlarmTime())
+                .authDays(request.getAuthDays())
+                .category(request.getCategory())
+                .groupImageUrl(request.getImageUrl())
+                .maxMembers(request.getMaxMembers())
+                .build();
 
         group.addLeader(leader);
-        groupRepository.save(group);
-        return GroupResponse.from(group);
+        group.setInitialValues(group);
+        Group saved = groupRepository.save(group);
+        return GroupResponse.from(saved);
     }
 
     // -- Read

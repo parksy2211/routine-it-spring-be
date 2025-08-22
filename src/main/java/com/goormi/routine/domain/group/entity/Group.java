@@ -80,20 +80,12 @@ public class Group {
         this.maxMembers = maxMembers;
     }
 
-    public static Group createGroup(User leader, String groupName, String description, GroupType groupType) {
-        Group group = Group.builder()
-                .leader(leader)
-                .groupName(groupName)
-                .description(description)
-                .groupType(groupType)
-                .build();
+    // 생성 초기값은 여기서 세팅
+    public void setInitialValues(Group group) {
 
-        // 생성 초기값은 여기서 세팅
         group.createdAt = LocalDateTime.now();
         group.updatedAt = group.createdAt;
         group.isActive = true;
-
-        return group;
     }
 
     public GroupMember addMember(User user) {
