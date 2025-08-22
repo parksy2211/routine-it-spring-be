@@ -42,7 +42,7 @@ public class GroupResponse {
                 .category(group.getCategory())
                 .groupImageUrl(group.getGroupImageUrl())
                 .maxMembers(group.getMaxMembers())
-                .currentMemberCount(group.getCurrentMemberCount())
+                .currentMemberCount(group.getCurrentMemberCnt())
                 .isActive(group.isActive())
                 .createdAt(group.getCreatedAt())
                 .updatedAt(group.getUpdatedAt())
