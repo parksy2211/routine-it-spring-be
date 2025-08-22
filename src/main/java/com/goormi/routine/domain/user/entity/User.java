@@ -101,7 +101,12 @@ public class User {
                 .role(UserRole.USER)
                 .build();
     }
-    
+
+    public void updateSettings(Boolean isAlarmOn, Boolean isDarkMode) {
+        if (isAlarmOn != null) this.isAlarmOn = isAlarmOn;
+        if (isDarkMode != null) this.isDarkMode = isDarkMode;
+    }
+
     public enum UserRole {
         USER, ADMIN
     }
