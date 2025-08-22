@@ -8,5 +8,5 @@ public interface UserService {
 	UserResponse updateProfile(Long userId, UserRequest request);
 	UserResponse updateSettings(Long userId, UserRequest request);
 	UserResponse getUserProfile(Long userId);
-	void deleteAccount(Long userId);
+	void deleteAccount(Long userId, String accessToken);
 }

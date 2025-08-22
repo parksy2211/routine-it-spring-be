@@ -1,5 +1,7 @@
 package com.goormi.routine.domain.user.service;
 
+import com.goormi.routine.domain.auth.repository.RedisRepository;
+import com.goormi.routine.domain.auth.service.JwtTokenProvider;
 import com.goormi.routine.domain.user.dto.UserRequest;
 import com.goormi.routine.domain.user.dto.UserResponse;
 import com.goormi.routine.domain.user.entity.User;
@@ -12,6 +14,8 @@ import org.springframework.stereotype.Service;
 public class UserServiceImpl implements UserService {
 
 	private final UserRepository userRepository;
+	private final RedisRepository redisRepository;
+	private final JwtTokenProvider jwtTokenProvider;
 
 	@Override
 	public UserResponse getMyProfile(Long userId) {
@@ -44,9 +48,21 @@ public class UserServiceImpl implements UserService {
 	}
 
 	@Override
-	public void deleteAccount(Long userId) {
-		userRepository.deleteById(userId);
+	public void deleteAccount(Long userId, String accessToken) {
+		User user = userRepository.findById(userId).orElseThrow();
+
+		user.updateRefreshToken(null);
+		user.setActive(false);
+
+		userRepository.save(user);
+
+		// AccessToken 남은 유효기간 계산 후 블랙리스트에 등록
+		long expiration = jwtTokenProvider.getRefreshTokenExpiration();
+		redisRepository.saveBlackList(accessToken, expiration);
+
+		redisRepository.deleteRefreshToken(String.valueOf(userId));
 	}
+
 
 	private UserResponse toResponse(User user) {
 		return UserResponse.builder()
