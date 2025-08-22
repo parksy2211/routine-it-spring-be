@@ -11,16 +11,16 @@ import java.util.List;
 
 public interface GroupMemberService {
     // -- Create
-    GroupMemberResponse addMember(User user, GroupJoinRequest request);
+    GroupMemberResponse addMember(User user, Long groupId, GroupJoinRequest request);
 
     // -- Read
     List<GroupMemberResponse> getGroupsByRole(Long groupId, GroupMemberRole role);
     List<GroupMemberResponse> getGroupsByStatus(Long groupId, GroupMemberStatus status);
 
     // -- Update
-    GroupMemberResponse updateMemberStatus(User user, LeaderAnswerRequest request);
-    GroupMemberResponse updateMemberRole(User user, LeaderAnswerRequest request);
+    GroupMemberResponse updateMemberStatus(User leader, LeaderAnswerRequest request);
+    GroupMemberResponse updateMemberRole(User leader, LeaderAnswerRequest request);
 
     // -- Delete
-    void delete(User user, Long groupMemberId);
+    void delete(User user, Long groupId);
 }

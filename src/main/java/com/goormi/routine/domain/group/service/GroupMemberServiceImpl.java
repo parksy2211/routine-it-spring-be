@@ -23,7 +23,11 @@ public class GroupMemberServiceImpl implements GroupMemberService {
 
     // 그룹에 멤버가 참여 신청시 펜딩으로 추가
     @Override
-    public GroupMemberResponse addMember(User user, GroupJoinRequest request) {
+    public GroupMemberResponse addMember(User user, Long groupId, GroupJoinRequest request) {
+        if(!Objects.equals(groupId, request.getGroupId())){
+            throw new IllegalArgumentException("Invalid group id");
+        }
+
         Group group = groupRepository.findById(request.getGroupId())
                 .orElseThrow(()->new IllegalArgumentException("Group not found"));
 
@@ -121,16 +125,13 @@ public class GroupMemberServiceImpl implements GroupMemberService {
 
     // -- Delete
     @Override
-    public void delete(User user, Long groupMemberId) { // 본인이 탈퇴하는 것, 리더는 블락 사용
+    public void delete(User user, Long groupId) { // 본인이 탈퇴하는 것, 리더는 블락 사용
+        Group group = groupRepository.findById(groupId).
+                orElseThrow(()->new IllegalArgumentException("Group not found"));
 
-        GroupMember groupMember = groupMemberRepository.findById(groupMemberId)
-                .orElseThrow(() -> new IllegalArgumentException("Member not found"));
-
-        if (!Objects.equals(user.getId(), groupMember.getUser().getId())) {
-            throw new IllegalArgumentException("권한이 없습니다.");
-        }
+        GroupMember groupMember = groupMemberRepository.findByGroupAndUser(group, user)
+                .orElseThrow(()-> new IllegalArgumentException("Group Member not found"));
 
         groupMemberRepository.delete(groupMember);
     }
-
 }
