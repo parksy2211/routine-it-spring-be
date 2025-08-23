@@ -56,8 +56,7 @@ public class UserServiceImpl implements UserService {
 
 		userRepository.save(user);
 
-		// AccessToken 남은 유효기간 계산 후 블랙리스트에 등록
-		long expiration = jwtTokenProvider.getRefreshTokenExpiration();
+		long expiration = jwtTokenProvider.getRemainingExpiration(accessToken);
 		redisRepository.saveBlackList(accessToken, expiration);
 
 		redisRepository.deleteRefreshToken(String.valueOf(userId));
