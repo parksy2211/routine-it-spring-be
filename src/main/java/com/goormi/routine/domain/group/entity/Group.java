@@ -14,6 +14,7 @@ import java.util.List;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(name = "user_group")
 public class Group {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
