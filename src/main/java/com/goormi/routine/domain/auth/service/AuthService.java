@@ -32,7 +32,7 @@ public class AuthService {
             throw new IllegalArgumentException("이미 사용중인 닉네임입니다.");
         }
         
-        user.updateProfile(nickname, user.getProfileImageUrl());
+        user.createProfile(nickname, user.getProfileImageUrl());
         userRepository.save(user);
         
         return UserInfoResponse.from(user);
