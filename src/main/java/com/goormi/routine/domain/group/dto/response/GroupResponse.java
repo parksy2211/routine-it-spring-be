@@ -33,7 +33,7 @@ public class GroupResponse {
     public static GroupResponse from(Group group) {
         return GroupResponse.builder()
                 .groupId(group.getGroupId())
-                .leaderName(group.getLeader().getUsername())
+                .leaderName(group.getLeader().getNickname())
                 .groupName(group.getGroupName())
                 .description(group.getDescription())
                 .groupType(group.getGroupType())

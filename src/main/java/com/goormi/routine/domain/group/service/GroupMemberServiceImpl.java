@@ -6,6 +6,8 @@ import com.goormi.routine.domain.group.dto.response.GroupMemberResponse;
 import com.goormi.routine.domain.group.entity.*;
 import com.goormi.routine.domain.group.repository.GroupMemberRepository;
 import com.goormi.routine.domain.group.repository.GroupRepository;
+import com.goormi.routine.domain.user.entity.User;
+import com.goormi.routine.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,16 +22,21 @@ import java.util.Optional;
 public class GroupMemberServiceImpl implements GroupMemberService {
     private final GroupMemberRepository groupMemberRepository;
     private final GroupRepository groupRepository;
+    private final UserRepository userRepository;
 
     // 그룹에 멤버가 참여 신청시 펜딩으로 추가
     @Override
-    public GroupMemberResponse addMember(User user, Long groupId, GroupJoinRequest request) {
+    public GroupMemberResponse addMember(Long userId, Long groupId, GroupJoinRequest request) {
+
+        Group group = groupRepository.findById(request.getGroupId())
+                .orElseThrow(()->new IllegalArgumentException("Group not found"));
+
         if(!Objects.equals(groupId, request.getGroupId())){
             throw new IllegalArgumentException("Invalid group id");
         }
 
-        Group group = groupRepository.findById(request.getGroupId())
-                .orElseThrow(()->new IllegalArgumentException("Group not found"));
+        User user = userRepository.findById(userId)
+                .orElseThrow(()->new IllegalArgumentException("User not found"));
 
         Optional<GroupMember> existingMember = groupMemberRepository
                 .findByGroupAndUser(group, user);
@@ -78,8 +85,8 @@ public class GroupMemberServiceImpl implements GroupMemberService {
 
     // -- Update
     @Override
-    public GroupMemberResponse updateMemberStatus(User leader, LeaderAnswerRequest request) {
-        Group group = validateLeader(leader, request);
+    public GroupMemberResponse updateMemberStatus(Long leaderId, LeaderAnswerRequest request) {
+        Group group = validateLeader(leaderId, request);
         GroupMember groupMember = validateMember(request);
 
         GroupMemberStatus oldStatus = groupMember.getStatus();
@@ -101,8 +108,8 @@ public class GroupMemberServiceImpl implements GroupMemberService {
     }
 
     @Override
-    public GroupMemberResponse updateMemberRole(User leader, LeaderAnswerRequest request) {
-        validateLeader(leader, request);
+    public GroupMemberResponse updateMemberRole(Long leaderId, LeaderAnswerRequest request) {
+        validateLeader(leaderId, request);
 
         GroupMember groupMember = validateMember(request);
 
@@ -111,11 +118,11 @@ public class GroupMemberServiceImpl implements GroupMemberService {
         return GroupMemberResponse.from(groupMember);
     }
 
-    private Group validateLeader(User leader, LeaderAnswerRequest request) {
+    private Group validateLeader(Long leaderId, LeaderAnswerRequest request) {
         Group group = groupRepository.findById(request.getGroupId())
                 .orElseThrow(()->new IllegalArgumentException("Group not found"));
 
-        if(!Objects.equals(leader.getId(), group.getLeader().getId())){
+        if(!Objects.equals(leaderId, group.getLeader().getId())){
             throw new IllegalArgumentException(" is not the leader of this member");
         }
         return group;
@@ -133,9 +140,12 @@ public class GroupMemberServiceImpl implements GroupMemberService {
 
     // -- Delete
     @Override
-    public void delete(User user, Long groupId) { // 본인이 탈퇴하는 것, 리더는 블락 사용
+    public void delete(Long userId, Long groupId) { // 본인이 탈퇴하는 것, 리더는 블락 사용
         Group group = groupRepository.findById(groupId).
                 orElseThrow(()->new IllegalArgumentException("Group not found"));
+
+        User user = userRepository.findById(userId).
+                orElseThrow(()->new IllegalArgumentException("User not found"));
 
         GroupMember groupMember = groupMemberRepository.findByGroupAndUser(group, user)
                 .orElseThrow(()-> new IllegalArgumentException("Group Member not found"));

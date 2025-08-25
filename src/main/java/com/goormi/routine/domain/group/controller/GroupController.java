@@ -4,7 +4,6 @@ import com.goormi.routine.domain.group.dto.request.GroupCreateRequest;
 import com.goormi.routine.domain.group.dto.request.GroupUpdateRequest;
 import com.goormi.routine.domain.group.dto.response.GroupResponse;
 import com.goormi.routine.domain.group.entity.GroupType;
-import com.goormi.routine.domain.group.entity.User;
 import com.goormi.routine.domain.group.service.GroupService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -14,6 +13,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -37,11 +37,9 @@ public class GroupController {
     })
 
     @PostMapping
-    public ResponseEntity<GroupResponse> createGroup(/*@AuthenticationPrincipal*/ User user,
+    public ResponseEntity<GroupResponse> createGroup(@AuthenticationPrincipal Long leaderId,
                                                      @Valid @RequestBody GroupCreateRequest request) {
-//        TODO: 임시 User 객체 사용, 인증 기능 구현 후 @AuthenticationPrincipal 등으로 교체 필요
-//        Long userId = user.getId();
-        GroupResponse created = groupService.createGroup(user, request);
+        GroupResponse created = groupService.createGroup(leaderId, request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
@@ -95,11 +93,11 @@ public class GroupController {
             @ApiResponse(responseCode = "404", description = "그룹을 찾을 수 없음")
     })
     @PutMapping("/{groupId}")
-    public ResponseEntity<GroupResponse> updateGroupInfo(/*@AuthenticationPrincipal*/ User user,
+    public ResponseEntity<GroupResponse> updateGroupInfo(/*@AuthenticationPrincipal*/ Long leaderId,
                                                                   @PathVariable Long groupId,
                                                                   @Valid @RequestBody GroupUpdateRequest request) {
         // TODO: 인증 기능 구현 후 @AuthenticationPrincipal 등으로 교체 필요
-        GroupResponse response = groupService.updateGroupInfo(user, groupId, request);
+        GroupResponse response = groupService.updateGroupInfo(leaderId, groupId, request);
         return ResponseEntity.ok(response);
     }
 
@@ -114,10 +112,10 @@ public class GroupController {
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     })
     @DeleteMapping("/{groupId}")
-    public ResponseEntity<Void> deleteGroup(/*@AuthenticationPrincipal*/ User user,
+    public ResponseEntity<Void> deleteGroup(@AuthenticationPrincipal Long leaderId,
                                                                                    @PathVariable Long groupId) {
         // TODO: 임시 User 객체 사용, 인증 기능 구현 후 @AuthenticationPrincipal 등으로 교체 필요
-        groupService.deleteGroup(user, groupId);
+        groupService.deleteGroup(leaderId, groupId);
         return ResponseEntity.noContent().build();
     }
 }

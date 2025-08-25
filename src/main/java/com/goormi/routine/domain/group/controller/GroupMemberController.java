@@ -5,7 +5,6 @@ import com.goormi.routine.domain.group.dto.request.LeaderAnswerRequest;
 import com.goormi.routine.domain.group.dto.response.GroupMemberResponse;
 import com.goormi.routine.domain.group.entity.GroupMemberRole;
 import com.goormi.routine.domain.group.entity.GroupMemberStatus;
-import com.goormi.routine.domain.group.entity.User;
 import com.goormi.routine.domain.group.service.GroupMemberService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -14,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -36,12 +36,11 @@ public class GroupMemberController {
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
     })
     @PostMapping("/join")
-    public ResponseEntity<GroupMemberResponse> joinGroup(/*@AuthenticationPrincipal*/ User user,
+    public ResponseEntity<GroupMemberResponse> joinGroup(@AuthenticationPrincipal Long userId,
                                                                                       @PathVariable Long groupId,
                                                                                       @Valid @RequestBody GroupJoinRequest request) {
-        // TODO: 인증 기능 구현 후 @AuthenticationPrincipal 등으로 교체 필요
 
-        GroupMemberResponse response = groupMemberService.addMember(user, groupId, request);
+        GroupMemberResponse response = groupMemberService.addMember(userId, groupId, request);
         return ResponseEntity.ok(response);
     }
 
@@ -80,10 +79,9 @@ public class GroupMemberController {
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
             @ApiResponse(responseCode = "403", description = "권한이 없는 사용자")
     })
-    public ResponseEntity<GroupMemberResponse> updateMemberStatus(/*@AuthenticationPrincipal*/ User leader,
+    public ResponseEntity<GroupMemberResponse> updateMemberStatus(@AuthenticationPrincipal Long leaderId,
                                                                                @Valid @RequestBody LeaderAnswerRequest request) {
-        // TODO: 임시 User 객체 사용, 인증 기능 구현 후 @AuthenticationPrincipal 등으로 교체 필요
-        GroupMemberResponse response = groupMemberService.updateMemberStatus(leader, request);
+        GroupMemberResponse response = groupMemberService.updateMemberStatus(leaderId, request);
         return ResponseEntity.ok(response);
     }
 
@@ -97,10 +95,9 @@ public class GroupMemberController {
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
             @ApiResponse(responseCode = "403", description = "권한이 없는 사용자")
     })
-    public ResponseEntity<GroupMemberResponse> updateMemberRole(/*@AuthenticationPrincipal*/ User user,
+    public ResponseEntity<GroupMemberResponse> updateMemberRole(@AuthenticationPrincipal Long userId,
                                                                              @Valid @RequestBody LeaderAnswerRequest request) {
-        // TODO: 임시 User 객체 사용, 인증 기능 구현 후 @AuthenticationPrincipal 등으로 교체 필요
-        GroupMemberResponse response = groupMemberService.updateMemberRole(user, request);
+        GroupMemberResponse response = groupMemberService.updateMemberRole(userId, request);
         return ResponseEntity.ok(response);
     }
 
@@ -114,10 +111,9 @@ public class GroupMemberController {
             @ApiResponse(responseCode = "404", description = "그룹이나 유저를 찾을 수 없음")
     })
     @DeleteMapping("/members/me")
-    public ResponseEntity<Void> leaveGroup(/*@AuthenticationPrincipal*/ User user,
+    public ResponseEntity<Void> leaveGroup(@AuthenticationPrincipal Long userId,
                                                                         @PathVariable Long groupId) {
-        // TODO: 임시 User 객체 사용, 인증 기능 구현 후 @AuthenticationPrincipal 등으로 교체 필요
-        groupMemberService.delete(user, groupId);
+        groupMemberService.delete(userId, groupId);
         return ResponseEntity.noContent().build();
     }
 }

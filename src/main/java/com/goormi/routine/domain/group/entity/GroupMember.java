@@ -1,5 +1,6 @@
 package com.goormi.routine.domain.group.entity;
 
+import com.goormi.routine.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

@@ -5,8 +5,9 @@ import com.goormi.routine.domain.group.dto.request.GroupUpdateRequest;
 import com.goormi.routine.domain.group.dto.response.GroupResponse;
 import com.goormi.routine.domain.group.entity.Group;
 import com.goormi.routine.domain.group.entity.GroupType;
-import com.goormi.routine.domain.group.entity.User;
+import com.goormi.routine.domain.user.entity.User;
 import com.goormi.routine.domain.group.repository.GroupRepository;
+import com.goormi.routine.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,11 +20,13 @@ import java.util.Objects;
 @Transactional
 public class GroupServiceImpl implements GroupService {
     private final GroupRepository groupRepository;
+    private final UserRepository userRepository;
 
     // -- create
     @Override
-    public GroupResponse createGroup(User leader, GroupCreateRequest request) {
-        // User leader = userRepository.findById(userId);
+    public GroupResponse createGroup(Long leaderId, GroupCreateRequest request) {
+         User leader = userRepository.findById(leaderId)
+                 .orElseThrow(()-> new IllegalArgumentException("User not found"));
 
         Group group = Group.builder()
                 .leader(leader)
@@ -84,11 +87,11 @@ public class GroupServiceImpl implements GroupService {
 
     // -- Update
     @Override
-    public GroupResponse updateGroupInfo(User user, Long groupId, GroupUpdateRequest request) {
+    public GroupResponse updateGroupInfo(Long leaderId, Long groupId, GroupUpdateRequest request) {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new IllegalArgumentException(groupId + " is not found"));
 
-        if (!Objects.equals(user.getId(), group.getLeader().getId())){
+        if (!Objects.equals(leaderId, group.getLeader().getId())){
             throw new IllegalArgumentException("권한이 없습니다.");
         }
         group.updateBasicInfo(request.getGroupName(), request.getGroupDescription(), request.getGroupType());
@@ -100,11 +103,11 @@ public class GroupServiceImpl implements GroupService {
 
     // -- Delete
     @Override
-    public void deleteGroup(User user, Long groupId){
+    public void deleteGroup(Long leaderId, Long groupId){
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new IllegalArgumentException(groupId + " is not found"));
 
-        if (!Objects.equals(user.getId(), group.getLeader().getId())){
+        if (!Objects.equals(leaderId, group.getLeader().getId())){
             throw new IllegalArgumentException("권한이 없습니다.");
         }
         group.deactivate(); // 비활성화 후 일정기간 후 삭제?
