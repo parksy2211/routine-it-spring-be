@@ -53,6 +53,7 @@ public class GroupMemberServiceImpl implements GroupMemberService {
         }
 
         GroupMember groupMember = group.addMember(user); // PENDING
+        groupMemberRepository.save(groupMember);
 
         return GroupMemberResponse.from(groupMember);
     }

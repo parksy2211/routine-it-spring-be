@@ -11,6 +11,8 @@ import java.time.LocalDateTime;
 @Getter
 @Builder
 public class GroupMemberResponse {
+
+    private Long groupMemberId;
     private String groupName;
     private GroupMemberStatus status;
     private GroupMemberRole role;
@@ -21,6 +23,7 @@ public class GroupMemberResponse {
 
     public static  GroupMemberResponse from(GroupMember groupMember) {
         return GroupMemberResponse.builder()
+                .groupMemberId(groupMember.getMemberId())
                 .groupName(groupMember.getGroup().getGroupName())
                 .status(groupMember.getStatus())
                 .role(groupMember.getRole())
