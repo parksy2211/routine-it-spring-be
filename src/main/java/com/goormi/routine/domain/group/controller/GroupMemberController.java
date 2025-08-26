@@ -58,7 +58,12 @@ public class GroupMemberController {
             @RequestParam(required = false) GroupMemberStatus status) {
 
         List<GroupMemberResponse> responses;
-        if (role != null) {
+        if (role != null && status != null) {
+            List<GroupMemberResponse> byRole = groupMemberService.getGroupsByRole(groupId, role);
+            List<GroupMemberResponse> byStatus = groupMemberService.getGroupsByStatus(groupId, status);
+            byRole.retainAll(byStatus);
+            responses = byRole;
+        } else if (role != null) {
             responses = groupMemberService.getGroupsByRole(groupId, role);
         } else if (status != null) {
             responses = groupMemberService.getGroupsByStatus(groupId, status);
