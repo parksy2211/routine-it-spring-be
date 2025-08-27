@@ -44,14 +44,24 @@ jobs:
           echo "deploy_tag=$TAG" >> $GITHUB_OUTPUT
           echo "🏷️ Deploying tag: $TAG"
 
-      - name: Setup SSH key
-        uses: webfactory/ssh-agent@v0.8.0
-        with:
-          ssh-private-key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-
-      - name: Add EC2 to known hosts
+      - name: Setup SSH
         run: |
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/routine-it-key.pem
+          chmod 600 ~/.ssh/routine-it-key.pem
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+          
+          # SSH config 설정
+          cat >> ~/.ssh/config << EOF
+          Host ec2-instance
+            HostName ${{ secrets.EC2_HOST }}
+            User ${{ secrets.EC2_USER }}
+            IdentityFile ~/.ssh/routine-it-key.pem
+            StrictHostKeyChecking no
+          EOF
+          chmod 600 ~/.ssh/config
+          
+          echo "🔐 SSH setup completed"
 
       - name: Create .env file from secrets
         run: |
@@ -98,32 +108,25 @@ jobs:
           EOF
 
       - name: Copy files to EC2
-        env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_USER: ${{ secrets.EC2_USER }}
         run: |
           echo "📦 Copying deployment files to EC2..."
           
-          # Create directory if not exists
-          ssh $EC2_USER@$EC2_HOST "mkdir -p /home/$EC2_USER/routine-it-backend"
+          # SSH 키 사용하여 직접 연결
+          ssh -i ~/.ssh/routine-it-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p /home/${{ secrets.EC2_USER }}/routine-it-backend"
           
           # Copy docker-compose.yml
-          scp docker-compose.yml $EC2_USER@$EC2_HOST:/home/$EC2_USER/routine-it-backend/
+          scp -i ~/.ssh/routine-it-key.pem docker-compose.yml ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/routine-it-backend/
           
           # Copy .env file
-          scp .env.production $EC2_USER@$EC2_HOST:/home/$EC2_USER/routine-it-backend/.env
+          scp -i ~/.ssh/routine-it-key.pem .env.production ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/routine-it-backend/.env
           
           echo "✅ Files copied successfully"
 
       - name: Deploy to EC2
-        env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_USER: ${{ secrets.EC2_USER }}
-          DEPLOY_TAG: ${{ steps.tag.outputs.deploy_tag }}
         run: |
           echo "🚀 Starting deployment to EC2..."
           
-          ssh $EC2_USER@$EC2_HOST << 'ENDSSH'
+          ssh -i ~/.ssh/routine-it-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENDSSH'
             set -e
             
             echo "📂 Navigating to application directory..."
