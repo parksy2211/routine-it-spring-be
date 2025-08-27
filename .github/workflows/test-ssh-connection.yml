@@ -1,6 +1,12 @@
 name: Test SSH Connection
 
 on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - '.github/workflows/test-ssh-connection.yml'
   workflow_dispatch:
 
 jobs:
@@ -13,8 +19,8 @@ jobs:
           echo "🔐 Setting up SSH..."
           mkdir -p ~/.ssh
           
-          # Base64로 인코딩된 키를 디코드
-          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/routine-it-key.pem
+          # Base64로 인코딩된 키를 디코드 (한 줄로 된 Base64)
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" | tr -d ' ' | base64 -d > ~/.ssh/routine-it-key.pem
           
           # 권한 설정
           chmod 600 ~/.ssh/routine-it-key.pem
