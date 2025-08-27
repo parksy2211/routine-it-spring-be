@@ -13,11 +13,6 @@ on:
         description: 'Docker image tag to deploy'
         required: false
         default: 'latest'
-      force_deploy:
-        description: 'Force deployment without build dependency'
-        required: false
-        default: true
-        type: boolean
 
 jobs:
   deploy:
@@ -48,6 +43,83 @@ jobs:
         run: |
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
+      - name: Test SSH connection
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+        run: |
+          echo "🔐 Testing SSH connection..."
+          ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST "echo 'SSH connection successful!'" || {
+            echo "❌ SSH connection failed"
+            echo "Please check:"
+            echo "1. EC2_SSH_PRIVATE_KEY contains the full PEM file content"
+            echo "2. EC2_USER is 'ec2-user'"
+            echo "3. EC2_HOST is '54.180.93.1'"
+            exit 1
+          }
+
+      - name: Create .env file from secrets
+        run: |
+          cat > .env.production << EOF
+          # Application
+          APP_PORT=8080
+          SPRING_PROFILES_ACTIVE=docker
+          
+          # Database
+          DB_HOST=routine-db
+          DB_PORT=3306
+          DB_NAME=${{ secrets.DB_NAME }}
+          DB_USERNAME=${{ secrets.DB_USERNAME }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          JPA_HIBERNATE_DDL_AUTO=${{ secrets.JPA_HIBERNATE_DDL_AUTO }}
+          
+          # Redis
+          REDIS_HOST=routine-redis
+          REDIS_PORT=6379
+          REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
+          
+          # JWT
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          
+          # OAuth2 Kakao
+          KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}
+          OAUTH_REDIRECT_URI=${{ secrets.OAUTH_REDIRECT_URI }}
+          OAUTH_CALLBACK_URI=${{ secrets.OAUTH_CALLBACK_URI }}
+          
+          # CORS
+          CORS_ALLOWED_ORIGINS=${{ secrets.CORS_ALLOWED_ORIGINS }}
+          
+          # Logging
+          LOG_LEVEL_SQL=${{ secrets.LOG_LEVEL_SQL }}
+          LOG_LEVEL_SQL_BIND=${{ secrets.LOG_LEVEL_SQL_BIND }}
+          LOG_LEVEL_APP=${{ secrets.LOG_LEVEL_APP }}
+          
+          # Docker
+          DEPLOY_TAG=${{ steps.tag.outputs.deploy_tag }}
+          
+          # MySQL Root Password (for docker-compose)
+          MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_DATABASE=${{ secrets.DB_NAME }}
+          EOF
+
+      - name: Copy files to EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+        run: |
+          echo "📦 Copying deployment files to EC2..."
+          
+          # Create directory if not exists
+          ssh $EC2_USER@$EC2_HOST "mkdir -p /home/$EC2_USER/routine-it-backend"
+          
+          # Copy docker-compose.yml
+          scp docker-compose.yml $EC2_USER@$EC2_HOST:/home/$EC2_USER/routine-it-backend/
+          
+          # Copy .env file
+          scp .env.production $EC2_USER@$EC2_HOST:/home/$EC2_USER/routine-it-backend/.env
+          
+          echo "✅ Files copied successfully"
+
       - name: Deploy to EC2
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
@@ -58,21 +130,24 @@ jobs:
           
           ssh $EC2_USER@$EC2_HOST << 'ENDSSH'
             set -e
-            
+          
             echo "📂 Navigating to application directory..."
-            cd /home/${{ secrets.EC2_USER }}/routine-it-backend || {
-              echo "❌ Application directory not found. Please run initial setup first."
-              exit 1
-            }
-            
+            cd /home/${{ secrets.EC2_USER }}/routine-it-backend
+          
+            # Backup current .env if exists
+            if [ -f .env ]; then
+              cp .env .env.backup.$(date +%Y%m%d_%H%M%S)
+              echo "📋 Backed up existing .env file"
+            fi
+          
             echo "📥 Pulling latest Docker images..."
             export DEPLOY_TAG=${{ steps.tag.outputs.deploy_tag }}
             docker-compose pull
-            
+          
             echo "🔄 Restarting application..."
             docker-compose down --remove-orphans
             docker-compose up -d
-            
+          
             echo "⏳ Waiting for application to be ready..."
             for i in {1..30}; do
               if curl -f http://localhost:8080/api/health/ping > /dev/null 2>&1; then
@@ -87,27 +162,24 @@ jobs:
               echo "⏳ Waiting... ($i/30)"
               sleep 10
             done
-            
+          
             echo "🧹 Cleaning up old Docker images..."
             docker image prune -f
-            
+          
             echo "📊 Deployment status:"
             docker-compose ps
+          
+            echo "🔍 Environment variables loaded:"
+            docker-compose exec -T app env | grep -E "^(SPRING_|DB_|REDIS_|JWT_|KAKAO_)" | sort
           ENDSSH
 
       - name: Health Check
         run: |
           echo "🔍 Running post-deployment health checks..."
           
-          # Basic connectivity check
           curl -f http://${{ secrets.EC2_HOST }}:8080/api/health/ping || {
             echo "❌ Health check failed"
             exit 1
-          }
-          
-          # Detailed health check
-          curl -s http://${{ secrets.EC2_HOST }}:8080/api/health | jq '.success' || {
-            echo "⚠️ Detailed health check inconclusive"
           }
           
           echo "✅ All health checks passed!"
@@ -118,14 +190,3 @@ jobs:
           echo "🎉 Deployment completed successfully!"
           echo "🌐 Application is available at: http://${{ secrets.EC2_HOST }}:8080"
           echo "📚 API Documentation: http://${{ secrets.EC2_HOST }}:8080/swagger-ui/index.html"
-          echo "🏥 Health Check: http://${{ secrets.EC2_HOST }}:8080/api/health"
-
-      - name: Notify deployment failure
-        if: failure()
-        run: |
-          echo "❌ Deployment failed! Please check the logs above."
-          echo "🔧 Troubleshooting tips:"
-          echo "  1. Check EC2 instance status"
-          echo "  2. Verify Docker service is running"
-          echo "  3. Check application logs on EC2"
-          echo "  4. Ensure all environment variables are set"
