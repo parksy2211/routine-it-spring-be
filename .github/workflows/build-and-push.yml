@@ -2,7 +2,10 @@ name: Build and Push Docker Image
 
 on:
   push:
-    branches: [main]
+    branches: 
+      - main
+      - develop
+      - test/*
     paths:
       - 'src/**'
       - 'build.gradle'
@@ -25,7 +28,8 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     
-    if: github.repository == 'Goorda-Goormi/routine-it-spring-be'
+    # 개인 레포에서도 실행 가능하도록 조건 제거 또는 수정
+    # if: github.repository == 'Goorda-Goormi/routine-it-spring-be'
 
     steps:
       - name: Checkout Repository
