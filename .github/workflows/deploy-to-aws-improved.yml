@@ -73,7 +73,7 @@ jobs:
           cat > .env.production << EOF
           # Application
           APP_PORT=8080
-          SPRING_PROFILES_ACTIVE=production
+          SPRING_PROFILES_ACTIVE=docker
           
           # Database
           DB_HOST=routine-db
