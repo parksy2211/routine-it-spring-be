@@ -47,8 +47,23 @@ jobs:
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/routine-it-key.pem
+          
+          # Base64로 인코딩된 키를 디코드 (GitHub Secrets에 Base64로 저장한 경우)
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/routine-it-key.pem
+          
+          # 일반 텍스트로 저장된 경우 (이 라인은 주석처리)
+          # echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/routine-it-key.pem
+          
+          # 권한 설정
           chmod 600 ~/.ssh/routine-it-key.pem
+          
+          # SSH 키 검증
+          echo "🔍 Checking SSH key format..."
+          head -n 1 ~/.ssh/routine-it-key.pem
+          tail -n 1 ~/.ssh/routine-it-key.pem
+          wc -l ~/.ssh/routine-it-key.pem
+          
+          # known_hosts 설정
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
           
           # SSH config 설정
@@ -58,10 +73,23 @@ jobs:
             User ${{ secrets.EC2_USER }}
             IdentityFile ~/.ssh/routine-it-key.pem
             StrictHostKeyChecking no
+            IdentitiesOnly yes
+            PreferredAuthentications publickey
           EOF
           chmod 600 ~/.ssh/config
           
           echo "🔐 SSH setup completed"
+          
+          # SSH 연결 테스트
+          echo "🧪 Testing SSH connection..."
+          ssh -v -i ~/.ssh/routine-it-key.pem -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo 'SSH connection successful!'" || {
+            echo "❌ SSH connection failed. Debug info:"
+            echo "Host: ${{ secrets.EC2_HOST }}"
+            echo "User: ${{ secrets.EC2_USER }}"
+            echo "Key file exists: $(test -f ~/.ssh/routine-it-key.pem && echo 'Yes' || echo 'No')"
+            echo "Key permissions: $(ls -la ~/.ssh/routine-it-key.pem)"
+            exit 1
+          }
 
       - name: Create .env file from secrets
         run: |
