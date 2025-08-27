@@ -56,6 +56,7 @@ public class GroupMemberServiceImpl implements GroupMemberService {
         // 자유 참여는 바로 가입 처리
         if(group.getGroupType() == GroupType.FREE){
             groupMember.changeStatus(GroupMemberStatus.JOINED);
+            group.addMemberCnt();
         }
         groupMemberRepository.save(groupMember);
 
@@ -124,7 +125,12 @@ public class GroupMemberServiceImpl implements GroupMemberService {
     @Override
     public GroupMemberResponse updateMemberRole(Long leaderId, LeaderAnswerRequest request) {
         Group group = validateLeader(leaderId, request);
-        GroupMember targetGroupMember = validateMember(request);//
+        GroupMember targetGroupMember = validateMember(request);
+
+        // JOINED Member만 리더 가능
+        if(targetGroupMember.getStatus() != GroupMemberStatus.JOINED){
+            throw new IllegalArgumentException("가입된 그룹멤버가 아님");
+        }
 
         GroupMemberRole oldRole = targetGroupMember.getRole();
         GroupMemberRole newRole = request.getRole();
