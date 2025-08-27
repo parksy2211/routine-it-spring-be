@@ -65,7 +65,7 @@ public class GroupMemberServiceTest {
         GroupCreateRequest groupCreateRequest = GroupCreateRequest.builder()
                 .groupName("test")
                 .groupDescription("test description")
-                .groupType(GroupType.FREE)
+                .groupType(GroupType.REQUIRED)
                 .maxMembers(3)
                 .build();
 
@@ -105,6 +105,33 @@ public class GroupMemberServiceTest {
         assertThat(savedGroup.getCurrentMemberCnt()).isEqualTo(1);
     }
     @Test
+    @DisplayName("지유그룹가입신청")
+    public void addMember_FREE_success() {
+        //given
+        GroupCreateRequest groupCreateRequest = GroupCreateRequest.builder()
+                .groupName("FREEGroup")
+                .groupDescription("addFREEGroup")
+                .groupType(GroupType.FREE)
+                .maxMembers(3)
+                .build();
+
+        GroupResponse groupResponse = groupService.createGroup(leaderId, groupCreateRequest);
+        Group freeGroup = groupRepository.findById(groupResponse.getGroupId()).orElseThrow();
+
+        GroupJoinRequest request = GroupJoinRequest.builder().
+                groupId(freeGroup.getGroupId()).build();
+
+        // when
+        GroupMemberResponse added = groupMemberService.addMember(userId, freeGroup.getGroupId(), request);
+
+        //then
+        assertThat(added.getGroupName()).isEqualTo(freeGroup.getGroupName());
+        assertThat(added.getStatus()).isEqualTo(GroupMemberStatus.JOINED);
+        assertThat(added.getRole()).isEqualTo(GroupMemberRole.MEMBER);
+        assertThat(freeGroup.getGroupMembers()).hasSize(2);
+        assertThat(freeGroup.getCurrentMemberCnt()).isEqualTo(2);
+    }
+    @Test
     @DisplayName("이미 있는 경우 그룹가입신청 실패")
     public void addMember_fail() {
         //given
@@ -136,19 +163,53 @@ public class GroupMemberServiceTest {
         assertThat(savedGroupMember.getStatus()).isEqualTo(GroupMemberStatus.JOINED);
         assertThat(savedGroup.getCurrentMemberCnt()).isEqualTo(2);
     }
+    @Test
+    @DisplayName("리더 위임")
+    public void updateMemberRole_success() {
+        //given
+        LeaderAnswerRequest requestStatus = LeaderAnswerRequest.builder()
+                .groupId(savedGroup.getGroupId())
+                .leaderId(leaderId)
+                .targetMemberId(savedGroupMember.getMemberId())
+                .status(GroupMemberStatus.JOINED)
+                .build();
+        LeaderAnswerRequest requestRole = LeaderAnswerRequest.builder()
+                .groupId(savedGroup.getGroupId())
+                .leaderId(leaderId)
+                .targetMemberId(savedGroupMember.getMemberId())
+                .role(GroupMemberRole.LEADER)
+                .build();
+
+        //when
+        groupMemberService.updateMemberStatus(leaderId, requestStatus);
+        GroupMemberResponse updatedMemberRole = groupMemberService.updateMemberRole(leaderId, requestRole);
+
+        //then
+        assertThat(updatedMemberRole.getGroupName()).isEqualTo("test");
+        assertThat(updatedMemberRole.getRole()).isEqualTo(GroupMemberRole.LEADER);
+        assertThat(savedGroupMember.getRole()).isEqualTo(GroupMemberRole.LEADER);
+        assertThat(savedGroup.getLeader().getId()).isEqualTo(userId);
+    }
 
     @Test
     @DisplayName("그룹 탈퇴")
     public void delete() {
         //given
+        User leftUser = User.builder()
+                .kakaoId("leftUser")
+                .email("testLeftUser@kakao.com")
+                .nickname("testLeftUser").build();
+        userRepository.save(leftUser);
+        GroupJoinRequest request = GroupJoinRequest.builder().
+                groupId(savedGroup.getGroupId()).build();
 
+        GroupMemberResponse added = groupMemberService.addMember(leftUser.getId(), savedGroup.getGroupId(), request);
+        GroupMember leftGroupMember = groupMemberRepository.findById(added.getGroupMemberId()).orElseThrow();
         //when
-        groupMemberService.delete(userId, savedGroup.getGroupId());
+        groupMemberService.delete(leftUser.getId(), savedGroup.getGroupId());
         //then
-        assertThat(savedGroupMember.getStatus()).isEqualTo(GroupMemberStatus.LEFT);
+        assertThat(leftGroupMember.getStatus()).isEqualTo(GroupMemberStatus.LEFT);
         assertThat(savedGroup.getCurrentMemberCnt()).isEqualTo(1);
     }
-
-
 
 }
