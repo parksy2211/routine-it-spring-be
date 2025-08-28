@@ -66,7 +66,7 @@ public class GroupMemberServiceImpl implements GroupMemberService {
     // -- Read
     @Override
     @Transactional(readOnly = true)
-    public List<GroupMemberResponse> getGroupsByRole(Long groupId, GroupMemberRole role) {
+    public List<GroupMemberResponse> getGroupMembersByRole(Long groupId, GroupMemberRole role) {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(()->new IllegalArgumentException("Group not found"));
 
@@ -78,7 +78,7 @@ public class GroupMemberServiceImpl implements GroupMemberService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<GroupMemberResponse> getGroupsByStatus(Long groupId, GroupMemberStatus status) {
+    public List<GroupMemberResponse> getGroupMembersByStatus(Long groupId, GroupMemberStatus status) {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(()->new IllegalArgumentException("Group not found"));
 

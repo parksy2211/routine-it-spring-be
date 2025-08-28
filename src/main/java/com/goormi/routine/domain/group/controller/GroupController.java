@@ -93,9 +93,9 @@ public class GroupController {
             @ApiResponse(responseCode = "404", description = "그룹을 찾을 수 없음")
     })
     @PutMapping("/{groupId}")
-    public ResponseEntity<GroupResponse> updateGroupInfo(/*@AuthenticationPrincipal*/ Long leaderId,
-                                                                  @PathVariable Long groupId,
-                                                                  @Valid @RequestBody GroupUpdateRequest request) {
+    public ResponseEntity<GroupResponse> updateGroupInfo(@AuthenticationPrincipal Long leaderId,
+                                                         @PathVariable Long groupId,
+                                                         @Valid @RequestBody GroupUpdateRequest request) {
         // TODO: 인증 기능 구현 후 @AuthenticationPrincipal 등으로 교체 필요
         GroupResponse response = groupService.updateGroupInfo(leaderId, groupId, request);
         return ResponseEntity.ok(response);
@@ -113,7 +113,7 @@ public class GroupController {
     })
     @DeleteMapping("/{groupId}")
     public ResponseEntity<Void> deleteGroup(@AuthenticationPrincipal Long leaderId,
-                                                                                   @PathVariable Long groupId) {
+                                            @PathVariable Long groupId) {
         // TODO: 임시 User 객체 사용, 인증 기능 구현 후 @AuthenticationPrincipal 등으로 교체 필요
         groupService.deleteGroup(leaderId, groupId);
         return ResponseEntity.noContent().build();
