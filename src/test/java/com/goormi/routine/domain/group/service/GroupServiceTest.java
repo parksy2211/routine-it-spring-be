@@ -17,8 +17,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -70,6 +72,17 @@ public class GroupServiceTest {
         assertThat(savedGroup.getGroupName()).isEqualTo("test");
         assertThat(savedGroup.getGroupType()).isEqualTo(GroupType.FREE);
         assertThat(savedGroup.getLeader().getNickname()).isEqualTo(user.get().getNickname());
+    }
+
+    @Test
+    @DisplayName("가입된 그룹 불러오기")
+    public void getJoinedGroups(){
+        //when
+        List<GroupResponse> joinedGroups = groupService.getJoinedGroups(leaderId);
+        List<GroupResponse> groupsByLeaderId = groupService.getGroupsByLeaderId(leaderId);
+        //then
+        assertThat(joinedGroups.size()).isEqualTo(1);
+        assertThat(groupsByLeaderId.size()).isEqualTo(1);
     }
 
     @Test

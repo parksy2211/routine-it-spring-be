@@ -96,7 +96,7 @@ public class GroupController {
             @ApiResponse(responseCode = "400", description = "잘못된 요청"),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     })
-    @GetMapping
+    @GetMapping("joined")
     public ResponseEntity<List<GroupResponse>> getJoinedGroups(@AuthenticationPrincipal Long userId) {
 
         List<GroupResponse> responses = groupService.getJoinedGroups(userId);
