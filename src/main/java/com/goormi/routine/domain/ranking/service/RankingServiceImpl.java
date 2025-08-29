@@ -12,6 +12,7 @@ import java.util.stream.IntStream;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.goormi.routine.domain.auth.repository.RedisRepository;
 import com.goormi.routine.domain.group.entity.Group;
 import com.goormi.routine.domain.group.repository.GroupMemberRepository;
 import com.goormi.routine.domain.ranking.dto.GlobalGroupRankingResponse;
@@ -20,6 +21,7 @@ import com.goormi.routine.domain.ranking.dto.PersonalRankingResponse;
 import com.goormi.routine.domain.ranking.entity.Ranking;
 import com.goormi.routine.domain.ranking.repository.RankingRepository;
 import com.goormi.routine.domain.user.entity.User;
+import com.goormi.routine.domain.auth.repository.RedisRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,9 +34,12 @@ public class RankingServiceImpl implements RankingService {
 
 	private final RankingRepository rankingRepository;
 	private final GroupMemberRepository groupMemberRepository;
+	private final RedisRepository redisRepository;
 
 	@Override
 	public List<PersonalRankingResponse> getPersonalRankings() {
+		checkAndResetIfNewMonth();
+		
 		String currentMonthYear = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
 		List<Ranking> personalRankings = rankingRepository.findPersonalRankingsOrderByScore();
 
@@ -135,7 +140,7 @@ public class RankingServiceImpl implements RankingService {
 					// 실제 인증 횟수, 연속 일수, 점수 세부사항 계산 로직 구현 필요
 					int authCount = 0;
 					int consecutiveDays = 0;
-					int consecutiveBonus = calculateConsecutiveBonus(consecutiveDays);
+					double consecutiveBonus = calculateConsecutiveBonus(consecutiveDays);
 
 					GroupTop3RankingResponse.ScoreBreakdown scoreBreakdown =
 						GroupTop3RankingResponse.ScoreBreakdown.builder()
@@ -293,14 +298,44 @@ public class RankingServiceImpl implements RankingService {
 		}
 	}
 
-	private int calculateConsecutiveBonus(int consecutiveDays) {
-		if (consecutiveDays >= 30) {
-			return 100; // 30일 연속 달성시 100점 보너스
-		} else if (consecutiveDays >= 14) {
-			return 50; // 14일 연속 달성시 50점 보너스
-		} else if (consecutiveDays >= 7) {
-			return 20; // 7일 연속 달성시 20점 보너스
+	private double calculateConsecutiveBonus(int consecutiveDays) {
+		if (consecutiveDays <= 2 && consecutiveDays < 30) {
+			return consecutiveDays * 0.5;
+		} else if (consecutiveDays >= 30) {
+			return 15;
 		}
 		return 0;
+	}
+
+	private void checkAndResetIfNewMonth() {
+		String currentMonth = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
+		String lastResetMonth = getLastResetMonth();
+
+		if (!currentMonth.equals(lastResetMonth)) {
+			try {
+				resetMonthlyRankings();
+				saveLastResetMonth(currentMonth);
+			} catch (Exception e) {
+				log.error("랭킹 자동 초기화 중 오류 발생: {}", currentMonth, e);
+			}
+		}
+	}
+
+	private void saveLastResetMonth(String 	monthYear) {
+		try {
+			redisRepository.saveLastResetMonth(monthYear);
+		} catch (Exception e) {
+			log.error("Redis에 마지막 초기화 월 저장 실패: {}", monthYear, e);
+		}
+	}
+
+	private String getLastResetMonth() {
+		try {
+			String lastResetMonth = redisRepository.getLastResetMonth();
+			return lastResetMonth != null ? lastResetMonth : "2025-01"; // 기본값
+		} catch (Exception e) {
+			log.warn("Redis에서 마지막 초기화 월 조회 실패, 기본값 사용", e);
+			return "2025-01"; // 기본값
+		}
 	}
 }

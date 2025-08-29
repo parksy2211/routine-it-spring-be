@@ -32,4 +32,23 @@ public class RedisRepository {
 	public boolean isBlackListed(String token) {
 		return redisTemplate.hasKey("BL:" + token);
 	}
+
+	private static final String LAST_RESET_MONTH_KEY = "RANKING_LAST_RESET_MONTH";
+
+	public void saveLastResetMonth(String monthYear) {
+		redisTemplate.opsForValue().set(LAST_RESET_MONTH_KEY, monthYear);
+	}
+
+	public String getLastResetMonth() {
+		return redisTemplate.opsForValue().get(LAST_RESET_MONTH_KEY);
+	}
+
+	public void deleteLastResetMonth() {
+		redisTemplate.delete(LAST_RESET_MONTH_KEY);
+	}
+
+	public boolean hasLastResetMonth() {
+		return redisTemplate.hasKey(LAST_RESET_MONTH_KEY);
+	}
+
 }

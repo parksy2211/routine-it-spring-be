@@ -41,7 +41,7 @@ public class GroupTop3RankingResponse {
 		private Integer score;
 		private Integer authCount;
 		private Integer consecutiveDays;
-		private Integer consecutiveBonus;
+		private Double consecutiveBonus;
 		private ScoreBreakdown scoreBreakdown;
 	}
 
@@ -54,7 +54,7 @@ public class GroupTop3RankingResponse {
 		private Integer baseScore; // 기본 점수 (인증횟수 * 10)
 		private Double weightMultiplier;
 		private Integer weightedScore;
-		private Integer consecutiveBonus;
+		private Double consecutiveBonus;
 		private Integer finalScore;
 	}
 }
