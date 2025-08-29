@@ -6,6 +6,4 @@ import com.goormi.routine.domain.review.dto.UserReviewHistoryResponse;
 public interface ReviewService {
 	void sendMonthlyReviewMessages(String monthYear);
 	void sendUserReviewMessage(Long userId, String monthYear);
-	MonthlyReviewResponse getUserReview(Long userId, String monthYear);
-	UserReviewHistoryResponse getUserReviewHistory(Long userId);
 }

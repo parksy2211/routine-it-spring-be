@@ -83,72 +83,6 @@ public class ReviewServiceImpl implements ReviewService{
 		}
 	}
 
-	@Override
-	public MonthlyReviewResponse getUserReview(Long userId, String monthYear) {
-		try {
-			String reviewData = redisRepository.getReviewData(userId.toString(), monthYear);
-
-			if (reviewData != null) {
-				return parseReviewData(reviewData);
-			} else {
-				return calculateMonthlyReview(userId, monthYear);
-			}
-
-		} catch (Exception e) {
-			log.error("회고 기록 조회 실패: 사용자 ID = {}, 월 = {}", userId, monthYear, e);
-			return null;
-		}
-	}
-
-	@Override
-	public UserReviewHistoryResponse getUserReviewHistory(Long userId) {
-		try {
-			List<String> reviewKeys = redisRepository.getUserReviewKeys(userId.toString());
-
-			List<UserReviewHistoryResponse.MonthlyReviewSummary> summaries = new ArrayList<>();
-
-			for (String key : reviewKeys) {
-				String monthYear = key.substring(key.lastIndexOf(":") + 1);
-
-				try {
-					String reviewData = redisRepository.getReviewData(userId.toString(), monthYear);
-					if (reviewData != null) {
-						MonthlyReviewResponse review = parseReviewData(reviewData);
-
-						UserReviewHistoryResponse.MonthlyReviewSummary summary =
-							UserReviewHistoryResponse.MonthlyReviewSummary.builder()
-								.monthYear(review.getMonthYear())
-								.totalScore(review.getTotalScore())
-								.participatingGroups(review.getParticipatingGroups())
-								.scoreDifference(review.getScoreDifference())
-								.messageSent(review.getMessageSent())
-								.createdAt(review.getCreatedAt())
-								.build();
-
-						summaries.add(summary);
-					}
-				} catch (Exception e) {
-					log.warn("회고 데이터 파싱 실패: 사용자 ID = {}, 월 = {}", userId, monthYear, e);
-				}
-			}
-
-			summaries.sort((a, b) -> b.getMonthYear().compareTo(a.getMonthYear()));
-
-			return UserReviewHistoryResponse.builder()
-				.reviews(summaries)
-				.totalCount(summaries.size())
-				.updatedAt(LocalDateTime.now())
-				.build();
-
-		} catch (Exception e) {
-			log.error("회고 히스토리 조회 실패: 사용자 ID = {}", userId, e);
-			return UserReviewHistoryResponse.builder()
-				.reviews(new ArrayList<>())
-				.totalCount(0)
-				.updatedAt(LocalDateTime.now())
-				.build();
-		}
-	}
 
 	private MonthlyReviewResponse calculateMonthlyReview(Long userId, String monthYear) {
 		try {
@@ -240,8 +174,6 @@ public class ReviewServiceImpl implements ReviewService{
 			return null;
 		}
 	}
-
-
 
 	private String generateReviewMessage(MonthlyReviewResponse review) {
 		StringBuilder message = new StringBuilder();
