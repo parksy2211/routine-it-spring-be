@@ -43,7 +43,8 @@ public class SecurityConfig {
                     "/oauth2/**",
                     "/api/auth/signup",
                     "/api/auth/check-nickname",
-                    "/api/auth/refresh"
+                    "/api/auth/refresh",
+                    "/ws/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )

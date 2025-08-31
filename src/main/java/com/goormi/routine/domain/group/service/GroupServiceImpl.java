@@ -8,6 +8,11 @@ import com.goormi.routine.domain.group.entity.GroupType;
 import com.goormi.routine.domain.user.entity.User;
 import com.goormi.routine.domain.group.repository.GroupRepository;
 import com.goormi.routine.domain.user.repository.UserRepository;
+import com.goormi.routine.domain.chat.entity.ChatRoom;
+import com.goormi.routine.domain.chat.entity.ChatMember;
+import com.goormi.routine.domain.chat.entity.ChatMember.MemberRole;
+import com.goormi.routine.domain.chat.repository.ChatRoomRepository;
+import com.goormi.routine.domain.chat.repository.ChatMemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +26,8 @@ import java.util.Objects;
 public class GroupServiceImpl implements GroupService {
     private final GroupRepository groupRepository;
     private final UserRepository userRepository;
+    private final ChatRoomRepository chatRoomRepository;
+    private final ChatMemberRepository chatMemberRepository;
 
     // -- create
     @Override
@@ -43,6 +50,29 @@ public class GroupServiceImpl implements GroupService {
         group.addLeader(leader);
         group.setInitialValues(group);
         Group saved = groupRepository.save(group);
+        
+        // 그룹 생성 시 자동으로 채팅방 생성
+        ChatRoom chatRoom = ChatRoom.builder()
+                .groupId(saved.getGroupId())
+                .roomName(saved.getGroupName())
+                .description(saved.getGroupName())
+                .maxParticipants(saved.getMaxMembers())
+                .isActive(true)
+                .createdBy(leader.getId())
+                .build();
+        
+        ChatRoom savedChatRoom = chatRoomRepository.save(chatRoom);
+        
+        // 그룹 리더를 채팅방 관리자로 자동 추가
+        ChatMember chatMember = ChatMember.builder()
+                .roomId(savedChatRoom.getId())
+                .userId(leader.getId())
+                .role(MemberRole.ADMIN)
+                .isActive(true)
+                .build();
+        
+        chatMemberRepository.save(chatMember);
+        
         return GroupResponse.from(saved);
     }
 
