@@ -2,6 +2,7 @@ package com.goormi.routine.domain.userActivity.dto;
 
 import com.goormi.routine.domain.userActivity.entity.ActivityType;
 import com.goormi.routine.domain.userActivity.entity.UserActivity;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -18,9 +19,14 @@ public class UserActivityResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    @Schema(description = "개인 루틴 ID (Group 활동일 경우 null)")
     private Integer personalRoutineId;
+    @Schema(description = "개인 루틴 이름 (Group 활동일 경우 null)")
     private String personalRoutineName;
+
+    @Schema(description = "그룹 ID (PersonalRoutine 활동일 경우 null)")
     private Long groupId;
+    @Schema(description = "그룹 이름 (PersonalRoutine 활동일 경우 null)")
     private String groupName;
 
     public static UserActivityResponse from(UserActivity userActivity) {
