@@ -17,26 +17,29 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
     List<GroupMember> findAllByGroupAndRole(Group group, GroupMemberRole role);
     List<GroupMember> findAllByGroupAndStatus(Group group, GroupMemberStatus status);
 
-    int countByGroupId(Long groupId);
+    @Query("SELECT COUNT(gm) FROM GroupMember gm WHERE gm.group.groupId = :groupId")
+    int countMembersByGroupId(@Param("groupId") Long groupId);
 
-    @Query("""
-        SELECT COUNT(DISTINCT gm.user.id)
-        FROM GroupMember gm
-        JOIN Auth a ON gm.user.id = a.user.id AND gm.group.id = a.group.id
-        WHERE gm.group.id = :groupId
-          AND FUNCTION('DATE_FORMAT', a.createdAt, '%Y-%m') = :monthYear
-    """)
-    int countActiveByGroupId(@Param("groupId") Long groupId,
-        @Param("monthYear") String monthYear);
+    // 인증 엔티티가 구현되면 활성화
+    // @Query("""
+    //     SELECT COUNT(DISTINCT gm.user.id)
+    //     FROM GroupMember gm
+    //     JOIN Auth a ON gm.user.id = a.user.id AND gm.group.groupId = a.group.groupId
+    //     WHERE gm.group.groupId = :groupId
+    //       AND FUNCTION('DATE_FORMAT', a.createdAt, '%Y-%m') = :monthYear
+    // """)
+    // int countActiveByGroupId(@Param("groupId") Long groupId,
+    //     @Param("monthYear") String monthYear);
 
-    @Query("""
-        SELECT COUNT(a)
-        FROM Auth a
-        WHERE a.group.id = :groupId
-          AND FUNCTION('DATE_FORMAT', a.createdAt, '%Y-%m') = :monthYear
-    """)
-    int countAuthByGroupId(@Param("groupId") Long groupId,
-        @Param("monthYear") String monthYear);
+    // @Query("""
+    //     SELECT COUNT(a)
+    //     FROM Auth a
+    //     WHERE a.group.groupId = :groupId
+    //       AND FUNCTION('DATE_FORMAT', a.createdAt, '%Y-%m') = :monthYear
+    // """)
+    // int countAuthByGroupId(@Param("groupId") Long groupId,
+    //     @Param("monthYear") String monthYear);
 
-    List<GroupMember> findActiveGroupsByUserId(Long userId);
+    @Query("SELECT gm FROM GroupMember gm WHERE gm.user.id = :userId AND gm.status = 'JOINED'")
+    List<GroupMember> findActiveGroupsByUserId(@Param("userId") Long userId);
 }

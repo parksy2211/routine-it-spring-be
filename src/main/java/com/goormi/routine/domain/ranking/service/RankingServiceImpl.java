@@ -21,7 +21,6 @@ import com.goormi.routine.domain.ranking.dto.PersonalRankingResponse;
 import com.goormi.routine.domain.ranking.entity.Ranking;
 import com.goormi.routine.domain.ranking.repository.RankingRepository;
 import com.goormi.routine.domain.user.entity.User;
-import com.goormi.routine.domain.auth.repository.RedisRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -76,9 +75,10 @@ public class RankingServiceImpl implements RankingService {
 					Group group = ranking.getGroup();
 					int rank = index + 1;
 
-					int memberCount = groupMemberRepository.countByGroupId(ranking.getGroupId());
-					int activeMembers = groupMemberRepository.countActiveByGroupId(ranking.getGroupId(), monthYear);
-					int totalAuthCount = groupMemberRepository.countAuthByGroupId(ranking.getGroupId(), monthYear);
+					// TODO: Auth 엔티티 구현 후 수정 필요
+					int memberCount = groupMemberRepository.countMembersByGroupId(ranking.getGroupId());
+					int activeMembers = 0; // groupMemberRepository.countActiveByGroupId(ranking.getGroupId(), monthYear);
+					int totalAuthCount = 0; // groupMemberRepository.countAuthByGroupId(ranking.getGroupId(), monthYear);
 
 					double participationRate = memberCount > 0
 						? (double) activeMembers / memberCount : 0.0;
@@ -143,25 +143,25 @@ public class RankingServiceImpl implements RankingService {
 					double consecutiveBonus = calculateConsecutiveBonus(consecutiveDays);
 
 					GroupTop3RankingResponse.ScoreBreakdown scoreBreakdown =
-						GroupTop3RankingResponse.ScoreBreakdown.builder()
-							.baseScore(authCount * 10)
-							.weightMultiplier(groupWeightMultiplier)
-							.weightedScore((int)(authCount * 10 * groupWeightMultiplier))
-							.consecutiveBonus(consecutiveBonus)
-							.finalScore(ranking.getScore())
-							.build();
+					GroupTop3RankingResponse.ScoreBreakdown.builder()
+					.baseScore(authCount * 10)
+					.weightMultiplier(groupWeightMultiplier)
+					.weightedScore((int)(authCount * 10 * groupWeightMultiplier))
+					.consecutiveBonus(consecutiveBonus)
+					.finalScore(ranking.getScore())
+					.build();
 
 					return GroupTop3RankingResponse.UserRankingItem.builder()
-						.rank(index + 1)
-						.userId(ranking.getUserId())
-						.nickname(user != null ? user.getNickname() : "탈퇴한 사용자")
-						.profileImageUrl(user != null ? user.getProfileImageUrl() : null)
-						.score(ranking.getScore())
-						.authCount(authCount)
-						.consecutiveDays(consecutiveDays)
-						.consecutiveBonus(consecutiveBonus)
-						.scoreBreakdown(scoreBreakdown)
-						.build();
+					.rank(index + 1)
+					.userId(ranking.getUserId())
+					.nickname(user != null ? user.getNickname() : "탈퇴한 사용자")
+					.profileImageUrl(user != null ? user.getProfileImageUrl() : null)
+					.score(ranking.getScore())
+					.authCount(authCount)
+					.consecutiveDays(consecutiveDays)
+					.consecutiveBonus(consecutiveBonus)
+					.scoreBreakdown(scoreBreakdown)
+					.build();
 				})
 				.collect(Collectors.toList());
 
@@ -172,7 +172,7 @@ public class RankingServiceImpl implements RankingService {
 			.groupWeightMultiplier(groupWeightMultiplier)
 			.monthYear(currentMonthYear)
 			.top3Users(userRankingItems)
-			.totalMembers(groupMemberRepository.countByGroupId(groupId))
+			.totalMembers(groupMemberRepository.countMembersByGroupId(groupId))
 			.updatedAt(LocalDateTime.now())
 			.build();
 	}
