@@ -3,16 +3,15 @@ package com.goormi.routine.domain.auth.repository;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Repository
 public class RedisRepository {
 	private final StringRedisTemplate redisTemplate;
-
-	private static final String LAST_RESET_MONTH_KEY = "RANKING_LAST_RESET_MONTH";
-	private static final String REVIEW_KEY_PREFIX = "REVIEW:";
 
 	public RedisRepository(StringRedisTemplate redisTemplate) {
 		this.redisTemplate = redisTemplate;
@@ -38,52 +37,34 @@ public class RedisRepository {
 		return redisTemplate.hasKey("BL:" + token);
 	}
 
-	public void saveLastResetMonth(String monthYear) {
-		redisTemplate.opsForValue().set(LAST_RESET_MONTH_KEY, monthYear);
+	// 데이터 저장/조회용
+	public void saveData(String key, String value, long expireSeconds) {
+		if (expireSeconds > 0) {
+			redisTemplate.opsForValue().set(key, value, Duration.ofSeconds(expireSeconds));
+		} else {
+			redisTemplate.opsForValue().set(key, value);
+		}
 	}
 
-	public String getLastResetMonth() {
-		return redisTemplate.opsForValue().get(LAST_RESET_MONTH_KEY);
+	public String getData(String key) {
+		Object value = redisTemplate.opsForValue().get(key);
+		return value != null ? value.toString() : null;
 	}
 
-	public void deleteLastResetMonth() {
-		redisTemplate.delete(LAST_RESET_MONTH_KEY);
-	}
-
-	public boolean hasLastResetMonth() {
-		return redisTemplate.hasKey(LAST_RESET_MONTH_KEY);
-	}
-
-	public void saveReviewData(String userId, String monthYear, String reviewData) {
-		String key = REVIEW_KEY_PREFIX + userId + ":" + monthYear;
-		redisTemplate.opsForValue().set(key, reviewData, 90, TimeUnit.DAYS);
-	}
-
-	public String getReviewData(String userId, String monthYear) {
-		String key = REVIEW_KEY_PREFIX + userId + ":" + monthYear;
-		return redisTemplate.opsForValue().get(key);
-	}
-
-	public List<String> getUserReviewKeys(String userId) {
-		String pattern = REVIEW_KEY_PREFIX + userId + ":*";
-		return redisTemplate.keys(pattern)
-			.stream()
-			.sorted()
-			.collect(Collectors.toList());
-	}
-
-	public void deleteReviewData(String userId, String monthYear) {
-		String key = REVIEW_KEY_PREFIX + userId + ":" + monthYear;
+	public void deleteData(String key) {
 		redisTemplate.delete(key);
 	}
 
-	public void deleteAllUserReviewData(String userId) {
-		String pattern = REVIEW_KEY_PREFIX + userId + ":*";
-		redisTemplate.keys(pattern).forEach(redisTemplate::delete);
+	public List<String> getKeysByPattern(String pattern) {
+		Set<String> keys = redisTemplate.keys(pattern);
+		return keys != null ? keys.stream().collect(Collectors.toList()) : List.of();
 	}
 
-	public boolean hasReviewData(String userId, String monthYear) {
-		String key = REVIEW_KEY_PREFIX + userId + ":" + monthYear;
-		return redisTemplate.hasKey(key);
+	public boolean hasKey(String key) {
+		return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+	}
+
+	public void setExpire(String key, long seconds) {
+		redisTemplate.expire(key, Duration.ofSeconds(seconds));
 	}
 }

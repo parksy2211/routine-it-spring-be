@@ -4,9 +4,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,6 +18,7 @@ import com.goormi.routine.domain.group.repository.GroupMemberRepository;
 import com.goormi.routine.domain.ranking.service.RankingService;
 import com.goormi.routine.domain.review.dto.MonthlyReviewResponse;
 import com.goormi.routine.domain.review.dto.UserReviewHistoryResponse;
+import com.goormi.routine.domain.review.repository.ReviewRedisRepository;
 import com.goormi.routine.domain.user.entity.User;
 import com.goormi.routine.domain.user.repository.UserRepository;
 
@@ -29,7 +33,7 @@ public class ReviewServiceImpl implements ReviewService{
 	private final UserRepository userRepository;
 	private final RankingService rankingService;
 	private final GroupMemberRepository groupMemberRepository;
-	private final RedisRepository redisRepository;
+	private final ReviewRedisRepository reviewRedisRepository;
 	private final ObjectMapper objectMapper;
 
 	@Override
@@ -50,19 +54,31 @@ public class ReviewServiceImpl implements ReviewService{
 				} catch (Exception e) {
 					failCount++;
 					log.error("사용자 회고 메시지 전송 실패: 사용자 ID = {}", user.getId(), e);
+					// 실패한 사용자 정보를 Redis에 저장 (재전송용)
+					reviewRedisRepository.saveFailedMessage(user.getId(), targetMonth, e.getMessage());
 				}
 			}
 
 			log.info("월간 회고 메시지 전송 완료: 월 = {}, 성공 = {}, 실패 = {}",
 				targetMonth, successCount, failCount);
 
+			if (failCount > 0) {
+				throw new RuntimeException(String.format("일부 메시지 전송 실패: 성공 %d건, 실패 %d건", successCount, failCount));
+			}
+
 		} catch (Exception e) {
-			log.error("월간 회고 메시지 전송 중 오류 발생: 월 = {}", targetMonth, e);
+			log.error("월간 회고 메시지 전송 실패: 월 = {}", targetMonth, e);
+			throw new RuntimeException("월간 회고 메시지 전송 중 오류가 발생했습니다.", e);
 		}
 	}
 
+
 	@Override
 	public void sendUserReviewMessage(Long userId, String monthYear) {
+		if (userId == null) {
+			throw new IllegalArgumentException("사용자 ID는 필수입니다.");
+		}
+
 		try {
 			MonthlyReviewResponse currentReview = calculateMonthlyReview(userId, monthYear);
 
@@ -79,10 +95,54 @@ public class ReviewServiceImpl implements ReviewService{
 
 		} catch (Exception e) {
 			log.error("사용자 회고 메시지 전송 실패: 사용자 ID = {}, 월 = {}", userId, monthYear, e);
-			throw new RuntimeException("회고 메시지 전송 실패", e);
+			throw new RuntimeException("회고 메시지 전송 실패: " + e.getMessage(), e);
 		}
 	}
 
+
+	@Override
+	public void retryFailedMessages(String monthYear) {
+		String targetMonth = monthYear != null ? monthYear :
+			LocalDate.now().minusMonths(1).format(DateTimeFormatter.ofPattern("yyyy-MM"));
+
+		try {
+			List<Long> failedUserIds = reviewRedisRepository.getFailedUserIds(targetMonth);
+
+			if (failedUserIds.isEmpty()) {
+				log.info("재전송할 실패 메시지가 없습니다. 월: {}", targetMonth);
+				return;
+			}
+
+			int retrySuccessCount = 0;
+			int retryFailCount = 0;
+
+			for (Long userId : failedUserIds) {
+				try {
+					sendUserReviewMessage(userId, targetMonth);
+					reviewRedisRepository.removeFailedMessage(userId, targetMonth);
+					retrySuccessCount++;
+				} catch (Exception e) {
+					retryFailCount++;
+					log.error("회고 메시지 재전송 실패: 사용자 ID = {}", userId, e);
+				}
+			}
+
+			log.info("회고 메시지 재전송 완료: 월 = {}, 성공 = {}, 실패 = {}",
+				targetMonth, retrySuccessCount, retryFailCount);
+
+		} catch (Exception e) {
+			log.error("회고 메시지 재전송 중 오류 발생: 월 = {}", targetMonth, e);
+			throw new RuntimeException("회고 메시지 재전송 실패: " + e.getMessage(), e);
+		}
+	}
+
+	@Override
+	public int getFailedMessageCount(String monthYear) {
+		String targetMonth = monthYear != null ? monthYear :
+			LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
+
+		return reviewRedisRepository.getFailedMessageCount(targetMonth);
+	}
 
 	private MonthlyReviewResponse calculateMonthlyReview(Long userId, String monthYear) {
 		try {
@@ -95,7 +155,7 @@ public class ReviewServiceImpl implements ReviewService{
 			String previousMonth = getPreviousMonth(monthYear);
 			MonthlyReviewResponse previousReview = null;
 			if (previousMonth != null) {
-				String previousData = redisRepository.getReviewData(userId.toString(), previousMonth);
+				String previousData = reviewRedisRepository.getReviewData(userId.toString(), previousMonth);
 				if (previousData != null) {
 					previousReview = parseReviewData(previousData);
 				}
@@ -126,34 +186,26 @@ public class ReviewServiceImpl implements ReviewService{
 			return MonthlyReviewResponse.builder()
 				.userId(userId)
 				.nickname(user.getNickname())
-				.profileImageUrl(user.getProfileImageUrl())
 				.monthYear(monthYear)
 				.totalScore((int)currentScore)
-				.totalAuthCount(0) // 실제 인증 횟수 계산
-				.consecutiveDays(0) // 연속 일수 계산
 				.participatingGroups(currentGroups)
-				.achievements(achievements)
-				.scoreDifference(scoreDifference)
-				.groupDifference(groupDifference)
-				.messageSent(false)
 				.createdAt(LocalDateTime.now())
 				.build();
 
 		} catch (Exception e) {
 			log.error("월간 회고 계산 실패: 사용자 ID = {}, 월 = {}", userId, monthYear, e);
-			throw new RuntimeException("회고 계산 실패", e);
+			throw new RuntimeException("회고 계산 중 오류가 발생했습니다.", e);
 		}
-
 	}
 
 	private void saveReviewToRedis(MonthlyReviewResponse review) {
 		try {
 			String jsonData = objectMapper.writeValueAsString(review);
-			redisRepository.saveReviewData(review.getUserId().toString(), review.getMonthYear(), jsonData);
-
+			reviewRedisRepository.saveReviewData(review.getUserId().toString(), review.getMonthYear(), jsonData); // 변경된 부분
 		} catch (JsonProcessingException e) {
 			log.error("회고 데이터 JSON 변환 실패: 사용자 ID = {}, 월 = {}",
 				review.getUserId(), review.getMonthYear(), e);
+			throw new RuntimeException("회고 데이터 저장 실패", e);
 		}
 	}
 
