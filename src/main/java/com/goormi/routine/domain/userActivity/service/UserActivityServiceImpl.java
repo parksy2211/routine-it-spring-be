@@ -57,8 +57,8 @@ public class UserActivityServiceImpl implements UserActivityService{
           throw new  IllegalArgumentException("Invalid request");
         }
 
-        userActivityRepository.save(userActivity);
-        return UserActivityResponse.from(userActivity);
+        UserActivity saved = userActivityRepository.save(userActivity);
+        return UserActivityResponse.from(saved);
     }
 
     @Override

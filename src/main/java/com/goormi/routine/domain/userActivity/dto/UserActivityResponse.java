@@ -1,6 +1,5 @@
 package com.goormi.routine.domain.userActivity.dto;
 
-import com.goormi.routine.domain.user.entity.User;
 import com.goormi.routine.domain.userActivity.entity.ActivityType;
 import com.goormi.routine.domain.userActivity.entity.UserActivity;
 import lombok.Builder;
@@ -12,7 +11,7 @@ import java.time.LocalDateTime;
 @Getter
 @Builder
 public class UserActivityResponse {
-    private User user;
+    private Long userId;
     private ActivityType activityType;
     private LocalDate activityDate;
 
@@ -26,15 +25,27 @@ public class UserActivityResponse {
 
     public static UserActivityResponse from(UserActivity userActivity) {
         return UserActivityResponse.builder()
-                .user(userActivity.getUser())
+                .userId(userActivity.getUser().getId())
                 .activityType(userActivity.getActivityType())
                 .activityDate(userActivity.getActivityDate())
                 .createdAt(userActivity.getCreatedAt())
                 .updatedAt(userActivity.getUpdatedAt())
-                .personalRoutineId(userActivity.getPersonalRoutine().getRoutineId())
-                .personalRoutineName(userActivity.getPersonalRoutine().getRoutineName())
-                .groupId(userActivity.getGroupMember().getGroup().getGroupId())
-                .groupName(userActivity.getGroupMember().getGroup().getGroupName())
+                .personalRoutineId(
+                        userActivity.getPersonalRoutine() != null
+                                ? userActivity.getPersonalRoutine().getRoutineId()
+                                : null)
+                .personalRoutineName(
+                        userActivity.getPersonalRoutine() != null
+                                ? userActivity.getPersonalRoutine().getRoutineName()
+                                : null)
+                .groupId(
+                        userActivity.getGroupMember() != null
+                                ? userActivity.getGroupMember().getGroup().getGroupId()
+                                : null)
+                .groupName(
+                        userActivity.getGroupMember() != null
+                                ? userActivity.getGroupMember().getGroup().getGroupName()
+                                : null)
                 .build();
     }
 }
