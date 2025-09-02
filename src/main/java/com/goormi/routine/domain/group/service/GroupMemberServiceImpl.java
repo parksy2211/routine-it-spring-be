@@ -96,7 +96,9 @@ public class GroupMemberServiceImpl implements GroupMemberService {
     }
 
     // 그룹 멤버들의 인증 미인증 구분을 위함.
-    public List<GroupMemberResponse> getGroupMembersWithActivity (Long groupId){
+    @Override
+    @Transactional(readOnly = true)
+    public List<GroupMemberResponse> getJoinedGroupMembersWithActivity(Long groupId){
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(()->new IllegalArgumentException("Group not found"));
         List<GroupMember> groupMembers = groupMemberRepository.findAllByGroupAndStatus(group, GroupMemberStatus.JOINED);
