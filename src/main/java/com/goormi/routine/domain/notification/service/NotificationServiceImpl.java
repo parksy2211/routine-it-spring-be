@@ -53,6 +53,15 @@ public class NotificationServiceImpl implements NotificationService {
             conent = receiver.getNickname() + "님의 "
                     + group.getGroupName() +"의 멤버 상태가 "
                     + groupMember.getRole()+"으로 변경되었습니다.";
+        } else if (notificationType == NotificationType.GROUP_TODAY_AUTH_COMPLETED) {
+            conent = sender.getNickname() + "님이 " + receiver.getNickname() + "님의 "
+                    + group.getGroupName() +"의 그룹 인증을 수락했습니다.";
+        } else if (notificationType == NotificationType.GROUP_TODAY_AUTH_REJECTED) {
+            conent = sender.getNickname() + "님이 " + receiver.getNickname() + "님의 "
+                    + group.getGroupName() +"의 그룹 인증을 반려했습니다.";
+        } else if (notificationType == NotificationType.GROUP_TODAY_AUTH_REQUEST) {
+            conent = sender.getNickname() + "님이 "
+                    + group.getGroupName() +"의 그룹 인증을 요청했습니다.";
         }
         Notification notification =
                 Notification.createNotification(conent, notificationType, sender, receiver, group);

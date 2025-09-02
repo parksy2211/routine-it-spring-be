@@ -10,9 +10,11 @@ import com.goormi.routine.domain.notification.entity.NotificationType;
 import com.goormi.routine.domain.notification.service.NotificationService;
 import com.goormi.routine.domain.user.entity.User;
 import com.goormi.routine.domain.user.repository.UserRepository;
+import com.goormi.routine.domain.userActivity.dto.UserActivityRequest;
 import com.goormi.routine.domain.userActivity.entity.ActivityType;
 import com.goormi.routine.domain.userActivity.entity.UserActivity;
 import com.goormi.routine.domain.userActivity.repository.UserActivityRepository;
+import com.goormi.routine.domain.userActivity.service.UserActivityService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +36,7 @@ public class GroupMemberServiceImpl implements GroupMemberService {
     private final UserActivityRepository userActivityRepository;
 
     private final NotificationService notificationService;
+    private final UserActivityService userActivityService;
 
     // 그룹에 멤버가 참여 신청시 펜딩으로 추가
     @Override
@@ -199,6 +202,26 @@ public class GroupMemberServiceImpl implements GroupMemberService {
                 group.getLeader().getId(), targetGroupMember.getUser().getId(), group.getGroupId());
 
         return GroupMemberResponse.from(targetGroupMember);
+    }
+
+    @Override
+    public void approveAuthRequest(Long leaderId, Long groupId, LeaderAnswerRequest leaderAnswerRequest, UserActivityRequest activityRequest){
+        Group group = validateLeader(leaderId, leaderAnswerRequest);
+        if (!Objects.equals(groupId, group.getGroupId())) {
+            throw new IllegalArgumentException("not equal group id");
+        }
+        GroupMember groupMember = validateMember(leaderAnswerRequest);
+
+
+        if (leaderAnswerRequest.isApproved()) {
+            userActivityService.create(groupMember.getUser().getId(), activityRequest);
+            notificationService.createNotification(NotificationType.GROUP_TODAY_AUTH_COMPLETED,
+                    group.getLeader().getId(), groupMember.getUser().getId(), group.getGroupId());
+        }
+        else {
+            notificationService.createNotification(NotificationType.GROUP_TODAY_AUTH_REJECTED,
+                    group.getLeader().getId(), groupMember.getUser().getId(), group.getGroupId());
+        }
     }
 
     private Group validateLeader(Long leaderId, LeaderAnswerRequest request) {

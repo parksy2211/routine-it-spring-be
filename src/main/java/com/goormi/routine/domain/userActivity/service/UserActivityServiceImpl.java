@@ -47,7 +47,6 @@ public class UserActivityServiceImpl implements UserActivityService{
                     .orElseThrow(() -> new IllegalArgumentException("GroupMember not found"));
 
             userActivity = UserActivity.createActivity(user, groupMember);
-
         }
         else if (request.getPersonalRoutineId() != null) {
             PersonalRoutine personalRoutine = personalRoutineRepository.findById(request.getPersonalRoutineId())
