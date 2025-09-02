@@ -27,7 +27,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private final JwtTokenProvider jwtTokenProvider;
     private final TokenService tokenService;
     
-    @Value("${app.oauth2.redirect-uri:http://localhost:3000}")
+    @Value("${app.oauth2.redirect-uri:http://localhost:5173}")
     private String redirectUri;
     
     @Override
