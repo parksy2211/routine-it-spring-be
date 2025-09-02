@@ -8,13 +8,19 @@ import com.goormi.routine.domain.group.repository.GroupMemberRepository;
 import com.goormi.routine.domain.group.repository.GroupRepository;
 import com.goormi.routine.domain.user.entity.User;
 import com.goormi.routine.domain.user.repository.UserRepository;
+import com.goormi.routine.domain.userActivity.entity.ActivityType;
+import com.goormi.routine.domain.userActivity.entity.UserActivity;
+import com.goormi.routine.domain.userActivity.repository.UserActivityRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +29,7 @@ public class GroupMemberServiceImpl implements GroupMemberService {
     private final GroupMemberRepository groupMemberRepository;
     private final GroupRepository groupRepository;
     private final UserRepository userRepository;
+    private final UserActivityRepository userActivityRepository;
 
     // 그룹에 멤버가 참여 신청시 펜딩으로 추가
     @Override
@@ -86,6 +93,25 @@ public class GroupMemberServiceImpl implements GroupMemberService {
         return groupMembers.stream()
                 .map(GroupMemberResponse::from)
                 .toList();
+    }
+
+    // 그룹 멤버들의 인증 미인증 구분을 위함.
+    public List<GroupMemberResponse> getGroupMembersWithActivity (Long groupId){
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(()->new IllegalArgumentException("Group not found"));
+        List<GroupMember> groupMembers = groupMemberRepository.findAllByGroupAndStatus(group, GroupMemberStatus.JOINED);
+        List<UserActivity> completedActivities = userActivityRepository.
+                findByGroupMemberInAndActivityTypeAndActivityDate(groupMembers, ActivityType.GROUP_AUTH_COMPLETE, LocalDate.now());
+
+        Set<Long> completedMemberIds = completedActivities.stream()
+                .map(activity -> activity.getGroupMember().getMemberId())
+                .collect(Collectors.toSet());
+
+        return groupMembers.stream()
+                .map(member -> {
+                    boolean isAuthToday = completedMemberIds.contains(member.getMemberId());
+                    return GroupMemberResponse.from(member, isAuthToday);
+                }).toList();
     }
 
 

@@ -1,5 +1,7 @@
 package com.goormi.routine.domain.userActivity.repository;
 
+import com.goormi.routine.domain.group.entity.Group;
+import com.goormi.routine.domain.group.entity.GroupMember;
 import com.goormi.routine.domain.user.entity.User;
 import com.goormi.routine.domain.userActivity.entity.ActivityType;
 import com.goormi.routine.domain.userActivity.entity.UserActivity;
@@ -7,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,4 +17,7 @@ import java.util.Optional;
 public interface UserActivityRepository extends JpaRepository<UserActivity, Long> {
     List<UserActivity> findAllByUserAndActivityDate(User user, LocalDate activityDate);
     Optional<UserActivity>  findByUserAndActivityDateAndActivityType(User user, LocalDate activityDate, ActivityType activityType);
+    List<UserActivity> findByGroupMemberInAndActivityTypeAndActivityDate(
+            List<GroupMember> groupMembers, ActivityType activityType,
+            LocalDate activityDate);
 }
