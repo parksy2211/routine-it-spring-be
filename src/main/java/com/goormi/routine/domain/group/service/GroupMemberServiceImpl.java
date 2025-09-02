@@ -6,6 +6,8 @@ import com.goormi.routine.domain.group.dto.response.GroupMemberResponse;
 import com.goormi.routine.domain.group.entity.*;
 import com.goormi.routine.domain.group.repository.GroupMemberRepository;
 import com.goormi.routine.domain.group.repository.GroupRepository;
+import com.goormi.routine.domain.notification.entity.NotificationType;
+import com.goormi.routine.domain.notification.service.NotificationService;
 import com.goormi.routine.domain.user.entity.User;
 import com.goormi.routine.domain.user.repository.UserRepository;
 import com.goormi.routine.domain.userActivity.entity.ActivityType;
@@ -30,6 +32,8 @@ public class GroupMemberServiceImpl implements GroupMemberService {
     private final GroupRepository groupRepository;
     private final UserRepository userRepository;
     private final UserActivityRepository userActivityRepository;
+
+    private final NotificationService notificationService;
 
     // 그룹에 멤버가 참여 신청시 펜딩으로 추가
     @Override
@@ -60,12 +64,21 @@ public class GroupMemberServiceImpl implements GroupMemberService {
         }
 
         GroupMember groupMember = group.addMember(user); // PENDING
+        if (group.getGroupType() == GroupType.REQUIRED){
+            // 리더에게 가입 신청
+            notificationService.createNotification(NotificationType.GROUP_JOIN_REQUEST,
+                    userId, group.getLeader().getId(), group.getGroupId());
+        }
         // 자유 참여는 바로 가입 처리
         if(group.getGroupType() == GroupType.FREE){
             groupMember.changeStatus(GroupMemberStatus.JOINED);
             group.addMemberCnt();
+            // 유저에게 가입됨을 알림
+            notificationService.createNotification(NotificationType.GROUP_MEMBER_STATUS_UPDATED,
+                    group.getLeader().getId(),userId, group.getGroupId());
         }
         groupMemberRepository.save(groupMember);
+
 
         return GroupMemberResponse.from(groupMember);
     }
@@ -146,7 +159,9 @@ public class GroupMemberServiceImpl implements GroupMemberService {
             }
         }
         groupMember.changeStatus(newStatus); // JOINED, BLOCKED, LEFT
-
+        // 유저에게 역할 변경 알림
+        notificationService.createNotification(NotificationType.GROUP_MEMBER_STATUS_UPDATED,
+                group.getLeader().getId(), groupMember.getUser().getId(), group.getGroupId());
         return GroupMemberResponse.from(groupMember);
     }
 
@@ -179,6 +194,9 @@ public class GroupMemberServiceImpl implements GroupMemberService {
                 .orElseThrow(() -> new IllegalArgumentException("Group not found"));
         groupLeader.changeRole(GroupMemberRole.MEMBER);
         targetGroupMember.changeRole(request.getRole()); // LEADER, MEMBER
+
+        notificationService.createNotification(NotificationType.GROUP_MEMBER_ROLE_UPDATED,
+                group.getLeader().getId(), targetGroupMember.getUser().getId(), group.getGroupId());
 
         return GroupMemberResponse.from(targetGroupMember);
     }

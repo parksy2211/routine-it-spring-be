@@ -41,6 +41,7 @@ public class GroupMemberController {
                                                                                       @Valid @RequestBody GroupJoinRequest request) {
 
         GroupMemberResponse response = groupMemberService.addMember(userId, groupId, request);
+
         return ResponseEntity.ok(response);
     }
 
