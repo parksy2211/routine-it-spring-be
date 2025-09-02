@@ -9,7 +9,7 @@ import java.util.List;
 
 @Repository
 public interface GroupRepository extends JpaRepository<Group, Long> {
-    List<Group> findAllByLeaderId(Long userId);
+    List<Group> findAllByLeaderId(Long leaderId);
     List<Group> findAllByGroupType(GroupType groupType);
     List<Group> findAllByIsActive(boolean isActive);
 }

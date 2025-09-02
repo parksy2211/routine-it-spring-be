@@ -4,7 +4,10 @@ import com.goormi.routine.domain.group.dto.request.GroupCreateRequest;
 import com.goormi.routine.domain.group.dto.request.GroupUpdateRequest;
 import com.goormi.routine.domain.group.dto.response.GroupResponse;
 import com.goormi.routine.domain.group.entity.Group;
+import com.goormi.routine.domain.group.entity.GroupMember;
+import com.goormi.routine.domain.group.entity.GroupMemberStatus;
 import com.goormi.routine.domain.group.entity.GroupType;
+import com.goormi.routine.domain.group.repository.GroupMemberRepository;
 import com.goormi.routine.domain.user.entity.User;
 import com.goormi.routine.domain.group.repository.GroupRepository;
 import com.goormi.routine.domain.user.repository.UserRepository;
@@ -20,6 +23,7 @@ import java.util.Objects;
 @Transactional
 public class GroupServiceImpl implements GroupService {
     private final GroupRepository groupRepository;
+    private final GroupMemberRepository groupMemberRepository;
     private final UserRepository userRepository;
 
     // -- create
@@ -58,8 +62,8 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<GroupResponse> getGroupsByUserId(Long userId){
-        List<Group> groups = groupRepository.findAllByLeaderId(userId);
+    public List<GroupResponse> getGroupsByLeaderId(Long leaderId){
+        List<Group> groups = groupRepository.findAllByLeaderId(leaderId);
         return groups.stream()
                 .map(GroupResponse::from)
                 .toList();
@@ -79,6 +83,19 @@ public class GroupServiceImpl implements GroupService {
     public List<GroupResponse> getGroupsByIsActive(boolean isActive){
         List<Group> groups = groupRepository.findAllByIsActive(isActive);
         return groups.stream()
+                .map(GroupResponse::from)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<GroupResponse> getJoinedGroups(Long userId){
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        List<GroupMember> memberList = groupMemberRepository.findAllByUserAndStatus(user, GroupMemberStatus.JOINED);
+
+        return memberList.stream()
+                .map(GroupMember::getGroup)
                 .map(GroupResponse::from)
                 .toList();
     }
