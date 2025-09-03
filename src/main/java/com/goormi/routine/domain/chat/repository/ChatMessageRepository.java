@@ -14,17 +14,17 @@ import java.util.List;
 @Repository
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
     
-    Page<ChatMessage> findByRoomIdOrderBySentAtDesc(Long roomId, Pageable pageable);
+    Page<ChatMessage> findByRoomIdOrderByCreatedAtDesc(Long roomId, Pageable pageable);
     
-    @Query("SELECT cm FROM ChatMessage cm WHERE cm.roomId = :roomId AND cm.id < :beforeMessageId ORDER BY cm.sentAt DESC")
-    Page<ChatMessage> findByRoomIdAndIdLessThanOrderBySentAtDesc(@Param("roomId") Long roomId, 
-                                                                  @Param("beforeMessageId") Long beforeMessageId, 
-                                                                  Pageable pageable);
+    @Query("SELECT cm FROM ChatMessage cm WHERE cm.roomId = :roomId AND cm.id < :beforeMessageId ORDER BY cm.createdAt DESC")
+    Page<ChatMessage> findByRoomIdAndIdLessThanOrderByCreatedAtDesc(@Param("roomId") Long roomId, 
+                                                                     @Param("beforeMessageId") Long beforeMessageId, 
+                                                                     Pageable pageable);
     
-    List<ChatMessage> findByRoomIdAndSentAtAfterOrderBySentAt(Long roomId, LocalDateTime after);
+    List<ChatMessage> findByRoomIdAndCreatedAtAfterOrderByCreatedAt(Long roomId, LocalDateTime after);
     
     @Query("SELECT COUNT(cm) FROM ChatMessage cm WHERE cm.roomId = :roomId")
     long countByRoomId(@Param("roomId") Long roomId);
     
-    void deleteByRoomIdAndSentAtBefore(Long roomId, LocalDateTime before);
+    void deleteByRoomIdAndCreatedAtBefore(Long roomId, LocalDateTime before);
 }

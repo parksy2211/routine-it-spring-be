@@ -13,8 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -102,7 +100,7 @@ public class ChatServiceImpl implements ChatService {
                 .senderNickname(message.getSenderNickname())
                 .message(message.getMessage())
                 .messageType(message.getMessageType())
-                .sentAt(message.getSentAt())
+                .sentAt(message.getCreatedAt())
                 .build();
     }
 }

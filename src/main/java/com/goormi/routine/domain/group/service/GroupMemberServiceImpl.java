@@ -8,6 +8,11 @@ import com.goormi.routine.domain.group.repository.GroupMemberRepository;
 import com.goormi.routine.domain.group.repository.GroupRepository;
 import com.goormi.routine.domain.user.entity.User;
 import com.goormi.routine.domain.user.repository.UserRepository;
+import com.goormi.routine.domain.chat.entity.ChatRoom;
+import com.goormi.routine.domain.chat.entity.ChatMember;
+import com.goormi.routine.domain.chat.entity.ChatMember.MemberRole;
+import com.goormi.routine.domain.chat.repository.ChatRoomRepository;
+import com.goormi.routine.domain.chat.repository.ChatMemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +28,8 @@ public class GroupMemberServiceImpl implements GroupMemberService {
     private final GroupMemberRepository groupMemberRepository;
     private final GroupRepository groupRepository;
     private final UserRepository userRepository;
+    private final ChatRoomRepository chatRoomRepository;
+    private final ChatMemberRepository chatMemberRepository;
 
     // 그룹에 멤버가 참여 신청시 펜딩으로 추가
     @Override
@@ -57,6 +64,24 @@ public class GroupMemberServiceImpl implements GroupMemberService {
         if(group.getGroupType() == GroupType.FREE){
             groupMember.changeStatus(GroupMemberStatus.JOINED);
             group.addMemberCnt();
+            
+            // 채팅방 자동 참여
+            ChatRoom chatRoom = chatRoomRepository.findFirstByGroupIdAndIsActiveTrue(group.getGroupId())
+                    .orElseThrow(() -> new IllegalArgumentException("Chat room not found for group"));
+            
+            // 이미 채팅방 멤버인지 확인
+            Optional<ChatMember> existingChatMember = chatMemberRepository
+                    .findByRoomIdAndUserId(chatRoom.getId(), userId);
+            
+            if (existingChatMember.isEmpty()) {
+                ChatMember chatMember = ChatMember.builder()
+                        .roomId(chatRoom.getId())
+                        .userId(userId)
+                        .role(MemberRole.MEMBER)
+                        .isActive(true)
+                        .build();
+                chatMemberRepository.save(chatMember);
+            }
         }
         groupMemberRepository.save(groupMember);
 
@@ -104,6 +129,24 @@ public class GroupMemberServiceImpl implements GroupMemberService {
             }
             if (newStatus == GroupMemberStatus.JOINED) {
                 group.addMemberCnt(); // 가입 시 인원 수 증가
+                
+                // 채팅방 자동 참여
+                ChatRoom chatRoom = chatRoomRepository.findFirstByGroupIdAndIsActiveTrue(group.getGroupId())
+                        .orElseThrow(() -> new IllegalArgumentException("Chat room not found for group"));
+                
+                // 이미 채팅방 멤버인지 확인
+                Optional<ChatMember> existingChatMember = chatMemberRepository
+                        .findByRoomIdAndUserId(chatRoom.getId(), groupMember.getUser().getId());
+                
+                if (existingChatMember.isEmpty()) {
+                    ChatMember chatMember = ChatMember.builder()
+                            .roomId(chatRoom.getId())
+                            .userId(groupMember.getUser().getId())
+                            .role(MemberRole.MEMBER)
+                            .isActive(true)
+                            .build();
+                    chatMemberRepository.save(chatMember);
+                }
             }
         }
         else if (oldStatus == GroupMemberStatus.JOINED) {
@@ -111,6 +154,19 @@ public class GroupMemberServiceImpl implements GroupMemberService {
                 throw new IllegalArgumentException("BLOCKED, LEFT만 가능합니다");
             }
             group.minusMemberCnt(); // 차단, 탈퇴 시 인원 수 감소
+            
+            // 채팅방에서 자동 탈퇴
+            ChatRoom chatRoom = chatRoomRepository.findFirstByGroupIdAndIsActiveTrue(group.getGroupId())
+                    .orElseThrow(() -> new IllegalArgumentException("Chat room not found for group"));
+            
+            Optional<ChatMember> existingChatMember = chatMemberRepository
+                    .findByRoomIdAndUserId(chatRoom.getId(), groupMember.getUser().getId());
+            
+            if (existingChatMember.isPresent()) {
+                ChatMember chatMember = existingChatMember.get();
+                chatMember.setIsActive(false);
+                chatMemberRepository.save(chatMember);
+            }
         }
         else if (oldStatus == GroupMemberStatus.BLOCKED ){
             if (newStatus != GroupMemberStatus.PENDING) { // 차단 풀기
@@ -194,6 +250,21 @@ public class GroupMemberServiceImpl implements GroupMemberService {
             throw new IllegalArgumentException("차단된 멤버는 떠날 수 없습니다.");
         }
         groupMember.changeStatus(GroupMemberStatus.LEFT);
+        
+        // 채팅방에서 자동 탈퇴
+        ChatRoom chatRoom = chatRoomRepository.findFirstByGroupIdAndIsActiveTrue(group.getGroupId())
+                .orElseThrow(() -> new IllegalArgumentException("Chat room not found for group"));
+        
+        Optional<ChatMember> existingChatMember = chatMemberRepository
+                .findByRoomIdAndUserId(chatRoom.getId(), userId);
+        
+        if (existingChatMember.isPresent()) {
+            ChatMember chatMember = existingChatMember.get();
+            chatMember.setIsActive(false);
+            chatMember.setLeftAt(java.time.LocalDateTime.now());
+            chatMemberRepository.save(chatMember);
+        }
+        
 //        groupMemberRepository.delete(groupMember);
     }
 }
