@@ -19,35 +19,31 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public UserResponse getMyProfile(Long userId) {
-		User user = userRepository.findById(userId).orElseThrow();
+		User user = userRepository.findById(userId)
+			.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		return toResponse(user);
 	}
 
 	@Override
 	public UserResponse updateProfile(Long userId, UserRequest request) {
-		User user = userRepository.findById(userId).orElseThrow();
+		User user = userRepository.findById(userId)
+			.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		user.updateProfile(request.nickname(), request.profileMessage(), request.profileImageUrl());
 		userRepository.save(user);
 		return toResponse(user);
 	}
 
 	@Override
-	public UserResponse updateSettings(Long userId, UserRequest request) {
-		User user = userRepository.findById(userId).orElseThrow();
-		userRepository.save(user);
-
-		return toResponse(user);
-	}
-
-	@Override
 	public UserResponse getUserProfile(Long userId) {
-		User user = userRepository.findById(userId).orElseThrow();
+		User user = userRepository.findById(userId)
+			.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		return toResponse(user);
 	}
 
 	@Override
 	public void deleteAccount(Long userId, String accessToken) {
-		User user = userRepository.findById(userId).orElseThrow();
+		User user = userRepository.findById(userId)
+			.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
 		user.updateRefreshToken(null);
 		user.setActive(false);
