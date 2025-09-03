@@ -1,16 +1,16 @@
-package com.goormi.routine.domain.group.service;
+package com.goormi.routine.domain.userActivity.service;
 
 import com.goormi.routine.domain.group.dto.request.GroupCreateRequest;
 import com.goormi.routine.domain.group.dto.response.GroupResponse;
 import com.goormi.routine.domain.group.entity.Group;
 import com.goormi.routine.domain.group.entity.GroupType;
 import com.goormi.routine.domain.group.repository.GroupRepository;
+import com.goormi.routine.domain.group.service.GroupService;
 import com.goormi.routine.domain.user.entity.User;
 import com.goormi.routine.domain.user.repository.UserRepository;
 import com.goormi.routine.domain.userActivity.dto.UserActivityRequest;
 import com.goormi.routine.domain.userActivity.dto.UserActivityResponse;
 import com.goormi.routine.domain.userActivity.entity.ActivityType;
-import com.goormi.routine.domain.userActivity.service.UserActivityService;
 import com.goormi.routine.personal_routines.domain.PersonalRoutine;
 import com.goormi.routine.personal_routines.dto.PersonalRoutineRequest;
 import com.goormi.routine.personal_routines.dto.PersonalRoutineResponse;
