@@ -28,11 +28,11 @@ public class Notification {
     private NotificationType notificationType;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id",nullable = false)
+    @JoinColumn(name = "sender_id",nullable = false)
     private User sender;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id",nullable = false)
+    @JoinColumn(name = "receiver_id",nullable = false)
     private User receiver;
 
     @ManyToOne(fetch = FetchType.LAZY)

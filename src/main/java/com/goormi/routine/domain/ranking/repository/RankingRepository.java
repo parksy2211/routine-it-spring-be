@@ -17,26 +17,26 @@ public interface RankingRepository extends JpaRepository<Ranking, Long> {
 
 	Optional<Ranking> findByGroupId(Long groupId);
 
-	@Query("SELECT r FROM Ranking r WHERE r.userId IS NOT NULL ORDER BY r.personalScore DESC")
-	List<Ranking> findPersonalRankingsOrderByScore();
-
-	@Query("SELECT r FROM Ranking r WHERE r.groupId IS NOT NULL ORDER BY r.groupScore DESC")
-	List<Ranking> findGroupRankingsOrderByScore();
-
-	@Query("SELECT r FROM Ranking r WHERE r.groupId = :groupId AND r.userId IS NOT NULL ORDER BY r.personalScore DESC LIMIT 3")
-	List<Ranking> findTop3UsersByGroupId(@Param("groupId") Long groupId);
-
-	@Query("SELECT r FROM Ranking r WHERE r.groupId = :groupId AND r.userId IS NOT NULL ORDER BY r.personalScore DESC")
-	List<Ranking> findAllUsersByGroupIdOrderByScore(@Param("groupId") Long groupId);
-
-	@Query("UPDATE Ranking r SET r.personalScore = 0 WHERE r.userId IS NOT NULL")
-	void resetPersonalScores();
-
-	@Query("UPDATE Ranking r SET r.groupScore = 0 WHERE r.groupId IS NOT NULL")
-	void resetGroupScores();
-
 	Optional<Ranking> findByUserIdAndGroupId(Long userId, Long groupId);
 
-	@Query("SELECT SUM(r.personalScore) FROM Ranking r WHERE r.userId = :userId")
+	@Query("SELECT r FROM Ranking r WHERE r.groupId IS NULL ORDER BY r.score DESC")
+	List<Ranking> findPersonalRankingsOrderByScore();
+
+	@Query("SELECT r FROM Ranking r WHERE r.groupId IS NOT NULL ORDER BY r.score DESC")
+	List<Ranking> findGroupRankingsOrderByScore();
+
+	@Query("SELECT r FROM Ranking r WHERE r.groupId = :groupId AND r.userId IS NOT NULL ORDER BY r.score DESC LIMIT 3")
+	List<Ranking> findTop3UsersByGroupId(@Param("groupId") Long groupId);
+
+	@Query("SELECT r FROM Ranking r WHERE r.groupId = :groupId AND r.userId IS NOT NULL ORDER BY r.score DESC")
+	List<Ranking> findAllUsersByGroupIdOrderByScore(@Param("groupId") Long groupId);
+
+	@Query("UPDATE Ranking r SET r.score = 0 WHERE r.groupId IS NULL")
+	void resetPersonalScores();
+
+	@Query("UPDATE Ranking r SET r.score = 0 WHERE r.groupId IS NOT NULL")
+	void resetGroupScores();
+
+	@Query("SELECT SUM(r.score) FROM Ranking r WHERE r.userId = :userId")
 	Optional<Long> getTotalScoreByUserId(@Param("userId") Long userId);
 }
