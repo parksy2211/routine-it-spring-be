@@ -1,8 +1,8 @@
-package com.goormi.routine.config.scheduler.controller;
+package com.goormi.routine.domain.scheduler.controller;
 
 import com.goormi.routine.common.response.ApiResponse;
-import com.goormi.routine.config.scheduler.service.MonthlySchedulerService;
-import com.goormi.routine.config.scheduler.service.SchedulerManagementService;
+import com.goormi.routine.domain.scheduler.service.MonthlySchedulerService;
+import com.goormi.routine.domain.scheduler.service.SchedulerManagementService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -10,13 +10,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 @RestController
 @RequestMapping("/api/scheduler")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Scheduler", description = "스케줄러 관리 API")
+@Tag(name = "스케줄러", description = "스케줄러 관리 API")
 public class SchedulerController {
 
 	private final MonthlySchedulerService monthlySchedulerService;

@@ -23,7 +23,7 @@ import java.util.List;
 @RequestMapping("/api/rankings")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Ranking", description = "랭킹 시스템 API")
+@Tag(name = "랭킹", description = "랭킹 시스템 API")
 public class RankingController {
 
 	private final RankingService rankingService;

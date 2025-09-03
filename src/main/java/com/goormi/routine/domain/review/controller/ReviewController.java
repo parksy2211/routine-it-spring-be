@@ -15,7 +15,7 @@ import java.util.List;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Review", description = "월간 회고 시스템 API")
+@Tag(name = "월간 회고", description = "월간 회고 시스템 API")
 public class ReviewController {
 
 	private final ReviewService reviewService;

@@ -1,4 +1,4 @@
-package com.goormi.routine.config.scheduler.service;
+package com.goormi.routine.domain.scheduler.service;
 
 public interface MonthlySchedulerService {
 	void executeMonthlyReset();
