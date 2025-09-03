@@ -15,6 +15,7 @@ public class GroupMemberResponse {
 
     private Long groupMemberId;
     private String groupName;
+    private String memberName;
     private GroupMemberStatus status;
     private GroupMemberRole role;
     @Schema(description = "메세지는 인증, 미인증 둘 중 하나를 반환합니다.")
@@ -27,6 +28,7 @@ public class GroupMemberResponse {
         return GroupMemberResponse.builder()
                 .groupMemberId(groupMember.getMemberId())
                 .groupName(groupMember.getGroup().getGroupName())
+                .memberName(groupMember.getUser().getNickname())
                 .status(groupMember.getStatus())
                 .role(groupMember.getRole())
                 .createdAt(groupMember.getCreatedAt())

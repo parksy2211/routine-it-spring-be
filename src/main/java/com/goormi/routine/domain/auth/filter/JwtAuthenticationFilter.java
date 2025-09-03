@@ -53,7 +53,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     new UsernamePasswordAuthenticationToken(userId, null, authorities);
                     
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.debug("Authenticated user: {}", userId);
+                log.debug("Authenticated user: {} with ID: {}", user.getEmail(), userId);
             });
         }
         
