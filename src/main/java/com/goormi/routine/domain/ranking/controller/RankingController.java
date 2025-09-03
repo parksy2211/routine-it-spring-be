@@ -9,7 +9,6 @@ import com.goormi.routine.domain.ranking.dto.PersonalRankingRequest;
 import com.goormi.routine.domain.ranking.dto.PersonalRankingResponse;
 import com.goormi.routine.domain.ranking.dto.RankingResetResponse;
 import com.goormi.routine.domain.ranking.service.RankingService;
-import com.goormi.routine.domain.user.entity.User;
 import com.goormi.routine.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -52,7 +51,7 @@ public class RankingController {
 		@RequestParam(defaultValue = "0") Integer page,
 		@Parameter(description = "페이지 크기")
 		@RequestParam(defaultValue = "10") Integer size,
-		@CurrentUser User currentUser) {
+		@CurrentUser Long userId) {
 
 		try {
 			String targetMonth = monthYear != null ? monthYear :
@@ -141,7 +140,7 @@ public class RankingController {
 		@PathVariable Long groupId,
 		@Parameter(description = "조회할 월 (YYYY-MM 형식), 미입력시 현재 월")
 		@RequestParam(required = false) String monthYear,
-		@CurrentUser User currentUser) {
+		@CurrentUser Long userId) {
 
 		try {
 			String targetMonth = monthYear != null ? monthYear :
@@ -219,10 +218,10 @@ public class RankingController {
 		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패")
 	})
 	@GetMapping("/me/total-score")
-	public ResponseEntity<ApiResponse<Long>> getMyTotalScore(@CurrentUser User currentUser) {
+	public ResponseEntity<ApiResponse<Long>> getMyTotalScore(@CurrentUser Long userId) {
 
 		try {
-			long totalScore = rankingService.getTotalScoreByUser(currentUser.getId());
+			long totalScore = rankingService.getTotalScoreByUser(userId);
 
 			return ResponseEntity.ok(ApiResponse.success(
 				"총 점수 조회가 완료되었습니다.",
