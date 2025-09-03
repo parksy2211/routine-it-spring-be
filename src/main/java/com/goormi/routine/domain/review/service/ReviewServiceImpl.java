@@ -15,6 +15,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.goormi.routine.domain.auth.repository.RedisRepository;
 import com.goormi.routine.domain.group.repository.GroupMemberRepository;
+import com.goormi.routine.domain.notification.entity.NotificationType;
+import com.goormi.routine.domain.notification.service.NotificationService;
 import com.goormi.routine.domain.ranking.service.RankingService;
 import com.goormi.routine.domain.review.dto.MonthlyReviewResponse;
 import com.goormi.routine.domain.review.dto.UserReviewHistoryResponse;
@@ -32,6 +34,7 @@ public class ReviewServiceImpl implements ReviewService{
 
 	private final UserRepository userRepository;
 	private final RankingService rankingService;
+	private final NotificationService notificationService;
 	private final GroupMemberRepository groupMemberRepository;
 	private final ReviewRedisRepository reviewRedisRepository;
 	private final ObjectMapper objectMapper;
@@ -88,8 +91,12 @@ public class ReviewServiceImpl implements ReviewService{
 
 			saveReviewToRedis(currentReview);
 
-			// TODO: 실제 카카오 메시지 전송
-			// kakaoMessageService.sendMessage(user.getKakaoId(), messageContent);
+			notificationService.createNotification(
+				NotificationType.MONTHLY_REVIEW,
+				null,
+				userId,
+				null
+			);
 
 			log.info("사용자 회고 메시지 전송 완료: 사용자 ID = {}, 월 = {}", userId, monthYear);
 
