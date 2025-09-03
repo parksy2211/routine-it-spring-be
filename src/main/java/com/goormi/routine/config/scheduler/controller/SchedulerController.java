@@ -46,27 +46,4 @@ public class SchedulerController {
 		monthlySchedulerService.manualRetryReviewMessages(monthYear);
 		return ApiResponse.success("수동 회고 메시지 재전송이 완료되었습니다.", null);
 	}
-
-	@Operation(
-		summary = "스케줄러 상태 조회",
-		description = "전체 스케줄러의 실행 상태와 실패한 메시지 정보를 조회합니다."
-	)
-	@GetMapping("/status")
-	public ApiResponse<Map<String, Object>> getSchedulerStatus() {
-		Map<String, Object> status = schedulerManagementService.getSchedulerStatus();
-		return ApiResponse.success("스케줄러 상태 조회가 완료되었습니다.", status);
-	}
-
-	@Operation(
-		summary = "실패 메시지 상태 조회",
-		description = "특정 월의 실패한 메시지 상태를 상세히 조회합니다."
-	)
-	@GetMapping("/failed-status")
-	public ApiResponse<Map<String, Object>> getFailedMessageStatus(
-		@Parameter(description = "대상 월 (YYYY-MM), 미입력시 현재 월")
-		@RequestParam(required = false) String monthYear) {
-
-		Map<String, Object> status = schedulerManagementService.getFailedMessageStatus(monthYear);
-		return ApiResponse.success("실패 메시지 상태 조회가 완료되었습니다.", status);
-	}
 }
