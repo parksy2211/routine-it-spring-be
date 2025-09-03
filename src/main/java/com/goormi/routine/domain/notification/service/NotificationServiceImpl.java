@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 
@@ -41,21 +43,26 @@ public class NotificationServiceImpl implements NotificationService {
         GroupMember groupMember = groupMemberRepository.findByGroupAndUser(group, receiver)
                 .orElseThrow(() -> new IllegalArgumentException("GroupMember not found"));
 
-        String conent = "";
+        String content = "";
         if (notificationType == NotificationType.GROUP_JOIN_REQUEST) {
-            conent = sender.getNickname() + "님이 "
+            content = sender.getNickname() + "님이 "
                     + group.getGroupName() +"에 그룹 가입 요청을 보냈습니다.";
         } else if (notificationType == NotificationType.GROUP_MEMBER_ROLE_UPDATED){
-            conent = receiver.getNickname() + "님의 "
+            content = receiver.getNickname() + "님의 "
                     + group.getGroupName() +"의 멤버 역할이 "
                     + groupMember.getStatus()+"으로 변경되었습니다.";
         } else if (notificationType == NotificationType.GROUP_MEMBER_STATUS_UPDATED) {
-            conent = receiver.getNickname() + "님의 "
+            content = receiver.getNickname() + "님의 "
                     + group.getGroupName() +"의 멤버 상태가 "
                     + groupMember.getRole()+"으로 변경되었습니다.";
+        } else if (notificationType == NotificationType.MONTHLY_REVIEW) {
+            String monthYear = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
+            content = receiver.getNickname() + "님의 "
+                + monthYear + " 월간 루틴 성과 리포트가 준비되었습니다! 확인해보세요.";
         }
+
         Notification notification =
-                Notification.createNotification(conent, notificationType, sender, receiver, group);
+                Notification.createNotification(content, notificationType, sender, receiver, group);
 
         Notification saved = notificationRepository.save(notification);
 
