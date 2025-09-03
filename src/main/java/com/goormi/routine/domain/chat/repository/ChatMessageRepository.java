@@ -16,7 +16,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     
     Page<ChatMessage> findByRoomIdOrderBySentAtDesc(Long roomId, Pageable pageable);
     
-    @Query("SELECT cm FROM ChatMessage cm WHERE cm.roomId = :roomId AND cm.id < :beforeMessageId ORDER BY cm.sentAt DESC")
+    @Query("SELECT cm FROM ChatMessage cm WHERE cm.roomId = :roomId AND cm.id < :beforeMessageId ORDER BY cm.createdAt DESC")
     Page<ChatMessage> findByRoomIdAndIdLessThanOrderBySentAtDesc(@Param("roomId") Long roomId, 
                                                                   @Param("beforeMessageId") Long beforeMessageId, 
                                                                   Pageable pageable);

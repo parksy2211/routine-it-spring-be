@@ -231,7 +231,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
                 .senderNickname(message.getSenderNickname())
                 .message(message.getMessage())
                 .messageType(message.getMessageType())
-                .sentAt(message.getSentAt())
+                .sentAt(message.getCreatedAt())
                 .build();
     }
 }

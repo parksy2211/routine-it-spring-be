@@ -34,12 +34,16 @@ public class ChatMessage {
     @Column(name = "message_type", nullable = false, length = 20)
     private MessageType messageType;
     
-    @Column(name = "sent_at", nullable = false, updatable = false)
-    private LocalDateTime sentAt;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
     
     @PrePersist
     protected void onCreate() {
-        this.sentAt = LocalDateTime.now();
+        createdAt = LocalDateTime.now();
+    }
+
+    public boolean isAuthMessage() {
+        return MessageType.NOTICE == this.messageType;
     }
     
     public enum MessageType {
