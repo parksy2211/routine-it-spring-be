@@ -19,6 +19,7 @@ import java.util.List;
 public class PersonalRoutineService {
 
     private final PersonalRoutineRepository repository;
+    private final AlarmSyncService alarmSyncService; // ★ 추가: 카카오 톡캘린더 동기화 서비스
 
     public PersonalRoutineResponse create(PersonalRoutineRequest req) {
         validateDateRange(req.getStartDate(), req.getEndDate());
@@ -40,7 +41,12 @@ public class PersonalRoutineService {
                 .isDeleted(false)
                 .build();
 
-        return toResponse(repository.save(entity));
+        PersonalRoutine saved = repository.save(entity);
+
+        // ★ 생성 시 캘린더 동기화
+        alarmSyncService.sync(saved);
+
+        return toResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -73,12 +79,19 @@ public class PersonalRoutineService {
             validateDateRange(entity.getStartDate(), entity.getEndDate());
         }
 
+        // ★ 수정 시 캘린더 동기화
+        alarmSyncService.sync(entity);
+
         return toResponse(entity); // flush on commit
     }
 
     public void softDelete(Integer routineId) {
         PersonalRoutine entity = repository.findByRoutineIdAndIsDeletedFalse(routineId)
                 .orElseThrow(() -> new EntityNotFoundException("루틴을 찾을 수 없습니다."));
+
+        // ★ 삭제 전 카카오 이벤트 제거
+        alarmSyncService.deleteIfExists(entity);
+
         entity.softDelete();
     }
 
@@ -86,6 +99,10 @@ public class PersonalRoutineService {
         PersonalRoutine entity = repository.findByRoutineIdAndIsDeletedFalse(routineId)
                 .orElseThrow(() -> new EntityNotFoundException("루틴을 찾을 수 없습니다."));
         entity.toggleAlarm();
+
+        // ★ 알람 토글 즉시 동기화
+        alarmSyncService.sync(entity);
+
         return toResponse(entity);
     }
 

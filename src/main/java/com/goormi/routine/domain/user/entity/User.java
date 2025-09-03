@@ -20,17 +20,17 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class User {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @Column(unique = true, nullable = false)
     private String kakaoId;
-    
+
     @Column(nullable = false)
     private String email;
-    
+
     @Column(nullable = false)
     private String nickname;
 
@@ -40,26 +40,35 @@ public class User {
     @Column(name = "profile_message", columnDefinition = "TEXT")
     private String profileMessage;
 
+    // 서비스 자체 JWT Refresh Token
     @Column(name = "refresh_token", columnDefinition = "TEXT")
     private String refreshToken;
-    
+
+    // ✅ 카카오 Access Token
+    @Column(name = "kakao_access_token", columnDefinition = "TEXT")
+    private String kakaoAccessToken;
+
+    // ✅ 카카오 Refresh Token
+    @Column(name = "kakao_refresh_token", columnDefinition = "TEXT")
+    private String kakaoRefreshToken;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
     private UserRole role = UserRole.USER;
 
     @Column(
-        name = "is_alarm_on",
-        nullable = false,
-        columnDefinition = "BOOLEAN DEFAULT TRUE"
+            name = "is_alarm_on",
+            nullable = false,
+            columnDefinition = "BOOLEAN DEFAULT TRUE"
     )
     @Builder.Default
     private Boolean isAlarmOn = true;
 
     @Column(
-        name = "is_dark_mode",
-        nullable = false,
-        columnDefinition = "BOOLEAN DEFAULT FALSE"
+            name = "is_dark_mode",
+            nullable = false,
+            columnDefinition = "BOOLEAN DEFAULT FALSE"
     )
     @Builder.Default
     private Boolean isDarkMode = false;
@@ -67,11 +76,11 @@ public class User {
     @Column(nullable = false)
     @Builder.Default
     private boolean active = true;
-    
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
-    
+
     @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime updatedAt;
@@ -84,7 +93,7 @@ public class User {
             this.profileImageUrl = profileImageUrl;
         }
     }
-    
+
     public void updateProfile(String nickname, String profileMessage, String profileImageUrl) {
         if (nickname != null) {
             this.nickname = nickname;
@@ -93,11 +102,17 @@ public class User {
             this.profileImageUrl = profileImageUrl;
         }
     }
-    
+
     public void updateRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
     }
-    
+
+    // ✅ 카카오 토큰 업데이트 메서드
+    public void updateKakaoTokens(String accessToken, String refreshToken) {
+        if (accessToken != null) this.kakaoAccessToken = accessToken;
+        if (refreshToken != null) this.kakaoRefreshToken = refreshToken;
+    }
+
     public static User createKakaoUser(String kakaoId, String email, String nickname, String profileImageUrl) {
         return User.builder()
                 .kakaoId(kakaoId)

@@ -55,6 +55,10 @@ public class PersonalRoutine {
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = Boolean.FALSE;
 
+    // ✅ 추가: 카카오 캘린더 이벤트 ID
+    @Column(name = "kakao_calendar_event_id", length = 100)
+    private String kakaoCalendarEventId;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
