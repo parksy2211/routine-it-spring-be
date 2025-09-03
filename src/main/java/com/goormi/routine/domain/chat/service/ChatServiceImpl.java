@@ -4,8 +4,14 @@ import com.goormi.routine.domain.chat.dto.ChatMessageDto;
 import com.goormi.routine.domain.chat.entity.ChatMember;
 import com.goormi.routine.domain.chat.entity.ChatMessage;
 import com.goormi.routine.domain.chat.entity.ChatMessage.MessageType;
+import com.goormi.routine.domain.chat.entity.ChatRoom;
 import com.goormi.routine.domain.chat.repository.ChatMemberRepository;
 import com.goormi.routine.domain.chat.repository.ChatMessageRepository;
+import com.goormi.routine.domain.chat.repository.ChatRoomRepository;
+import com.goormi.routine.domain.group.entity.Group;
+import com.goormi.routine.domain.group.repository.GroupRepository;
+import com.goormi.routine.domain.notification.entity.NotificationType;
+import com.goormi.routine.domain.notification.service.NotificationService;
 import com.goormi.routine.domain.user.entity.User;
 import com.goormi.routine.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,8 +27,12 @@ public class ChatServiceImpl implements ChatService {
     
     private final ChatMessageRepository chatMessageRepository;
     private final ChatMemberRepository chatMemberRepository;
+    private final ChatRoomRepository chatRoomRepository;
     private final UserRepository userRepository;
+    private final GroupRepository groupRepository;
     private final RedisMessagePublisher redisMessagePublisher;
+
+    private final NotificationService notificationService;
     
     @Override
     public ChatMessageDto saveAndSendMessage(ChatMessageDto messageDto, Long userId) {
@@ -31,17 +41,29 @@ public class ChatServiceImpl implements ChatService {
         
         ChatMember member = chatMemberRepository.findByRoomIdAndUserIdAndIsActiveTrue(messageDto.getRoomId(), user.getId())
                 .orElseThrow(() -> new IllegalArgumentException("채팅방에 참여하지 않은 사용자입니다"));
-        
+
+        if (messageDto.getMessageType() != MessageType.TALK &&  messageDto.getMessageType() != MessageType.NOTICE) {
+            throw new IllegalArgumentException("Invalid message type");
+        }
         ChatMessage message = ChatMessage.builder()
                 .roomId(messageDto.getRoomId())
                 .userId(user.getId())
                 .senderNickname(user.getNickname())
                 .message(messageDto.getMessage())
-                .messageType(MessageType.TALK)
+                .messageType(messageDto.getMessageType())
                 .build();
         
         ChatMessage savedMessage = chatMessageRepository.save(message);
-        
+
+        ChatRoom chatRoom = chatRoomRepository.findById(messageDto.getRoomId())
+                .orElseThrow(() -> new IllegalArgumentException("chatRoom not found"));
+        Group group = groupRepository.findById(chatRoom.getGroupId())
+                .orElseThrow(() -> new IllegalArgumentException("group not found"));
+
+        if (savedMessage.isAuthMessage()){
+            notificationService.createNotification(
+                    NotificationType.GROUP_TODAY_AUTH_REQUEST, userId, group.getLeader().getId(), group.getGroupId());
+        }
         chatMemberRepository.updateLastReadMessage(messageDto.getRoomId(), user.getId(), savedMessage.getId());
         
         ChatMessageDto dto = convertToDto(savedMessage);
