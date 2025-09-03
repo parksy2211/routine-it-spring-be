@@ -12,8 +12,8 @@ import java.util.stream.IntStream;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.goormi.routine.domain.auth.repository.RedisRepository;
 import com.goormi.routine.domain.group.entity.Group;
+import com.goormi.routine.domain.group.entity.GroupMember;
 import com.goormi.routine.domain.group.repository.GroupMemberRepository;
 import com.goormi.routine.domain.ranking.dto.GlobalGroupRankingResponse;
 import com.goormi.routine.domain.ranking.dto.GroupTop3RankingResponse;
@@ -22,6 +22,9 @@ import com.goormi.routine.domain.ranking.entity.Ranking;
 import com.goormi.routine.domain.ranking.repository.RankingRedisRepository;
 import com.goormi.routine.domain.ranking.repository.RankingRepository;
 import com.goormi.routine.domain.user.entity.User;
+import com.goormi.routine.domain.userActivity.entity.ActivityType;
+import com.goormi.routine.domain.userActivity.entity.UserActivity;
+import com.goormi.routine.domain.userActivity.repository.UserActivityRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +38,7 @@ public class RankingServiceImpl implements RankingService {
 	private final RankingRepository rankingRepository;
 	private final GroupMemberRepository groupMemberRepository;
 	private final RankingRedisRepository rankingRedisRepository;
+	private final UserActivityRepository userActivityRepository;
 
 	@Override
 	public List<PersonalRankingResponse> getPersonalRankings() {
@@ -55,8 +59,8 @@ public class RankingServiceImpl implements RankingService {
 						.totalScore(ranking.getScore())
 						.totalParticipants(personalRankings.size())
 						.monthYear(currentMonthYear)
-						.consecutiveDays(0) // TODO: 연속 일수 계산 로직 구현 필요
-						.groupDetails(Collections.emptyList()) // TODO: 그룹별 상세 정보 구현 필요
+						.consecutiveDays(calculateConsecutiveDays(ranking.getUserId()))
+						.groupDetails(getGroupDetailsByUserId(ranking.getUserId(), currentMonthYear))
 						.updatedAt(ranking.getUpdatedAt())
 						.build();
 				})
@@ -82,8 +86,8 @@ public class RankingServiceImpl implements RankingService {
 
 						// TODO: 루틴 인증 엔티티 구현 후 수정 필요
 						int memberCount = groupMemberRepository.countMembersByGroupId(ranking.getGroupId());
-						int activeMembers = 0; // groupMemberRepository.countActiveByGroupId(ranking.getGroupId(), monthYear);
-						int totalAuthCount = 0; // groupMemberRepository.countAuthByGroupId(ranking.getGroupId(), monthYear);
+						int activeMembers = groupMemberRepository.countActiveByGroupId(ranking.getGroupId(), monthYear);
+						int totalAuthCount = groupMemberRepository.countAuthByGroupId(ranking.getGroupId(), monthYear);
 
 						double participationRate = memberCount > 0
 							? (double)activeMembers / memberCount : 0.0;
@@ -151,9 +155,8 @@ public class RankingServiceImpl implements RankingService {
 						Ranking ranking = top3Rankings.get(index);
 						User user = ranking.getUser();
 
-						// TODO: 실제 인증 횟수, 연속 일수, 점수 세부사항 계산 로직 구현 필요
-						int authCount = 0;
-						int consecutiveDays = 0;
+						int authCount = calculateGroupAuthCount(ranking.getUserId(), groupId, currentMonthYear);
+						int consecutiveDays = calculateConsecutiveDays(ranking.getUserId());
 						double consecutiveBonus = calculateConsecutiveBonus(consecutiveDays);
 
 						GroupTop3RankingResponse.ScoreBreakdown scoreBreakdown =
@@ -337,6 +340,77 @@ public class RankingServiceImpl implements RankingService {
 		} catch (Exception e) {
 			log.error("랭킹 초기화 실패: 사용자 ID = {}, 그룹 ID = {}", userId, groupId, e);
 			throw new RuntimeException("랭킹 초기화 중 오류가 발생했습니다.", e);
+		}
+	}
+
+
+	private int calculateConsecutiveDays(Long userId) {
+		try {
+			List<UserActivity> activities = userActivityRepository
+				.findByUserIdAndActivityTypeOrderByCreatedAtDesc(userId, ActivityType.GROUP_AUTH_COMPLETE);
+
+			if (activities.isEmpty()) {
+				return 0;
+			}
+
+			int consecutiveDays = 0;
+			LocalDate currentDate = LocalDate.now();
+
+			for (UserActivity activity : activities) {
+				LocalDate activityDate = activity.getCreatedAt().toLocalDate();
+				if (activityDate.equals(currentDate.minusDays(consecutiveDays))) {
+					consecutiveDays++;
+				} else {
+					break;
+				}
+			}
+
+			return consecutiveDays;
+		} catch (Exception e) {
+			log.warn("연속 일수 계산 실패: 사용자 ID = {}", userId, e);
+			return 0;
+		}
+	}
+
+	private List<PersonalRankingResponse.GroupRankingDetail> getGroupDetailsByUserId(Long userId,
+		String monthYear) {
+		try {
+			List<GroupMember> activeGroups = groupMemberRepository.findActiveGroupsByUserId(userId);
+
+			return activeGroups.stream()
+				.map(groupMember -> {
+					Group group = groupMember.getGroup();
+					int authCount = calculateGroupAuthCount(userId, group.getGroupId(), monthYear);
+
+					return PersonalRankingResponse.GroupRankingDetail.builder()
+						.groupId(group.getGroupId())
+						.groupName(group.getGroupName())
+						.authCount(authCount)
+						.groupType(group.getGroupType().name())
+						.build();
+				})
+				.collect(Collectors.toList());
+		} catch (Exception e) {
+			log.warn("그룹별 상세 정보 조회 실패: 사용자 ID = {}", userId, e);
+			return Collections.emptyList();
+		}
+	}
+
+	private int calculateGroupAuthCount(Long userId, Long groupId, String monthYear) {
+		try {
+			LocalDate startDate = LocalDate.parse(monthYear + "-01");
+			LocalDate endDate = startDate.plusMonths(1).minusDays(1);
+
+			return (int) userActivityRepository
+				.countByUserIdAndActivityTypeAndCreatedAtBetween(
+					userId,
+					ActivityType.GROUP_AUTH_COMPLETE,
+					startDate.atStartOfDay(),
+					endDate.atTime(23, 59, 59)
+				);
+		} catch (Exception e) {
+			log.warn("그룹 인증 횟수 계산 실패: 사용자 ID = {}, 그룹 ID = {}", userId, groupId, e);
+			return 0;
 		}
 	}
 

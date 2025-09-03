@@ -20,4 +20,8 @@ public interface UserActivityRepository extends JpaRepository<UserActivity, Long
     List<UserActivity> findByGroupMemberInAndActivityTypeAndActivityDate(
             List<GroupMember> groupMembers, ActivityType activityType,
             LocalDate activityDate);
+
+    List<UserActivity> findByUserIdAndActivityTypeOrderByCreatedAtDesc(Long userId, ActivityType activityType);
+
+    long countByUserIdAndActivityTypeAndCreatedAtBetween(Long userId, ActivityType activityType, LocalDateTime startDate, LocalDateTime endDate);
 }
