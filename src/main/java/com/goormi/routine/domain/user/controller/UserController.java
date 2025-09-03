@@ -33,15 +33,6 @@ public class UserController {
 		return ApiResponse.success(userService.updateProfile(userId, request));
 	}
 
-	@Operation(summary = "설정 변경", description = "알림 설정과 다크모드 여부를 수정합니다")
-	@PutMapping("/me/settings")
-	public ApiResponse<UserResponse> updateSettings(
-		@AuthenticationPrincipal Long userId,
-		@RequestBody UserRequest request
-	) {
-		return ApiResponse.success(userService.updateSettings(userId, request));
-	}
-
 	@Operation(summary = "타 사용자 프로필 조회", description = "특정 사용자의 공개 프로필 정보를 조회합니다")
 	@GetMapping("/{userId}")
 	public ApiResponse<UserResponse> getUserProfile(@PathVariable Long userId) {

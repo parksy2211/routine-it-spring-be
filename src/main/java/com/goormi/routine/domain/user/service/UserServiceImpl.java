@@ -34,8 +34,6 @@ public class UserServiceImpl implements UserService {
 	@Override
 	public UserResponse updateSettings(Long userId, UserRequest request) {
 		User user = userRepository.findById(userId).orElseThrow();
-		user.updateSettings(request.isAlarmOn(), request.isDarkMode());
-
 		userRepository.save(user);
 
 		return toResponse(user);
@@ -69,8 +67,6 @@ public class UserServiceImpl implements UserService {
 			.nickname(user.getNickname())
 			.profileMessage(user.getProfileMessage())
 			.profileImageUrl(user.getProfileImageUrl())
-			.isAlarmOn(true)
-			.isDarkMode(false)
 			.build();
 	}
 }
