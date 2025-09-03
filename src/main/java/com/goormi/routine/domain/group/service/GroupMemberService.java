@@ -13,8 +13,8 @@ public interface GroupMemberService {
     GroupMemberResponse addMember(Long userId, Long groupId, GroupJoinRequest request);
 
     // -- Read
-    List<GroupMemberResponse> getGroupsByRole(Long groupId, GroupMemberRole role);
-    List<GroupMemberResponse> getGroupsByStatus(Long groupId, GroupMemberStatus status);
+    List<GroupMemberResponse> getGroupMembersByRole(Long groupId, GroupMemberRole role);
+    List<GroupMemberResponse> getGroupMembersByStatus(Long groupId, GroupMemberStatus status);
 
     // -- Update
     GroupMemberResponse updateMemberStatus(Long leaderId, LeaderAnswerRequest request);

@@ -58,13 +58,18 @@ public class GroupMemberController {
             @RequestParam(required = false) GroupMemberStatus status) {
 
         List<GroupMemberResponse> responses;
-        if (role != null) {
-            responses = groupMemberService.getGroupsByRole(groupId, role);
+        if (role != null && status != null) {
+            List<GroupMemberResponse> byRole = groupMemberService.getGroupMembersByRole(groupId, role);
+            List<GroupMemberResponse> byStatus = groupMemberService.getGroupMembersByStatus(groupId, status);
+            byRole.retainAll(byStatus);
+            responses = byRole;
+        } else if (role != null) {
+            responses = groupMemberService.getGroupMembersByRole(groupId, role);
         } else if (status != null) {
-            responses = groupMemberService.getGroupsByStatus(groupId, status);
+            responses = groupMemberService.getGroupMembersByStatus(groupId, status);
         } else {
             // 기본적으로는 JOINED 상태의 멤버 목록을 반환
-            responses = groupMemberService.getGroupsByStatus(groupId, GroupMemberStatus.JOINED);
+            responses = groupMemberService.getGroupMembersByStatus(groupId, GroupMemberStatus.JOINED);
         }
         return ResponseEntity.ok(responses);
     }
