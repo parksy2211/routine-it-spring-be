@@ -74,14 +74,14 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional(readOnly = true)
     public List<NotificationResponse> getNotificationsByReceiver(Long receiverId) {
-        List<Notification> notifications = notificationRepository.findByReceiverOrderByCreatedAtDesc(receiverId);
+        List<Notification> notifications = notificationRepository.findByReceiver_IdOrderByCreatedAtDesc(receiverId);
         return notifications.stream().map(NotificationResponse::from).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<NotificationResponse> getNotificationsByNotificationType(Long receiverId, NotificationType notificationType) {
-        List<Notification> notifications = notificationRepository.findByReceiverAndNotificationType(receiverId, notificationType);
+        List<Notification> notifications = notificationRepository.findByReceiver_IdAndNotificationType(receiverId, notificationType);
         return notifications.stream().map(NotificationResponse::from).toList();
     }
 
