@@ -2,11 +2,12 @@ name: Publish API Documentation to GitBook
 
 on:
   push:
-    branches: [main]
+    branches: [develop]
     paths:
       - 'src/**'
       - 'build.gradle'
       - 'gradle/**'
+      - '.github'
   workflow_dispatch:
 
 jobs:
