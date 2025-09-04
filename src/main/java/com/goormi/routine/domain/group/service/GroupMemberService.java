@@ -16,6 +16,9 @@ public interface GroupMemberService {
     List<GroupMemberResponse> getGroupMembersByRole(Long groupId, GroupMemberRole role);
     List<GroupMemberResponse> getGroupMembersByStatus(Long groupId, GroupMemberStatus status);
 
+    // 그룹 멤버들의 인증 미인증 구분을 위함.
+    List<GroupMemberResponse> getJoinedGroupMembersWithActivity(Long groupId);
+
     // -- Update
     GroupMemberResponse updateMemberStatus(Long leaderId, LeaderAnswerRequest request);
     GroupMemberResponse updateMemberRole(Long leaderId, LeaderAnswerRequest request);

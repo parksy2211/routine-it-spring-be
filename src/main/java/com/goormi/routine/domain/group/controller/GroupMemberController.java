@@ -41,6 +41,7 @@ public class GroupMemberController {
                                                                                       @Valid @RequestBody GroupJoinRequest request) {
 
         GroupMemberResponse response = groupMemberService.addMember(userId, groupId, request);
+
         return ResponseEntity.ok(response);
     }
 
@@ -69,7 +70,7 @@ public class GroupMemberController {
             responses = groupMemberService.getGroupMembersByStatus(groupId, status);
         } else {
             // 기본적으로는 JOINED 상태의 멤버 목록을 반환
-            responses = groupMemberService.getGroupMembersByStatus(groupId, GroupMemberStatus.JOINED);
+            responses = groupMemberService.getJoinedGroupMembersWithActivity(groupId);
         }
         return ResponseEntity.ok(responses);
     }
