@@ -45,9 +45,7 @@ public class GroupMemberServiceImpl implements GroupMemberService {
     private final NotificationService notificationService;
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMemberRepository chatMemberRepository;
-    private final UserActivityRepository userActivityRepository;
 
-    private final NotificationService notificationService;
     private final UserActivityService userActivityService;
 
 
