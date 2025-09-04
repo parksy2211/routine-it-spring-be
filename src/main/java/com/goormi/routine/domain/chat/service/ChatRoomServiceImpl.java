@@ -200,9 +200,9 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         
         Page<ChatMessage> messages;
         if (beforeMessageId != null) {
-            messages = chatMessageRepository.findByRoomIdAndIdLessThanOrderBySentAtDesc(roomId, beforeMessageId, pageable);
+            messages = chatMessageRepository.findByRoomIdAndIdLessThanOrderByCreatedAtDesc(roomId, beforeMessageId, pageable);
         } else {
-            messages = chatMessageRepository.findByRoomIdOrderBySentAtDesc(roomId, pageable);
+            messages = chatMessageRepository.findByRoomIdOrderByCreatedAtDesc(roomId, pageable);
         }
         
         return messages.map(this::convertMessageToDto);
@@ -231,7 +231,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
                 .senderNickname(message.getSenderNickname())
                 .message(message.getMessage())
                 .messageType(message.getMessageType())
-                .sentAt(message.getSentAt())
+                .sentAt(message.getCreatedAt())
                 .build();
     }
 }

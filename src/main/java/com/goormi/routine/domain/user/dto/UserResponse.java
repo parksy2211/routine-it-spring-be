@@ -7,7 +7,5 @@ public record UserResponse(
 	Long id,
 	String nickname,
 	String profileMessage,
-	String profileImageUrl,
-	Boolean isAlarmOn,
-	Boolean isDarkMode
+	String profileImageUrl
 ) {}

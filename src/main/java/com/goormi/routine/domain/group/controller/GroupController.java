@@ -71,7 +71,12 @@ public class GroupController {
             @RequestParam(required = false) Boolean isActive) {
 
         List<GroupResponse> responses;
-        if (groupType != null) {
+        if (groupType != null && isActive != null) {
+            List<GroupResponse> byType = groupService.getGroupsByGroupType(groupType);
+            List<GroupResponse> byActive = groupService.getGroupsByIsActive(isActive);
+            byType.retainAll(byActive);
+            responses = byType;
+        } else if (groupType != null) {
             responses = groupService.getGroupsByGroupType(groupType);
         } else if (isActive != null) {
             responses = groupService.getGroupsByIsActive(isActive);
@@ -79,6 +84,37 @@ public class GroupController {
             // 기본적으로는 활성화된 그룹만 가져오도록 처리.
             responses = groupService.getGroupsByIsActive(true);
         }
+        return ResponseEntity.ok(responses);
+    }
+
+    /**
+     *  가입된 그룹목록 조회
+     */
+    @Operation(summary = "가입된 그룹 리스트 조회")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "그룹 조회 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
+    })
+    @GetMapping("joined")
+    public ResponseEntity<List<GroupResponse>> getJoinedGroups(@AuthenticationPrincipal Long userId) {
+
+        List<GroupResponse> responses = groupService.getJoinedGroups(userId);
+        return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * 리더의 그룹 목록 조회
+     */
+    @Operation(summary = "리더의 그룹 리스트 조회")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "그룹 조회 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
+    })
+    @GetMapping("/leader")
+    public ResponseEntity<List<GroupResponse>> getGroupsByLeader(@AuthenticationPrincipal Long leaderId) {
+        List<GroupResponse> responses = groupService.getGroupsByLeaderId(leaderId);
         return ResponseEntity.ok(responses);
     }
 
@@ -93,10 +129,9 @@ public class GroupController {
             @ApiResponse(responseCode = "404", description = "그룹을 찾을 수 없음")
     })
     @PutMapping("/{groupId}")
-    public ResponseEntity<GroupResponse> updateGroupInfo(/*@AuthenticationPrincipal*/ Long leaderId,
-                                                                  @PathVariable Long groupId,
-                                                                  @Valid @RequestBody GroupUpdateRequest request) {
-        // TODO: 인증 기능 구현 후 @AuthenticationPrincipal 등으로 교체 필요
+    public ResponseEntity<GroupResponse> updateGroupInfo(@AuthenticationPrincipal Long leaderId,
+                                                         @PathVariable Long groupId,
+                                                         @Valid @RequestBody GroupUpdateRequest request) {
         GroupResponse response = groupService.updateGroupInfo(leaderId, groupId, request);
         return ResponseEntity.ok(response);
     }
@@ -113,8 +148,7 @@ public class GroupController {
     })
     @DeleteMapping("/{groupId}")
     public ResponseEntity<Void> deleteGroup(@AuthenticationPrincipal Long leaderId,
-                                                                                   @PathVariable Long groupId) {
-        // TODO: 임시 User 객체 사용, 인증 기능 구현 후 @AuthenticationPrincipal 등으로 교체 필요
+                                            @PathVariable Long groupId) {
         groupService.deleteGroup(leaderId, groupId);
         return ResponseEntity.noContent().build();
     }

@@ -48,22 +48,6 @@ public class User {
     @Builder.Default
     private UserRole role = UserRole.USER;
 
-    @Column(
-        name = "is_alarm_on",
-        nullable = false,
-        columnDefinition = "BOOLEAN DEFAULT TRUE"
-    )
-    @Builder.Default
-    private Boolean isAlarmOn = true;
-
-    @Column(
-        name = "is_dark_mode",
-        nullable = false,
-        columnDefinition = "BOOLEAN DEFAULT FALSE"
-    )
-    @Builder.Default
-    private Boolean isDarkMode = false;
-
     @Column(nullable = false)
     @Builder.Default
     private boolean active = true;
@@ -106,11 +90,6 @@ public class User {
                 .profileImageUrl(profileImageUrl)
                 .role(UserRole.USER)
                 .build();
-    }
-
-    public void updateSettings(Boolean isAlarmOn, Boolean isDarkMode) {
-        if (isAlarmOn != null) this.isAlarmOn = isAlarmOn;
-        if (isDarkMode != null) this.isDarkMode = isDarkMode;
     }
 
     public enum UserRole {
