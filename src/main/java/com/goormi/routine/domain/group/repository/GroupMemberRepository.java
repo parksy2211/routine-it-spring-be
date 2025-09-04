@@ -16,35 +16,41 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
     Optional<GroupMember> findByGroupAndUser(Group group, User user);
     List<GroupMember> findAllByGroupAndRole(Group group, GroupMemberRole role);
     List<GroupMember> findAllByGroupAndStatus(Group group, GroupMemberStatus status);
-	List<GroupMember> findAllByUserAndStatus(User user, GroupMemberStatus status);
 
-	@Query("SELECT COUNT(gm) FROM GroupMember gm WHERE gm.group.groupId = :groupId")
-	int countMembersByGroupId(@Param("groupId") Long groupId);
+    List<GroupMember> findAllByUserAndStatus(User user, GroupMemberStatus status);
 
-	@Query("""
-    SELECT COUNT(DISTINCT gm.user.id)
-    FROM GroupMember gm
-    JOIN UserActivity ua ON gm.user.id = ua.user.id
-    WHERE gm.group.groupId = :groupId
-      AND gm.status = 'JOINED'
-      AND ua.activityType = 'ROUTINE_AUTH'
-      AND FUNCTION('DATE_FORMAT', ua.createdAt, '%Y-%m') = :monthYear
-""")
-	int countActiveByGroupId(@Param("groupId") Long groupId,
-		@Param("monthYear") String monthYear);
+    @Query("SELECT COUNT(gm) FROM GroupMember gm WHERE gm.group.groupId = :groupId")
+    int countMembersByGroupId(@Param("groupId") Long groupId);
 
-	@Query("""
-    SELECT COUNT(ua)
-    FROM UserActivity ua
-    JOIN GroupMember gm ON ua.user.id = gm.user.id
-    WHERE gm.group.groupId = :groupId
-      AND gm.status = 'JOINED'
-      AND ua.activityType = 'ROUTINE_AUTH'
-      AND FUNCTION('DATE_FORMAT', ua.createdAt, '%Y-%m') = :monthYear
-""")
-	int countAuthByGroupId(@Param("groupId") Long groupId,
-		@Param("monthYear") String monthYear);
+    @Query("""
+      SELECT COUNT(DISTINCT gm.user.id)
+      FROM GroupMember gm
+      JOIN UserActivity ua ON gm.user.id = ua.user.id
+      WHERE gm.group.groupId = :groupId
+        AND gm.status = 'JOINED'
+        AND ua.activityType = 'ROUTINE_AUTH'
+        AND FUNCTION('DATE_FORMAT', ua.createdAt, '%Y-%m') = :monthYear
+      """)
+    int countActiveByGroupId(@Param("groupId") Long groupId,
+      @Param("monthYear") String monthYear);
 
-	@Query("SELECT gm FROM GroupMember gm WHERE gm.user.id = :userId AND gm.status = 'JOINED'")
-	List<GroupMember> findActiveGroupsByUserId(@Param("userId") Long userId);
+    @Query("""
+      SELECT COUNT(ua)
+      FROM UserActivity ua
+      JOIN GroupMember gm ON ua.user.id = gm.user.id
+      WHERE gm.group.groupId = :groupId
+        AND gm.status = 'JOINED'
+        AND ua.activityType = 'ROUTINE_AUTH'
+        AND FUNCTION('DATE_FORMAT', ua.createdAt, '%Y-%m') = :monthYear
+      """)
+    int countAuthByGroupId(@Param("groupId") Long groupId,
+      @Param("monthYear") String monthYear);
+
+    @Query("SELECT gm FROM GroupMember gm WHERE gm.user.id = :userId AND gm.status = 'JOINED'")
+    List<GroupMember> findActiveGroupsByUserId(@Param("userId") Long userId);
+
+  
+    @Query("SELECT gm FROM GroupMember gm WHERE gm.group.id = :groupId AND gm.user.id = :userId AND gm.status = 'JOINED'")
+    Optional<GroupMember> findByGroupIdAndUserIdAndIsActiveTrue(@Param("groupId") Long groupId, @Param("userId") Long userId);
+
 }
