@@ -41,9 +41,9 @@ jobs:
           echo "Building application..."
           ./gradlew clean build -x test
           
-          echo "Starting application with CI profile..."
+          echo "Starting application with docker profile..."
           # 애플리케이션을 백그라운드에서 시작하여 OpenAPI JSON 생성
-          nohup ./gradlew bootRun --args='--spring.profiles.active=ci' > app.log 2>&1 &
+          nohup ./gradlew bootRun --args='--spring.profiles.active=docker' > app.log 2>&1 &
           APP_PID=$!
           
           echo "Waiting for application to start..."
