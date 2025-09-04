@@ -36,7 +36,7 @@ jobs:
 
       - name: Build & Generate OpenAPI
         env:
-          SPRING_PROFILES_ACTIVE: ci
+          SPRING_PROFILES_ACTIVE: docker
         run: |
           echo "Building application..."
           ./gradlew clean build -x test
