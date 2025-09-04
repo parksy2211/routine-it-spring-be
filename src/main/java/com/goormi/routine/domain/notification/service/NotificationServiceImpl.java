@@ -14,6 +14,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 
@@ -62,10 +65,15 @@ public class NotificationServiceImpl implements NotificationService {
         } else if (notificationType == NotificationType.GROUP_TODAY_AUTH_REQUEST) {
             conent = sender.getNickname() + "님이 "
                     + group.getGroupName() +"의 그룹 인증을 요청했습니다.";
+        } else if (notificationType == NotificationType.MONTHLY_REVIEW) {
+            String monthYear = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
+            content = receiver.getNickname() + "님의 "
+                + monthYear + " 월간 루틴 성과 리포트가 준비되었습니다! 확인해보세요.";
         }
+      
         Notification notification =
                 Notification.createNotification(conent, notificationType, sender, receiver, group);
-
+      
         Notification saved = notificationRepository.save(notification);
 
         return NotificationResponse.from(saved);

@@ -10,6 +10,9 @@ import com.goormi.routine.domain.notification.entity.NotificationType;
 import com.goormi.routine.domain.notification.service.NotificationService;
 import com.goormi.routine.domain.user.entity.User;
 import com.goormi.routine.domain.user.repository.UserRepository;
+import com.goormi.routine.domain.userActivity.entity.ActivityType;
+import com.goormi.routine.domain.userActivity.entity.UserActivity;
+import com.goormi.routine.domain.userActivity.repository.UserActivityRepository;
 import com.goormi.routine.domain.chat.entity.ChatRoom;
 import com.goormi.routine.domain.chat.entity.ChatMember;
 import com.goormi.routine.domain.chat.entity.ChatMember.MemberRole;
@@ -38,12 +41,15 @@ public class GroupMemberServiceImpl implements GroupMemberService {
     private final GroupMemberRepository groupMemberRepository;
     private final GroupRepository groupRepository;
     private final UserRepository userRepository;
+    private final UserActivityRepository userActivityRepository;
+    private final NotificationService notificationService;
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMemberRepository chatMemberRepository;
     private final UserActivityRepository userActivityRepository;
 
     private final NotificationService notificationService;
     private final UserActivityService userActivityService;
+
 
     // 그룹에 멤버가 참여 신청시 펜딩으로 추가
     @Override
@@ -83,6 +89,7 @@ public class GroupMemberServiceImpl implements GroupMemberService {
         if(group.getGroupType() == GroupType.FREE){
             groupMember.changeStatus(GroupMemberStatus.JOINED);
             group.addMemberCnt();
+
             // 유저에게 가입됨을 알림
             notificationService.createNotification(NotificationType.GROUP_MEMBER_STATUS_UPDATED,
                     group.getLeader().getId(),userId, group.getGroupId());
@@ -106,6 +113,7 @@ public class GroupMemberServiceImpl implements GroupMemberService {
             }
         }
         groupMemberRepository.save(groupMember);
+
 
         return GroupMemberResponse.from(groupMember);
     }
