@@ -5,6 +5,7 @@ import com.goormi.routine.domain.group.dto.request.LeaderAnswerRequest;
 import com.goormi.routine.domain.group.dto.response.GroupMemberResponse;
 import com.goormi.routine.domain.group.entity.GroupMemberRole;
 import com.goormi.routine.domain.group.entity.GroupMemberStatus;
+import com.goormi.routine.domain.userActivity.dto.UserActivityRequest;
 
 import java.util.List;
 
@@ -22,6 +23,8 @@ public interface GroupMemberService {
     // -- Update
     GroupMemberResponse updateMemberStatus(Long leaderId, LeaderAnswerRequest request);
     GroupMemberResponse updateMemberRole(Long leaderId, LeaderAnswerRequest request);
+
+    void approveAuthRequest(Long leaderId, Long groupId, LeaderAnswerRequest leaderAnswerRequest, UserActivityRequest activityRequest);
 
     // -- Delete
     void delete(Long userId, Long groupId);
