@@ -1,6 +1,7 @@
 package com.goormi.routine.config;
 
 import com.goormi.routine.domain.auth.filter.JwtAuthenticationFilter;
+import com.goormi.routine.domain.auth.handler.CustomAuthenticationEntryPoint;
 import com.goormi.routine.domain.auth.service.CustomOAuth2UserService;
 import com.goormi.routine.domain.auth.service.OAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class SecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -53,6 +55,9 @@ public class SecurityConfig {
                     .userService(customOAuth2UserService)
                 )
                 .successHandler(oAuth2SuccessHandler)
+            )
+            .exceptionHandling(exceptions -> exceptions
+                .authenticationEntryPoint(customAuthenticationEntryPoint)
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         
