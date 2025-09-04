@@ -1,8 +1,11 @@
 package com.goormi.routine.domain.auth.service;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
@@ -68,6 +71,29 @@ public class JwtTokenProvider {
         } catch (Exception e) {
             return false;
         }
+    }
+    
+    public TokenValidationResult validateTokenWithDetails(String token) {
+        try {
+            getClaims(token);
+            return TokenValidationResult.VALID;
+        } catch (ExpiredJwtException e) {
+            return TokenValidationResult.EXPIRED;
+        } catch (MalformedJwtException e) {
+            return TokenValidationResult.MALFORMED;
+        } catch (SignatureException e) {
+            return TokenValidationResult.INVALID_SIGNATURE;
+        } catch (Exception e) {
+            return TokenValidationResult.INVALID;
+        }
+    }
+    
+    public enum TokenValidationResult {
+        VALID,
+        EXPIRED,
+        MALFORMED,
+        INVALID_SIGNATURE,
+        INVALID
     }
     
     public long getRefreshTokenExpiration() {
