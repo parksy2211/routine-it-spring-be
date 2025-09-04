@@ -1,10 +1,10 @@
-package com.goormi.routine.domain.scheduler.service;
+package com.goormi.routine.common.scheduler.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import com.goormi.routine.domain.scheduler.repository.SchedulerRedisRepository;
+import com.goormi.routine.common.scheduler.repository.SchedulerRedisRepository;
 import com.goormi.routine.domain.ranking.service.RankingService;
 import com.goormi.routine.domain.review.service.ReviewService;
 import com.goormi.routine.domain.user.repository.UserRepository;

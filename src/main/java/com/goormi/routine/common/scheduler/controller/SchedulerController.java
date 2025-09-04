@@ -1,8 +1,8 @@
-package com.goormi.routine.domain.scheduler.controller;
+package com.goormi.routine.common.scheduler.controller;
 
 import com.goormi.routine.common.response.ApiResponse;
-import com.goormi.routine.domain.scheduler.service.MonthlySchedulerService;
-import com.goormi.routine.domain.scheduler.service.SchedulerManagementService;
+import com.goormi.routine.common.scheduler.service.MonthlySchedulerService;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 public class SchedulerController {
 
 	private final MonthlySchedulerService monthlySchedulerService;
-	private final SchedulerManagementService schedulerManagementService;
 
 	@Operation(
 		summary = "수동 월간 초기화 실행",

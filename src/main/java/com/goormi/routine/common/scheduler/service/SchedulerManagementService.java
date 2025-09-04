@@ -1,4 +1,4 @@
-package com.goormi.routine.domain.scheduler.service;
+package com.goormi.routine.common.scheduler.service;
 
 import java.util.Map;
 
