@@ -2,18 +2,19 @@ name: Publish API Documentation to GitBook
 
 on:
   push:
-    branches: [main]
+    branches: [develop]
     paths:
       - 'src/**'
       - 'build.gradle'
       - 'gradle/**'
+      - '.github'
   workflow_dispatch:
 
 jobs:
   publish-docs:
     runs-on: ubuntu-latest
     
-    if: github.repository == 'Goorda-Goormi/routine-it-spring-be'
+#    if: github.repository == 'Goorda-Goormi/routine-it-spring-be'
 
     steps:
       - name: Checkout Repository
@@ -74,20 +75,27 @@ jobs:
           
           # SpringDoc이 초기화될 시간을 추가로 제공
           echo "Waiting for SpringDoc to initialize..."
-          sleep 5
+          sleep 10
           
           echo "Downloading OpenAPI JSON..."
+          # 네트워크 및 포트 상태 확인
+          echo "Network debugging:"
+          netstat -tlnp | grep 8080 || echo "Port 8080 not bound"
+          
+          echo "Process debugging:"
+          ps aux | grep java || echo "No Java process found"
+          
           # 사용 가능한 엔드포인트 확인
           echo "Testing endpoints:"
           echo "1. Health check ping:"
-          curl -s http://localhost:8080/api/health/ping && echo ""
+          curl -v http://localhost:8080/api/health/ping 2>&1 || echo "Ping failed"
           
           echo "2. Health check full:"
-          curl -s http://localhost:8080/api/health | python3 -m json.tool 2>/dev/null || echo "Failed to get health"
+          curl -v http://localhost:8080/api/health 2>&1 | head -20 || echo "Health check failed"
           
           # OpenAPI 엔드포인트 확인
-          echo "3. Checking OpenAPI endpoint (should return 200):"
-          curl -I http://localhost:8080/v3/api-docs 2>&1 | head -3
+          echo "3. Checking OpenAPI endpoint:"
+          curl -v http://localhost:8080/v3/api-docs 2>&1 | head -20 || echo "OpenAPI endpoint failed"
           
           # OpenAPI JSON 다운로드 (여러 번 시도)
           for attempt in 1 2 3; do

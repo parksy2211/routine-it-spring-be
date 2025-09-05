@@ -45,7 +45,6 @@ public class SecurityConfig {
                     "/webjars/**",
                     "/login/oauth2/**",
                     "/oauth2/**",
-                    "/api/auth/signup",
                     "/api/auth/check-nickname",
                     "/api/auth/refresh",
                     "/ws/**"
