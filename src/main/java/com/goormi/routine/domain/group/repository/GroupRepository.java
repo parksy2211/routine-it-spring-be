@@ -12,4 +12,5 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     List<Group> findAllByLeaderId(Long leaderId);
     List<Group> findAllByGroupType(GroupType groupType);
     List<Group> findAllByIsActive(boolean isActive);
+    List<Group> findAllByCategory(String category);
 }

@@ -61,29 +61,16 @@ public class GroupController {
     /**
      * 그룹 목록 조회 (필터링 가능)
      */
-    @Operation(summary = "그룹 리스트 조회")
+    @Operation(summary = "그룹 리스트 조회", description = "active 그룹들 중 입력값에 따라 필터링하여 보여줌")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "그룹 조회 성공")
     })
     @GetMapping
     public ResponseEntity<List<GroupResponse>> getGroups(
             @RequestParam(required = false) GroupType groupType,
-            @RequestParam(required = false) Boolean isActive) {
+            @RequestParam(required = false) String category) {
 
-        List<GroupResponse> responses;
-        if (groupType != null && isActive != null) {
-            List<GroupResponse> byType = groupService.getGroupsByGroupType(groupType);
-            List<GroupResponse> byActive = groupService.getGroupsByIsActive(isActive);
-            byType.retainAll(byActive);
-            responses = byType;
-        } else if (groupType != null) {
-            responses = groupService.getGroupsByGroupType(groupType);
-        } else if (isActive != null) {
-            responses = groupService.getGroupsByIsActive(isActive);
-        } else {
-            // 기본적으로는 활성화된 그룹만 가져오도록 처리.
-            responses = groupService.getGroupsByIsActive(true);
-        }
+        List<GroupResponse> responses = groupService.getGroupsWithFiltering(groupType, category);
         return ResponseEntity.ok(responses);
     }
 
