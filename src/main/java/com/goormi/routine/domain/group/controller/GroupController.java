@@ -90,31 +90,36 @@ public class GroupController {
     /**
      *  가입된 그룹목록 조회
      */
-    @Operation(summary = "가입된 그룹 리스트 조회")
+    @Operation(summary = "가입된 그룹 리스트 조회",
+            description = "특정 유저의 가입된 그룹 목록을 조회, 타 사용자의 userId가 입력되지 않으면 본인 목록조회")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "그룹 조회 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청"),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     })
     @GetMapping("joined")
-    public ResponseEntity<List<GroupResponse>> getJoinedGroups(@AuthenticationPrincipal Long userId) {
-
-        List<GroupResponse> responses = groupService.getJoinedGroups(userId);
+    public ResponseEntity<List<GroupResponse>> getJoinedGroups(
+            @AuthenticationPrincipal Long myUserId, @RequestParam(required = false) Long userId) {
+        Long id = userId != null ? userId : myUserId;
+        List<GroupResponse> responses = groupService.getJoinedGroups(id);
         return ResponseEntity.ok(responses);
     }
 
     /**
      * 리더의 그룹 목록 조회
      */
-    @Operation(summary = "리더의 그룹 리스트 조회")
+    @Operation(summary = "리더의 그룹 리스트 조회",
+            description = "특정 유저가 리더인 그룹목록을 조회, 타 사용자의 userId가 입력되지 않으면 본인의 목록조회")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "그룹 조회 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청"),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     })
     @GetMapping("/leader")
-    public ResponseEntity<List<GroupResponse>> getGroupsByLeader(@AuthenticationPrincipal Long leaderId) {
-        List<GroupResponse> responses = groupService.getGroupsByLeaderId(leaderId);
+    public ResponseEntity<List<GroupResponse>> getGroupsByLeader(@AuthenticationPrincipal Long leaderId,
+                                                                 @RequestParam(required = false) Long userId) {
+        Long id = userId != null ? userId : leaderId;
+        List<GroupResponse> responses = groupService.getGroupsByLeaderId(id);
         return ResponseEntity.ok(responses);
     }
 
