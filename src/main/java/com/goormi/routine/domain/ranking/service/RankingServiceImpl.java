@@ -26,6 +26,7 @@ import com.goormi.routine.domain.userActivity.entity.ActivityType;
 import com.goormi.routine.domain.userActivity.entity.UserActivity;
 import com.goormi.routine.domain.userActivity.repository.UserActivityRepository;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -68,34 +69,48 @@ public class RankingServiceImpl implements RankingService {
 
 	@Override
 	public List<GlobalGroupRankingResponse> getGlobalGroupRankings() {
-		List<Ranking> groupRankings = rankingRepository.findGroupRankingsOrderByScore();
 		String monthYear = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
 
+		List<Ranking> groupRankings = rankingRepository.findGroupRankingsOrderByScore();
+
+		List<GroupScoreData> groupScoreList = groupRankings.stream()
+			.map(ranking -> {
+				Long groupId = ranking.getGroupId();
+				Group group = ranking.getGroup();
+
+				int membersTotalScore = calculateGroupMembersTotalScore(groupId);
+
+				int participationBonus = calculateSimpleParticipationBonus(groupId, monthYear);
+
+				int finalScore = membersTotalScore + participationBonus;
+
+				return new GroupScoreData(groupId, group, finalScore, membersTotalScore, participationBonus);
+			})
+			.sorted((a, b) -> Integer.compare(b.getFinalScore(), a.getFinalScore())) // 점수 내림차순 정렬
+			.collect(Collectors.toList());
+
 		List<GlobalGroupRankingResponse.GroupRankingItem> rankingItems =
-			IntStream.range(0, groupRankings.size())
+			IntStream.range(0, groupScoreList.size())
 				.mapToObj(index -> {
-					Ranking ranking = groupRankings.get(index);
-					Group group = ranking.getGroup();
-					int rank = index + 1;
+					GroupScoreData scoreData = groupScoreList.get(index);
+					Long groupId = scoreData.getGroupId();
+					Group group = scoreData.getGroup();
 
-					int memberCount = groupMemberRepository.countMembersByGroupId(ranking.getGroupId());
-					int activeMembers = groupMemberRepository.countActiveByGroupId(ranking.getGroupId(), monthYear);
-					int totalAuthCount = groupMemberRepository.countAuthByGroupId(ranking.getGroupId(), monthYear);
+					int memberCount = groupMemberRepository.countMembersByGroupId(groupId);
+					int activeMembers = groupMemberRepository.countActiveByGroupId(groupId, monthYear);
+					int totalAuthCount = groupMemberRepository.countAuthByGroupId(groupId, monthYear);
 
-					double participationRate = memberCount > 0
-						? (double)activeMembers / memberCount : 0.0;
-
-					double averageAuthPerMember = memberCount > 0
-						? (double)totalAuthCount / memberCount : 0.0;
+					double participationRate = memberCount > 0 ? (double)activeMembers / memberCount : 0.0;
+					double averageAuthPerMember = memberCount > 0 ? (double)totalAuthCount / memberCount : 0.0;
 
 					return GlobalGroupRankingResponse.GroupRankingItem.builder()
-						.rank(rank)
-						.groupId(ranking.getGroupId())
+						.rank(index + 1) // 새로운 순위
+						.groupId(groupId)
 						.groupName(group != null ? group.getGroupName() : "삭제된 그룹")
 						.groupImageUrl(group != null ? group.getGroupImageUrl() : null)
 						.category(group != null ? group.getCategory() : null)
 						.groupType(group != null ? group.getGroupType().name() : null)
-						.totalScore(ranking.getScore())
+						.totalScore(scoreData.getFinalScore())
 						.memberCount(memberCount)
 						.activeMembers(activeMembers)
 						.participationRate(Math.round(participationRate * 100.0) / 100.0)
@@ -108,7 +123,7 @@ public class RankingServiceImpl implements RankingService {
 		GlobalGroupRankingResponse response = GlobalGroupRankingResponse.builder()
 			.rankings(rankingItems)
 			.monthYear(monthYear)
-			.totalGroups(groupRankings.size())
+			.totalGroups(rankingItems.size())
 			.updatedAt(LocalDateTime.now())
 			.build();
 
@@ -388,5 +403,65 @@ public class RankingServiceImpl implements RankingService {
 			return 15;
 		}
 		return 0;
+	}
+
+	private int calculateGroupMembersTotalScore(Long groupId) {
+		List<Ranking> memberRankings = rankingRepository.findAllUsersByGroupIdOrderByScore(groupId);
+		return memberRankings.stream().mapToInt(Ranking::getScore).sum();
+	}
+
+	private int calculateSimpleParticipationBonus(Long groupId, String monthYear) {
+		try {
+			int memberCount = groupMemberRepository.countMembersByGroupId(groupId);
+			int activeMembers = groupMemberRepository.countActiveByGroupId(groupId, monthYear);
+
+			if (memberCount == 0) {
+				log.debug("그룹 {} 멤버 수가 0명이므로 보너스 0점", groupId);
+				return 0;
+			}
+
+			double participationRate = (double) activeMembers / memberCount;
+
+			int participationBonus = 0;
+			if (participationRate >= 0.8) {
+				participationBonus = 15;
+			} else if (participationRate >= 0.6) {
+				participationBonus = 10;
+			} else if (participationRate >= 0.4) {
+				participationBonus = 5;
+			}
+
+			int memberCountBonus = 0;
+			if (memberCount >= 10) {
+				memberCountBonus = 10;
+			} else if (memberCount >= 5) {
+				memberCountBonus = 5;
+			}
+
+			int totalBonus = participationBonus + memberCountBonus;
+
+			return totalBonus;
+
+		} catch (Exception e) {
+			log.warn("그룹 {} 참여도 보너스 계산 실패: {}", groupId, e.getMessage());
+			return 0;
+		}
+	}
+
+	@Getter
+	private static class GroupScoreData {
+		private final Long groupId;
+		private final Group group;
+		private final int finalScore;
+		private final int membersTotalScore;
+		private final int participationBonus;
+
+		public GroupScoreData(Long groupId, Group group, int finalScore, int membersTotalScore, int participationBonus) {
+			this.groupId = groupId;
+			this.group = group;
+			this.finalScore = finalScore;
+			this.membersTotalScore = membersTotalScore;
+			this.participationBonus = participationBonus;
+		}
 	}
 }
