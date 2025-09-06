@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -22,6 +23,7 @@ import com.goormi.routine.domain.ranking.entity.Ranking;
 import com.goormi.routine.domain.ranking.repository.RankingRedisRepository;
 import com.goormi.routine.domain.ranking.repository.RankingRepository;
 import com.goormi.routine.domain.user.entity.User;
+import com.goormi.routine.domain.user.repository.UserRepository;
 import com.goormi.routine.domain.userActivity.entity.ActivityType;
 import com.goormi.routine.domain.userActivity.entity.UserActivity;
 import com.goormi.routine.domain.userActivity.repository.UserActivityRepository;
@@ -36,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 public class RankingServiceImpl implements RankingService {
 
+	private final UserRepository userRepository;
 	private final RankingRepository rankingRepository;
 	private final GroupMemberRepository groupMemberRepository;
 	private final RankingRedisRepository rankingRedisRepository;
@@ -44,24 +47,36 @@ public class RankingServiceImpl implements RankingService {
 	@Override
 	public List<PersonalRankingResponse> getPersonalRankings() {
 		String currentMonthYear = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
-		List<Ranking> personalRankings = rankingRepository.findPersonalRankingsOrderByScore();
+		List<Ranking> allGroupRankings = rankingRepository.findGroupRankingsOrderByScore();
 
-		return IntStream.range(0, personalRankings.size())
+		Map<Long, Integer> userTotalScores = allGroupRankings.stream()
+			.collect(Collectors.groupingBy(
+				Ranking::getUserId,
+				Collectors.summingInt(Ranking::getScore)
+			));
+
+		List<Map.Entry<Long, Integer>> sortedUsers = userTotalScores.entrySet().stream()
+			.sorted((a, b) -> b.getValue().compareTo(a.getValue()))
+			.collect(Collectors.toList());
+
+		return IntStream.range(0, sortedUsers.size())
 			.mapToObj(index -> {
-				Ranking ranking = personalRankings.get(index);
-				User user = ranking.getUser();
+				Map.Entry<Long, Integer> entry = sortedUsers.get(index);
+				Long userId = entry.getKey();
+				Integer totalScore = entry.getValue();
+
+				User user = userRepository.findById(userId).orElse(null);
 
 				return PersonalRankingResponse.builder()
 					.currentRank(index + 1)
-					.userId(ranking.getUserId())
+					.userId(userId)
 					.nickname(user != null ? user.getNickname() : "탈퇴한 사용자")
-					.profileImageUrl(user != null ? user.getProfileImageUrl() : null)
-					.totalScore(ranking.getScore())
-					.totalParticipants(personalRankings.size())
+					.totalScore(totalScore)
+					.totalParticipants(sortedUsers.size())
 					.monthYear(currentMonthYear)
-					.consecutiveDays(calculateConsecutiveDays(ranking.getUserId()))
-					.groupDetails(getGroupDetailsByUserId(ranking.getUserId(), currentMonthYear))
-					.updatedAt(ranking.getUpdatedAt())
+					.consecutiveDays(calculateConsecutiveDays(userId))
+					.groupDetails(getGroupDetailsByUserId(userId, currentMonthYear))
+					.updatedAt(LocalDateTime.now())
 					.build();
 			})
 			.collect(Collectors.toList());
@@ -280,8 +295,10 @@ public class RankingServiceImpl implements RankingService {
 			throw new IllegalArgumentException("사용자 ID는 필수입니다.");
 		}
 
-		return rankingRepository.getTotalScoreByUserId(userId).orElse(0L);
-	}
+		return rankingRepository.findAll().stream()
+			.filter(ranking -> userId.equals(ranking.getUserId()) && ranking.getGroupId() != null)
+			.mapToInt(Ranking::getScore)
+			.sum();}
 
 	@Override
 	@Transactional
