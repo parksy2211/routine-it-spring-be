@@ -39,6 +39,7 @@ public class GroupMemberResponse {
         return GroupMemberResponse.builder()
                 .groupMemberId(groupMember.getMemberId())
                 .groupName(groupMember.getGroup().getGroupName())
+                .memberName(groupMember.getUser().getNickname())
                 .status(groupMember.getStatus())
                 .role(groupMember.getRole())
                 .message(isAuthToday == true ? "인증" : "미인증")
