@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -18,6 +20,10 @@ import com.goormi.routine.domain.review.dto.MonthlyReviewResponse;
 import com.goormi.routine.domain.review.repository.ReviewRedisRepository;
 import com.goormi.routine.domain.user.entity.User;
 import com.goormi.routine.domain.user.repository.UserRepository;
+import com.goormi.routine.domain.userActivity.entity.ActivityType;
+import com.goormi.routine.domain.userActivity.entity.UserActivity;
+import com.goormi.routine.domain.userActivity.repository.UserActivityRepository;
+import com.goormi.routine.personal_routines.domain.PersonalRoutine;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +38,7 @@ public class ReviewServiceImpl implements ReviewService{
 	private final NotificationService notificationService;
 	private final GroupMemberRepository groupMemberRepository;
 	private final ReviewRedisRepository reviewRedisRepository;
+	private final UserActivityRepository userActivityRepository;
 	private final ObjectMapper objectMapper;
 
 	@Override
@@ -137,6 +144,8 @@ public class ReviewServiceImpl implements ReviewService{
 			long currentScore = rankingService.getTotalScoreByUser(userId);
 			int currentGroups = groupMemberRepository.findActiveGroupsByUserId(userId).size();
 
+			int personalRoutineAchievementRate = calculatePersonalRoutineAchievementRate(userId, monthYear);
+
 			String previousMonth = getPreviousMonth(monthYear);
 			MonthlyReviewResponse previousReview = null;
 			if (previousMonth != null) {
@@ -174,12 +183,91 @@ public class ReviewServiceImpl implements ReviewService{
 				.monthYear(monthYear)
 				.totalScore((int)currentScore)
 				.participatingGroups(currentGroups)
+				.personalRoutineAchievementRate(personalRoutineAchievementRate)
+				.achievements(achievements)
+				.scoreDifference(scoreDifference)
+				.groupDifference(groupDifference)
 				.createdAt(LocalDateTime.now())
 				.build();
 
 		} catch (Exception e) {
 			log.error("월간 회고 계산 실패: 사용자 ID = {}, 월 = {}", userId, monthYear, e);
 			throw new RuntimeException("회고 계산 중 오류가 발생했습니다.", e);
+		}
+	}
+
+	private int calculatePersonalRoutineAchievementRate(Long userId, String monthYear) {
+		try {
+			LocalDate startDate = LocalDate.parse(monthYear + "-01");
+			LocalDate endDate = startDate.plusMonths(1).minusDays(1);
+
+			List<UserActivity> personalRoutineActivities = userActivityRepository
+				.findByUserIdAndActivityTypeAndActivityDateBetween(
+					userId,
+					ActivityType.PERSONAL_ROUTINE_COMPLETE,
+					startDate,
+					endDate
+				);
+
+			if (personalRoutineActivities.isEmpty()) {
+				return 0;
+			}
+
+			Map<Long, List<UserActivity>> activitiesByRoutine = personalRoutineActivities.stream()
+				.filter(activity -> activity.getPersonalRoutine() != null)
+				.collect(Collectors.groupingBy(activity -> activity.getPersonalRoutine().getRoutineId().longValue()));
+
+			if (activitiesByRoutine.isEmpty()) {
+				return 0;
+			}
+
+			List<Double> achievementRates = new ArrayList<>();
+
+			for (Map.Entry<Long, List<UserActivity>> entry : activitiesByRoutine.entrySet()) {
+				List<UserActivity> activities = entry.getValue();
+
+				PersonalRoutine routine = activities.get(0).getPersonalRoutine();
+				int targetCount = calculateMonthlyTargetCount(routine, startDate, endDate);
+
+				if (targetCount > 0) {
+					double achievementRate = Math.min(100.0, (double) activities.size() / targetCount * 100);
+					achievementRates.add(achievementRate);
+				}
+			}
+
+			return achievementRates.isEmpty() ? 0 :
+				(int) achievementRates.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+
+		} catch (Exception e) {
+			log.warn("개인 루틴 성취률 계산 실패: 사용자 ID = {}", userId, e);
+			return 0;
+		}
+	}
+
+	private int calculateMonthlyTargetCount(PersonalRoutine routine, LocalDate monthStart, LocalDate monthEnd) {
+		try {
+			String repeatDays = routine.getRepeatDays();
+			if (repeatDays == null || repeatDays.length() != 7) {
+				return 0;
+			}
+
+			LocalDate current = monthStart;
+			int targetCount = 0;
+
+			while (!current.isAfter(monthEnd)) {
+				int dayOfWeek = current.getDayOfWeek().getValue();
+				int repeatIndex = dayOfWeek == 7 ? 0 : dayOfWeek;
+
+				if (repeatIndex < repeatDays.length() && repeatDays.charAt(repeatIndex) == '1') {
+					targetCount++;
+				}
+				current = current.plusDays(1);
+			}
+
+			return targetCount;
+		} catch (Exception e) {
+			log.warn("월간 목표 횟수 계산 실패: 루틴 ID = {}", routine.getRoutineId(), e);
+			return 0;
 		}
 	}
 
@@ -242,12 +330,36 @@ public class ReviewServiceImpl implements ReviewService{
 		message.append("• 총 인증: ").append(review.getTotalAuthCount()).append("회\n");
 		message.append("• 연속 출석: ").append(review.getConsecutiveDays()).append("일\n\n");
 
-		if (review.getAchievements() != null && !review.getAchievements().isEmpty()) {
-			message.append("🏆 이번 달 성취\n");
-			for (String achievement : review.getAchievements()) {
-				message.append("✨ ").append(achievement).append("\n");
+		message.append("📊 활동별 상세 현황\n");
+		if (review.getPersonalRoutineCount() != null && review.getPersonalRoutineCount() > 0) {
+			message.append("🎯 개인 루틴: ").append(review.getPersonalRoutineCount()).append("회");
+			if (review.getPersonalRoutineAchievementRate() != null) {
+				message.append(" (달성률 ").append(review.getPersonalRoutineAchievementRate()).append("%)");
 			}
 			message.append("\n");
+		}
+		if (review.getGroupAuthCount() != null && review.getGroupAuthCount() > 0) {
+			message.append("👥 그룹 인증: ").append(review.getGroupAuthCount()).append("회\n");
+		}
+		if (review.getDailyChecklistCount() != null && review.getDailyChecklistCount() > 0) {
+			message.append("✅ 출석 체크: ").append(review.getDailyChecklistCount()).append("회\n");
+		}
+		message.append("• 참여 그룹: ").append(review.getParticipatingGroups()).append("개\n\n");
+
+		if (review.getPersonalRoutineAchievementRate() != null) {
+			if (review.getPersonalRoutineAchievementRate() >= 90) {
+				message.append("🎉 개인 루틴 90% 이상 달성! 완벽한 한 달이었어요!\n\n");
+			} else if (review.getPersonalRoutineAchievementRate() >= 80) {
+				message.append("⭐ 개인 루틴 80% 이상! 정말 훌륭한 실천력이에요!\n\n");
+			} else if (review.getPersonalRoutineAchievementRate() >= 70) {
+				message.append("💪 개인 루틴 70% 달성! 꾸준함이 보여요!\n\n");
+			} else if (review.getPersonalRoutineAchievementRate() >= 50) {
+				message.append("🌟 개인 루틴 절반 이상 달성! 다음 달은 더 높여보세요!\n\n");
+			} else {
+				message.append("💪 개인 루틴에 더 집중해보세요! 작은 시작이 큰 변화를 만듭니다!\n\n");
+			}
+		} else {
+			message.append("🎯 다음 달에는 개인 루틴도 도전해보세요!\n\n");
 		}
 
 		if (review.getScoreDifference() != null && review.getScoreDifference() > 0) {

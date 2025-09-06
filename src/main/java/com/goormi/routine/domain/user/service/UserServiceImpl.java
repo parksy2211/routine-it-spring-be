@@ -2,6 +2,7 @@ package com.goormi.routine.domain.user.service;
 
 import com.goormi.routine.domain.auth.repository.RedisRepository;
 import com.goormi.routine.domain.auth.service.JwtTokenProvider;
+import com.goormi.routine.domain.ranking.service.RankingService;
 import com.goormi.routine.domain.user.dto.UserRequest;
 import com.goormi.routine.domain.user.dto.UserResponse;
 import com.goormi.routine.domain.user.entity.User;
@@ -16,6 +17,7 @@ public class UserServiceImpl implements UserService {
 	private final UserRepository userRepository;
 	private final RedisRepository redisRepository;
 	private final JwtTokenProvider jwtTokenProvider;
+	private final RankingService rankingService;
 
 	@Override
 	public UserResponse getMyProfile(Long userId) {
@@ -58,11 +60,14 @@ public class UserServiceImpl implements UserService {
 
 
 	private UserResponse toResponse(User user) {
+		long totalScore = rankingService.getTotalScoreByUser(user.getId());
+
 		return UserResponse.builder()
 			.id(user.getId())
 			.nickname(user.getNickname())
 			.profileMessage(user.getProfileMessage())
 			.profileImageUrl(user.getProfileImageUrl())
+			.totalScore(totalScore)
 			.build();
 	}
 }
