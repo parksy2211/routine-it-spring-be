@@ -31,7 +31,7 @@ public class UserActivityController {
             @ApiResponse(responseCode = "200", description = "활동 목록 조회 성공"),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     })
-    @GetMapping
+    @GetMapping("/day")
     public ResponseEntity<List<UserActivityResponse>> getUserActivities(
             @AuthenticationPrincipal Long userId,
             @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
@@ -44,7 +44,7 @@ public class UserActivityController {
             @ApiResponse(responseCode = "200", description = "사진 목록 조회 성공"),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     })
-    @GetMapping
+    @GetMapping("/info")
     public ResponseEntity<List<UserActivityResponse>> getUserImages(
             @AuthenticationPrincipal Long userId,
             @RequestParam(required = false) Long targetUserId) {
@@ -61,7 +61,7 @@ public class UserActivityController {
             @ApiResponse(responseCode = "201", description = "활동 생성 성공"),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     })
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<UserActivityResponse> createActivity(@AuthenticationPrincipal Long userId,
                                                                @RequestBody @Valid UserActivityRequest request) {
         UserActivityResponse response = userActivityService.create(userId, request);
@@ -74,7 +74,7 @@ public class UserActivityController {
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
             @ApiResponse(responseCode = "404", description = "활동을 찾을 수 없음")
     })
-    @PutMapping
+    @PutMapping("/update")
     public ResponseEntity<UserActivityResponse> updateActivity(
             @AuthenticationPrincipal Long userId,
             @Valid @RequestBody UserActivityRequest request) {
