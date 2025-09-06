@@ -20,8 +20,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -95,8 +97,30 @@ public class GroupServiceImpl implements GroupService {
     public List<GroupResponse> getGroupsByLeaderId(Long leaderId){
         List<Group> groups = groupRepository.findAllByLeaderId(leaderId);
         return groups.stream()
+                .filter(Group::isActive)
                 .map(GroupResponse::from)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<GroupResponse> getGroupsWithFiltering(GroupType groupType, String category){
+        List<GroupResponse> responses;
+        if (groupType != null && category != null) {
+            List<GroupResponse> byType = getGroupsByGroupType(groupType);
+            List<GroupResponse> byCategory = getGroupsByCategory(category);
+            Set<GroupResponse> categorySet = new HashSet<>(byCategory);
+
+            responses = byType.stream().filter(categorySet::contains).toList();
+        } else if (groupType != null) {
+            responses = getGroupsByGroupType(groupType);
+        } else if (category != null) {
+            responses = getGroupsByCategory(category);
+        } else {
+            // 기본적으로는 활성화된 그룹만 가져오도록 처리.
+            responses = getGroupsByIsActive(true);
+        }
+        return responses;
     }
 
     @Override
@@ -104,6 +128,17 @@ public class GroupServiceImpl implements GroupService {
     public List<GroupResponse> getGroupsByGroupType(GroupType groupType){
         List<Group> groups = groupRepository.findAllByGroupType(groupType);
         return  groups.stream()
+                .filter(Group::isActive)
+                .map(GroupResponse::from)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<GroupResponse> getGroupsByCategory(String category){
+        List<Group> groups = groupRepository.findAllByCategory(category);
+        return  groups.stream()
+                .filter(Group::isActive)
                 .map(GroupResponse::from)
                 .toList();
     }
@@ -126,6 +161,7 @@ public class GroupServiceImpl implements GroupService {
 
         return memberList.stream()
                 .map(GroupMember::getGroup)
+                .filter(Group::isActive)
                 .map(GroupResponse::from)
                 .toList();
     }

@@ -40,6 +40,9 @@ public class UserActivity {
     @JoinColumn(name = "member_id")
     private GroupMember groupMember;
 
+    private String imageUrl;
+    private boolean isPublic;
+
     public static UserActivity createActivity (User user,PersonalRoutine personalRoutine) {
         return UserActivity.builder()
                 .user(user)
@@ -47,20 +50,24 @@ public class UserActivity {
                 .activityType(ActivityType.PERSONAL_ROUTINE_COMPLETE)
                 .activityDate(LocalDate.now())
                 .createdAt(LocalDateTime.now())
+                .isPublic(false)
                 .build();
     }
-    public static UserActivity createActivity (User user, GroupMember groupMember) {
+    public static UserActivity createActivity (User user, GroupMember groupMember, String imageUrl) {
         return UserActivity.builder()
                 .user(user)
                 .groupMember(groupMember)
+                .imageUrl(imageUrl)
                 .activityType(ActivityType.GROUP_AUTH_COMPLETE)
                 .activityDate(LocalDate.now())
                 .createdAt(LocalDateTime.now())
+                .isPublic(false)
                 .build();
     }
 
-    public void updateActivity(ActivityType activityType) {
+    public void updateActivity(ActivityType activityType, boolean isPublic) {
         this.activityType = activityType;
+        this.isPublic = isPublic;
 
         if (this.activityDate == null) {
             this.activityDate = LocalDate.now();

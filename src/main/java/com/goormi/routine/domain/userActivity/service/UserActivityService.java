@@ -13,4 +13,6 @@ public interface UserActivityService {
     UserActivityResponse updateActivity(Long userId, UserActivityRequest request);
 
     List<UserActivityResponse> getUserActivitiesPerDay(Long userId, LocalDate activityDate);
+
+    List<UserActivityResponse> getImagesOfUserActivities(Long currentUserIdm, Long targetUserId);
 }

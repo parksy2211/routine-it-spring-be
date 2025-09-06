@@ -18,5 +18,7 @@ public class UserActivityRequest {
     private LocalDate activityDate;
     private Integer personalRoutineId;
     private Long groupId;
+    private String imageUrl;
+    private boolean isPublic;
 
 }
