@@ -28,30 +28,35 @@ public class UserActivityResponse {
     private Long groupId;
     @Schema(description = "그룹 이름 (PersonalRoutine 활동일 경우 null)")
     private String groupName;
+    @Schema(description = "그룹 인증 사진 (PersonalRoutine 활동일 경우 null)")
+    private String imageUrl;
+    @Schema(description = "공개 여부 (기본값 false)")
+    private boolean isPublic;
 
-    public static UserActivityResponse from(UserActivity userActivity) {
+    public static UserActivityResponse fromPersonalActivity(UserActivity userActivity) {
         return UserActivityResponse.builder()
                 .userId(userActivity.getUser().getId())
                 .activityType(userActivity.getActivityType())
                 .activityDate(userActivity.getActivityDate())
                 .createdAt(userActivity.getCreatedAt())
                 .updatedAt(userActivity.getUpdatedAt())
-                .personalRoutineId(
-                        userActivity.getPersonalRoutine() != null
-                                ? userActivity.getPersonalRoutine().getRoutineId()
-                                : null)
-                .personalRoutineName(
-                        userActivity.getPersonalRoutine() != null
-                                ? userActivity.getPersonalRoutine().getRoutineName()
-                                : null)
-                .groupId(
-                        userActivity.getGroupMember() != null
-                                ? userActivity.getGroupMember().getGroup().getGroupId()
-                                : null)
-                .groupName(
-                        userActivity.getGroupMember() != null
-                                ? userActivity.getGroupMember().getGroup().getGroupName()
-                                : null)
+                .personalRoutineId(userActivity.getPersonalRoutine().getRoutineId())
+                .personalRoutineName(userActivity.getPersonalRoutine().getRoutineName())
+                .isPublic(userActivity.isPublic())
+                .build();
+    }
+
+    public static UserActivityResponse fromGroupActivity(UserActivity userActivity) {
+        return UserActivityResponse.builder()
+                .userId(userActivity.getUser().getId())
+                .activityType(userActivity.getActivityType())
+                .activityDate(userActivity.getActivityDate())
+                .createdAt(userActivity.getCreatedAt())
+                .updatedAt(userActivity.getUpdatedAt())
+                .groupId(userActivity.getGroupMember().getGroup().getGroupId())
+                .groupName(userActivity.getGroupMember().getGroup().getGroupName())
+                .imageUrl(userActivity.getImageUrl())
+                .isPublic(userActivity.isPublic())
                 .build();
     }
 }

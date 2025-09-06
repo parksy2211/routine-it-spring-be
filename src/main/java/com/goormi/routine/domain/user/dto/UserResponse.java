@@ -7,5 +7,6 @@ public record UserResponse(
 	Long id,
 	String nickname,
 	String profileMessage,
-	String profileImageUrl
+	String profileImageUrl,
+	Long totalScore
 ) {}

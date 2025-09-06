@@ -17,6 +17,7 @@ public class ChatMessageDto {
     private Long userId;
     private String senderNickname;
     private String message;
+    private String imageUrl;
     private MessageType messageType;
     private LocalDateTime sentAt;
 }

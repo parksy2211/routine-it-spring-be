@@ -27,11 +27,18 @@ public class MonthlyReviewResponse {
 	private Integer consecutiveDays;
 	private Integer participatingGroups;
 
+	private Integer groupAuthCount;
+	private Integer personalRoutineCount;
+	private Integer dailyChecklistCount;
+	private Integer totalActiveDays;
+
+	private Integer personalRoutineAchievementRate;
+
 	private List<String> achievements;
 	private Integer scoreDifference;
 	private Integer groupDifference;
 
-	private String messageContent; // 실제 전송된 카카오톡 메시지
+	private String messageContent;
 	private Boolean messageSent;
 
 	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")

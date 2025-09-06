@@ -14,7 +14,9 @@ public interface GroupService {
     // -- Read
     GroupResponse getGroupInfo(Long groupId);
     List<GroupResponse> getGroupsByLeaderId(Long leaderId);
+    List<GroupResponse> getGroupsWithFiltering(GroupType groupType, String category);
     List<GroupResponse> getGroupsByGroupType(GroupType groupType);
+    List<GroupResponse> getGroupsByCategory(String category);
     List<GroupResponse> getGroupsByIsActive(boolean isActive);
     List<GroupResponse> getJoinedGroups(Long userId);
 

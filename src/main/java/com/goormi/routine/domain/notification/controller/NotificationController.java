@@ -21,7 +21,7 @@ import java.util.List;
 public class NotificationController {
     private final NotificationService notificationService;
 
-    @GetMapping("")
+    @GetMapping()
     @Operation(summary = "유저의 알림 전체 조회", description = "인증된 사용자의 전체 알림을 조회합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "알림 목록 조회 성공"),
@@ -32,7 +32,7 @@ public class NotificationController {
         return ResponseEntity.ok(notifications);
     }
 
-    @GetMapping("/Type")
+    @GetMapping("/type")
     @Operation(summary = "유저의 알림타입 별 조회", description = "인증된 사용자의 알림을 타입별로 조회합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "알림 목록 조회 성공"),

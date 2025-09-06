@@ -8,6 +8,7 @@ import com.goormi.routine.domain.user.entity.User;
 import com.goormi.routine.domain.user.repository.UserRepository;
 import com.goormi.routine.domain.userActivity.dto.UserActivityRequest;
 import com.goormi.routine.domain.userActivity.dto.UserActivityResponse;
+import com.goormi.routine.domain.userActivity.entity.ActivityType;
 import com.goormi.routine.domain.userActivity.entity.UserActivity;
 import com.goormi.routine.domain.userActivity.repository.UserActivityRepository;
 import com.goormi.routine.personal_routines.domain.PersonalRoutine;
@@ -46,7 +47,7 @@ public class UserActivityServiceImpl implements UserActivityService{
             GroupMember groupMember = groupMemberRepository.findByGroupAndUser(group, user)
                     .orElseThrow(() -> new IllegalArgumentException("GroupMember not found"));
 
-            userActivity = UserActivity.createActivity(user, groupMember);
+            userActivity = UserActivity.createActivity(user, groupMember, request.getImageUrl());
 
         }
         else if (request.getPersonalRoutineId() != null) {
@@ -58,7 +59,7 @@ public class UserActivityServiceImpl implements UserActivityService{
         }
 
         UserActivity saved = userActivityRepository.save(userActivity);
-        return UserActivityResponse.from(saved);
+        return convertToResponse(saved);
     }
 
     @Override
@@ -73,8 +74,8 @@ public class UserActivityServiceImpl implements UserActivityService{
             throw new IllegalArgumentException("권한이 없습니다.");
         }
 
-        userActivity.updateActivity(request.getActivityType());
-        return UserActivityResponse.from(userActivity);
+        userActivity.updateActivity(request.getActivityType(), request.isPublic());
+        return convertToResponse(userActivity);
     }
 
     @Override
@@ -85,7 +86,44 @@ public class UserActivityServiceImpl implements UserActivityService{
 
         List<UserActivity> activities = userActivityRepository.findAllByUserAndActivityDate(user, activityDate);
         return activities.stream()
-                .map(UserActivityResponse::from).toList();
+                .map(this::convertToResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserActivityResponse> getImagesOfUserActivities(Long currentUserId, Long targetUserId) {
+        userRepository.findById(targetUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Target user not found"));
+
+        List<UserActivity> activities = userActivityRepository
+                .findByUserIdAndActivityTypeOrderByCreatedAtDesc(targetUserId, ActivityType.GROUP_AUTH_COMPLETE);
+
+        boolean isOwner = targetUserId.equals(currentUserId);
+
+        if (!isOwner) {
+            // 본인이 아니면 공개된 사진만 조회
+            return activities.stream()
+                    .filter(UserActivity::isPublic)
+                    .map(this::convertToResponse)
+                    .toList();
+        }
+
+        return activities.stream()
+                .map(this::convertToResponse)
+                .toList();
+    }
+
+
+    private UserActivityResponse convertToResponse(UserActivity activity) {
+        if (activity.getPersonalRoutine() != null) {
+            return UserActivityResponse.fromPersonalActivity(activity);
+        } else if (activity.getGroupMember() != null) {
+            return UserActivityResponse.fromGroupActivity(activity);
+        }
+        // This case should not happen with consistent data
+        throw new IllegalArgumentException
+                ("UserActivity has neither PersonalRoutine nor GroupMember");
     }
 
 

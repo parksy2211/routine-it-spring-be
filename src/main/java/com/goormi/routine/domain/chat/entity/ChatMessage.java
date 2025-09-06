@@ -29,7 +29,10 @@ public class ChatMessage {
     
     @Column(name = "message", nullable = false, columnDefinition = "TEXT")
     private String message;
-    
+
+    @Column(name = "image_url")
+    private String imageUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "message_type", nullable = false, length = 20)
     private MessageType messageType;
