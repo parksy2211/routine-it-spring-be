@@ -63,4 +63,26 @@ public class ChatController {
         Long userId = Long.parseLong(principal.getName());
         chatService.handleUserLeave(roomId, userId);
     }
+    
+    @MessageMapping("/chat.online/{roomId}")
+    public void userOnline(
+            @DestinationVariable Long roomId,
+            Principal principal) {
+        
+        log.debug("User {} is now online in room {}", principal.getName(), roomId);
+        
+        Long userId = Long.parseLong(principal.getName());
+        chatService.handleUserOnline(roomId, userId);
+    }
+    
+    @MessageMapping("/chat.offline/{roomId}")
+    public void userOffline(
+            @DestinationVariable Long roomId,
+            Principal principal) {
+        
+        log.debug("User {} is now offline in room {}", principal.getName(), roomId);
+        
+        Long userId = Long.parseLong(principal.getName());
+        chatService.handleUserOffline(roomId, userId);
+    }
 }

@@ -94,6 +94,11 @@ jobs:
           LOG_LEVEL_SQL_BIND=${{ secrets.LOG_LEVEL_SQL_BIND }}
           LOG_LEVEL_APP=${{ secrets.LOG_LEVEL_APP }}
           
+          # Scheduler
+          SCHEDULER_POOL_SIZE=${{ secrets.SCHEDULER_POOL_SIZE }}
+          MONTHLY_SCHEDULER_ENABLED=${{ secrets.MONTHLY_SCHEDULER_ENABLED }}
+          RETRY_SCHEDULER_ENABLED=${{ secrets.RETRY_SCHEDULER_ENABLED }}
+          
           # Docker
           DEPLOY_TAG=${{ steps.tag.outputs.deploy_tag }}
           

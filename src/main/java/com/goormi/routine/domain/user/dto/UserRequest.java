@@ -6,7 +6,5 @@ import lombok.Builder;
 public record UserRequest(
 	String nickname,
 	String profileMessage,
-	String profileImageUrl,
-	Boolean isAlarmOn,
-	Boolean isDarkMode
+	String profileImageUrl
 ) {}

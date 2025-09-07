@@ -6,6 +6,7 @@ import com.goormi.routine.domain.group.dto.response.GroupMemberResponse;
 import com.goormi.routine.domain.group.entity.GroupMemberRole;
 import com.goormi.routine.domain.group.entity.GroupMemberStatus;
 import com.goormi.routine.domain.group.service.GroupMemberService;
+import com.goormi.routine.domain.userActivity.dto.UserActivityRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -41,7 +42,26 @@ public class GroupMemberController {
                                                                                       @Valid @RequestBody GroupJoinRequest request) {
 
         GroupMemberResponse response = groupMemberService.addMember(userId, groupId, request);
+
         return ResponseEntity.ok(response);
+    }
+    /**
+     *  리더에게 인증 요구
+     */
+    @Operation(summary = "리더에게 인증요청")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "인증 요청 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
+    })
+    @PostMapping("/approve-auth")
+    public ResponseEntity<Void> approveAuth(@AuthenticationPrincipal Long leaderId,
+                                            @PathVariable Long groupId,
+                                            @RequestBody LeaderAnswerRequest leaderAnswerRequest,
+                                            @RequestBody UserActivityRequest userActivityRequest) {
+
+        groupMemberService.approveAuthRequest(leaderId, groupId,leaderAnswerRequest, userActivityRequest);
+        return ResponseEntity.ok().build();
     }
 
     /**
@@ -58,13 +78,18 @@ public class GroupMemberController {
             @RequestParam(required = false) GroupMemberStatus status) {
 
         List<GroupMemberResponse> responses;
-        if (role != null) {
-            responses = groupMemberService.getGroupsByRole(groupId, role);
+        if (role != null && status != null) {
+            List<GroupMemberResponse> byRole = groupMemberService.getGroupMembersByRole(groupId, role);
+            List<GroupMemberResponse> byStatus = groupMemberService.getGroupMembersByStatus(groupId, status);
+            byRole.retainAll(byStatus);
+            responses = byRole;
+        } else if (role != null) {
+            responses = groupMemberService.getGroupMembersByRole(groupId, role);
         } else if (status != null) {
-            responses = groupMemberService.getGroupsByStatus(groupId, status);
+            responses = groupMemberService.getGroupMembersByStatus(groupId, status);
         } else {
             // 기본적으로는 JOINED 상태의 멤버 목록을 반환
-            responses = groupMemberService.getGroupsByStatus(groupId, GroupMemberStatus.JOINED);
+            responses = groupMemberService.getJoinedGroupMembersWithActivity(groupId);
         }
         return ResponseEntity.ok(responses);
     }

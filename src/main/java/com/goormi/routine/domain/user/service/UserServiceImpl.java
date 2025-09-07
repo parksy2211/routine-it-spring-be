@@ -2,6 +2,7 @@ package com.goormi.routine.domain.user.service;
 
 import com.goormi.routine.domain.auth.repository.RedisRepository;
 import com.goormi.routine.domain.auth.service.JwtTokenProvider;
+import com.goormi.routine.domain.ranking.service.RankingService;
 import com.goormi.routine.domain.user.dto.UserRequest;
 import com.goormi.routine.domain.user.dto.UserResponse;
 import com.goormi.routine.domain.user.entity.User;
@@ -16,40 +17,35 @@ public class UserServiceImpl implements UserService {
 	private final UserRepository userRepository;
 	private final RedisRepository redisRepository;
 	private final JwtTokenProvider jwtTokenProvider;
+	private final RankingService rankingService;
 
 	@Override
 	public UserResponse getMyProfile(Long userId) {
-		User user = userRepository.findById(userId).orElseThrow();
+		User user = userRepository.findById(userId)
+			.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		return toResponse(user);
 	}
 
 	@Override
 	public UserResponse updateProfile(Long userId, UserRequest request) {
-		User user = userRepository.findById(userId).orElseThrow();
+		User user = userRepository.findById(userId)
+			.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		user.updateProfile(request.nickname(), request.profileMessage(), request.profileImageUrl());
 		userRepository.save(user);
 		return toResponse(user);
 	}
 
 	@Override
-	public UserResponse updateSettings(Long userId, UserRequest request) {
-		User user = userRepository.findById(userId).orElseThrow();
-		user.updateSettings(request.isAlarmOn(), request.isDarkMode());
-
-		userRepository.save(user);
-
-		return toResponse(user);
-	}
-
-	@Override
 	public UserResponse getUserProfile(Long userId) {
-		User user = userRepository.findById(userId).orElseThrow();
+		User user = userRepository.findById(userId)
+			.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 		return toResponse(user);
 	}
 
 	@Override
 	public void deleteAccount(Long userId, String accessToken) {
-		User user = userRepository.findById(userId).orElseThrow();
+		User user = userRepository.findById(userId)
+			.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
 		user.updateRefreshToken(null);
 		user.setActive(false);
@@ -64,13 +60,14 @@ public class UserServiceImpl implements UserService {
 
 
 	private UserResponse toResponse(User user) {
+		long totalScore = rankingService.getTotalScoreByUser(user.getId());
+
 		return UserResponse.builder()
 			.id(user.getId())
 			.nickname(user.getNickname())
 			.profileMessage(user.getProfileMessage())
 			.profileImageUrl(user.getProfileImageUrl())
-			.isAlarmOn(true)
-			.isDarkMode(false)
+			.totalScore(totalScore)
 			.build();
 	}
 }

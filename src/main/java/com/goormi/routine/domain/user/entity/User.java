@@ -44,11 +44,11 @@ public class User {
     @Column(name = "refresh_token", columnDefinition = "TEXT")
     private String refreshToken;
 
-    // ✅ 카카오 Access Token
+    // 카카오 Access Token
     @Column(name = "kakao_access_token", columnDefinition = "TEXT")
     private String kakaoAccessToken;
 
-    // ✅ 카카오 Refresh Token
+    // 카카오 Refresh Token
     @Column(name = "kakao_refresh_token", columnDefinition = "TEXT")
     private String kakaoRefreshToken;
 
@@ -57,6 +57,7 @@ public class User {
     @Builder.Default
     private UserRole role = UserRole.USER;
 
+    // ✅ feature/attendance에서 추가된 사용자 환경설정 필드
     @Column(
             name = "is_alarm_on",
             nullable = false,
@@ -73,6 +74,7 @@ public class User {
     @Builder.Default
     private Boolean isDarkMode = false;
 
+    // ✅ develop 쪽에 있던 active 필드
     @Column(nullable = false)
     @Builder.Default
     private boolean active = true;
@@ -107,7 +109,7 @@ public class User {
         this.refreshToken = refreshToken;
     }
 
-    // ✅ 카카오 토큰 업데이트 메서드
+    // 카카오 토큰 업데이트 메서드
     public void updateKakaoTokens(String accessToken, String refreshToken) {
         if (accessToken != null) this.kakaoAccessToken = accessToken;
         if (refreshToken != null) this.kakaoRefreshToken = refreshToken;
@@ -121,11 +123,6 @@ public class User {
                 .profileImageUrl(profileImageUrl)
                 .role(UserRole.USER)
                 .build();
-    }
-
-    public void updateSettings(Boolean isAlarmOn, Boolean isDarkMode) {
-        if (isAlarmOn != null) this.isAlarmOn = isAlarmOn;
-        if (isDarkMode != null) this.isDarkMode = isDarkMode;
     }
 
     public enum UserRole {
