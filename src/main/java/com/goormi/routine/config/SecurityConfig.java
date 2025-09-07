@@ -37,8 +37,13 @@ public class SecurityConfig {
                         // ⬇️ 스토리지 presign 엔드포인트는 로컬 테스트 위해 공개
                         .requestMatchers(HttpMethod.POST, "/api/storage/profile/presign").permitAll()
                         .requestMatchers(HttpMethod.GET,  "/api/storage/profile/presign-get").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/storage/proof-shot/presign").permitAll()
+                        .requestMatchers(HttpMethod.GET,  "/api/storage/proof-shot/presign-get").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/storage/group-room/presign").permitAll()
+                        .requestMatchers(HttpMethod.GET,  "/api/storage/group-room/presign-get").permitAll()
                         // CORS 사전요청 허용(브라우저 OPTIONS)
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        //.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/api/storage/**").permitAll()
 
                         // 기존 공개 엔드포인트
                         .requestMatchers(
@@ -54,6 +59,7 @@ public class SecurityConfig {
                                 "/api/auth/refresh",
                                 "/api/personal-routines/**",
                                 "/ws/**"
+
                         ).permitAll()
 
                         // 그 외는 인증
