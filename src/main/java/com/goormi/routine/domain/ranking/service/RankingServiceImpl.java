@@ -52,7 +52,14 @@ public class RankingServiceImpl implements RankingService {
 		Map<Long, Integer> userTotalScores = allGroupRankings.stream()
 			.collect(Collectors.groupingBy(
 				Ranking::getUserId,
-				Collectors.summingInt(Ranking::getScore)
+				Collectors.summingInt(ranking -> {
+					int baseScore = ranking.getScore();
+
+					int consecutiveDays = calculateConsecutiveDays(ranking.getUserId());
+					double consecutiveBonus = calculateConsecutiveBonus(consecutiveDays);
+
+					return baseScore + (int)consecutiveBonus;
+				})
 			));
 
 		List<Map.Entry<Long, Integer>> sortedUsers = userTotalScores.entrySet().stream()
@@ -223,7 +230,8 @@ public class RankingServiceImpl implements RankingService {
 		}
 
 		if (groupId != null) {
-			updateGroupScore(userId, groupId, score);
+			int baseScore = score * 10;
+			updateGroupScore(userId, groupId, baseScore);
 		} else {
 			updatePersonalScore(userId, score);
 		}
@@ -249,19 +257,21 @@ public class RankingServiceImpl implements RankingService {
 
 	@Override
 	@Transactional
-	public void updateGroupScore(Long userId, Long groupId, int score) {
+	public void updateGroupScore(Long userId, Long groupId, int authCount) {
+		int baseScore = authCount * 10;
+
 		Optional<Ranking> existingRanking = rankingRepository.findByUserIdAndGroupId(userId, groupId);
 
 		if (existingRanking.isPresent()) {
 			Ranking ranking = existingRanking.get();
-			ranking.setScore(ranking.getScore() + score);
+			ranking.setScore(ranking.getScore() + baseScore);
 			ranking.setUpdatedAt(LocalDateTime.now());
 			rankingRepository.save(ranking);
-			log.info("그룹 점수 업데이트: 사용자 ID = {}, 그룹 ID = {}, 추가 점수 = {}, 총 점수 = {}",
-				userId, groupId, score, ranking.getScore());
+			log.info("그룹 점수 업데이트: 사용자 ID = {}, 그룹 ID = {},인증 횟수 = {}, 기본 점수 = {}, 총 점수 = {}",
+				userId, groupId, authCount, baseScore, ranking.getScore());
 		} else {
 			initializeRanking(userId, groupId);
-			updateGroupScore(userId, groupId, score);
+			updateGroupScore(userId, groupId, authCount);
 		}
 	}
 
@@ -297,7 +307,14 @@ public class RankingServiceImpl implements RankingService {
 
 		return rankingRepository.findAll().stream()
 			.filter(ranking -> userId.equals(ranking.getUserId()) && ranking.getGroupId() != null)
-			.mapToInt(Ranking::getScore)
+			.mapToInt(ranking -> {
+				int baseScore = ranking.getScore();
+
+				int consecutiveDays = calculateConsecutiveDays(ranking.getUserId());
+				double consecutiveBonus = calculateConsecutiveBonus(consecutiveDays);
+
+				return baseScore + (int)consecutiveBonus;
+			})
 			.sum();}
 
 	@Override
@@ -424,7 +441,14 @@ public class RankingServiceImpl implements RankingService {
 
 	private int calculateGroupMembersTotalScore(Long groupId) {
 		List<Ranking> memberRankings = rankingRepository.findAllUsersByGroupIdOrderByScore(groupId);
-		return memberRankings.stream().mapToInt(Ranking::getScore).sum();
+		return memberRankings.stream().mapToInt(ranking -> {
+			int baseScore = ranking.getScore();
+
+			int consecutiveDays = calculateConsecutiveDays(ranking.getUserId());
+			double consecutiveBonus = calculateConsecutiveBonus(consecutiveDays);
+
+			return baseScore + (int)consecutiveBonus;
+		}).sum();
 	}
 
 	private int calculateSimpleParticipationBonus(Long groupId, String monthYear) {
