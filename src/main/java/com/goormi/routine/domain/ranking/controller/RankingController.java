@@ -126,17 +126,12 @@ public class RankingController {
 	public ApiResponse<Void> updateRankingScore(
 		@Parameter(description = "사용자 ID", required = true)
 		@RequestParam Long userId,
-		@Parameter(description = "그룹 ID (개인 점수 업데이트시 null)")
-		@RequestParam(required = false) Long groupId,
-		@Parameter(description = "그룹: 인증 횟수, 개인: 기본 점수")
-		@RequestParam Integer score) {
+		@Parameter(description = "그룹 ID", required = true)
+		@RequestParam Long groupId,
+		@Parameter(description = "인증 횟수")
+		@RequestParam Integer authCount) {
 
-		rankingService.updateRankingScore(userId, groupId, score);
-
-		String logMessage = groupId != null ?
-			String.format("그룹 점수 업데이트 완료: 사용자 ID = %d, 그룹 ID = %d, 점수 = %d", userId, groupId, score) :
-			String.format("개인 점수 업데이트 완료: 사용자 ID = %d, 점수 = %d", userId, score);
-		log.info(logMessage);
+		rankingService.updateRankingScore(userId, groupId, authCount);
 
 		return ApiResponse.success("점수 업데이트가 완료되었습니다.", null);
 	}
