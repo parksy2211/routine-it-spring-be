@@ -1,5 +1,10 @@
 package com.goormi.routine.personal_routines.service;
 
+import com.goormi.routine.domain.user.entity.User;
+import com.goormi.routine.domain.user.repository.UserRepository;
+import com.goormi.routine.domain.userActivity.entity.ActivityType;
+import com.goormi.routine.domain.userActivity.entity.UserActivity;
+import com.goormi.routine.domain.userActivity.repository.UserActivityRepository;
 import com.goormi.routine.personal_routines.domain.PersonalRoutine;
 import com.goormi.routine.personal_routines.domain.RoutineExecution;
 import com.goormi.routine.personal_routines.event.RoutineCompletedEvent;
@@ -21,6 +26,10 @@ public class RoutineExecutionService {
     private final PersonalRoutineRepository routineRepo;
     private final ApplicationEventPublisher events;
 
+    // >>> 추가 의존성
+    private final UserRepository userRepository;
+    private final UserActivityRepository userActivityRepository;
+
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     /** 완료 처리(멱등): 같은 날 같은 루틴은 1회만 기록 */
@@ -34,6 +43,7 @@ public class RoutineExecutionService {
             throw new IllegalArgumentException("해당 루틴의 소유자가 아닙니다.");
         }
 
+        // 실행 로그 멱등 생성
         execRepo.findByUserIdAndRoutineIdAndExecDate(userId, routineId, day)
                 .orElseGet(() -> execRepo.save(
                         RoutineExecution.builder()
@@ -44,15 +54,42 @@ public class RoutineExecutionService {
                                 .build()
                 ));
 
+        // >>> 활동 레코드 멱등 생성 (카운트 ↑)
+        User user = userRepository.findById(r.getUserId().longValue())
+                .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다."));
+
+        boolean exists = userActivityRepository
+                .findByUserIdAndPersonalRoutine_RoutineIdAndActivityTypeAndActivityDate(
+                        user.getId(), routineId, ActivityType.PERSONAL_ROUTINE_COMPLETE, day)
+                .isPresent();
+
+        if (!exists) {
+            UserActivity ua = UserActivity.builder()
+                    .user(user)
+                    .personalRoutine(r)
+                    .activityType(ActivityType.PERSONAL_ROUTINE_COMPLETE)
+                    .activityDate(day)
+                    .createdAt(LocalDateTime.now(KST))
+                    .isPublic(false) // 필요 시 정책에 맞게 조정
+                    .build();
+            userActivityRepository.save(ua);
+        }
+
         // 커밋 이후 출석 체크 트리거
         events.publishEvent(new RoutineCompletedEvent(userId, routineId, day));
     }
 
-    /** 완료 취소: 로그만 삭제(기본 정책은 출석 유지) */
+    /** 완료 취소: 실행 로그 삭제 + 활동 레코드 삭제(카운트 ↓) */
     @Transactional
     public void undo(Integer userId, Integer routineId, LocalDate date) {
+        // 실행 로그 삭제
         execRepo.findByUserIdAndRoutineIdAndExecDate(userId, routineId, date)
                 .ifPresent(execRepo::delete);
-        // 엄격모드: 해당 날짜의 실행 로그가 0이면 출석도 취소하는 로직을 여기서 추가 가능
+
+        // >>> 활동 레코드 삭제 (카운트 ↓)
+        userActivityRepository.deleteByUserIdAndPersonalRoutine_RoutineIdAndActivityTypeAndActivityDate(
+                userId.longValue(), routineId, ActivityType.PERSONAL_ROUTINE_COMPLETE, date);
+
+        // 엄격모드: 활동 레코드가 0이면 출석도 취소하는 추가 정책이 있으면 여기서 처리
     }
 }
