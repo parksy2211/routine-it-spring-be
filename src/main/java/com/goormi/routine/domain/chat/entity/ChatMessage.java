@@ -50,9 +50,17 @@ public class ChatMessage {
     }
     
     public enum MessageType {
+        TALK,           // 일반 대화
+        NOTICE,         // 시스템 공지
+        MEMBER_JOIN,    // 그룹 멤버 가입 (영구적, DB 저장)
+        MEMBER_LEAVE,   // 그룹 멤버 탈퇴 (영구적, DB 저장)
+        ONLINE,         // 온라인 상태 (임시적, DB 저장 안함)
+        OFFLINE,        // 오프라인 상태 (임시적, DB 저장 안함)
+        
+        // 하위 호환성을 위해 유지 (deprecated)
+        @Deprecated
         ENTER,
-        TALK,
-        LEAVE,
-        NOTICE
+        @Deprecated  
+        LEAVE
     }
 }
