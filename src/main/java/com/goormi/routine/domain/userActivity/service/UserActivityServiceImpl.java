@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -54,7 +55,16 @@ public class UserActivityServiceImpl implements UserActivityService{
             PersonalRoutine personalRoutine = personalRoutineRepository.findById(request.getPersonalRoutineId())
                     .orElseThrow(() -> new IllegalArgumentException("Personal Routine not found"));
             userActivity = UserActivity.createActivity(user, personalRoutine);
-        } else {
+        }
+        else if (request.getActivityType() == ActivityType.DAILY_CHECKLIST) {
+            userActivity = UserActivity.builder()
+                    .user(user)
+                    .activityType(ActivityType.DAILY_CHECKLIST)
+                    .activityDate(LocalDate.now())
+                    .createdAt(LocalDateTime.now())
+                    .isPublic(false)
+                    .build();
+        } else{
           throw new  IllegalArgumentException("Invalid request");
         }
 

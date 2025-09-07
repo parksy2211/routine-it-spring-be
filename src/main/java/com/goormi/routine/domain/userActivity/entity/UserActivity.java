@@ -73,7 +73,7 @@ public class UserActivity {
             this.activityDate = LocalDate.now();
         }
 
-        if (activityType == null) {
+        if (activityType == null || activityType == ActivityType.NOT_COMPLETED) {
             this.activityDate = null;
         }
         this.updatedAt = LocalDateTime.now();
