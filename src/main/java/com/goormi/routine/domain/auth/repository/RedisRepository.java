@@ -3,7 +3,11 @@ package com.goormi.routine.domain.auth.repository;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.time.Duration;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Repository
 public class RedisRepository {
@@ -31,5 +35,36 @@ public class RedisRepository {
 
 	public boolean isBlackListed(String token) {
 		return redisTemplate.hasKey("BL:" + token);
+	}
+
+	// 데이터 저장/조회용
+	public void saveData(String key, String value, long expireSeconds) {
+		if (expireSeconds > 0) {
+			redisTemplate.opsForValue().set(key, value, Duration.ofSeconds(expireSeconds));
+		} else {
+			redisTemplate.opsForValue().set(key, value);
+		}
+	}
+
+	public String getData(String key) {
+		Object value = redisTemplate.opsForValue().get(key);
+		return value != null ? value.toString() : null;
+	}
+
+	public void deleteData(String key) {
+		redisTemplate.delete(key);
+	}
+
+	public List<String> getKeysByPattern(String pattern) {
+		Set<String> keys = redisTemplate.keys(pattern);
+		return keys != null ? keys.stream().collect(Collectors.toList()) : List.of();
+	}
+
+	public boolean hasKey(String key) {
+		return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+	}
+
+	public void setExpire(String key, long seconds) {
+		redisTemplate.expire(key, Duration.ofSeconds(seconds));
 	}
 }

@@ -8,6 +8,5 @@ public record UserResponse(
 	String nickname,
 	String profileMessage,
 	String profileImageUrl,
-	Boolean isAlarmOn,
-	Boolean isDarkMode
+	Long totalScore
 ) {}

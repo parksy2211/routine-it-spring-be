@@ -114,6 +114,10 @@ public class Group {
         this.currentMemberCnt--;
     }
 
+    public void changeLeader(User user){
+        this.leader = user;
+    }
+
     public void updateBasicInfo(String name, String description, GroupType groupType) {
         if (name == null || name.isBlank()) {
             throw new  IllegalArgumentException("name cannot be null or blank");

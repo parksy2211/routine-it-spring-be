@@ -12,8 +12,19 @@ on:
 jobs:
   publish-docs:
     runs-on: ubuntu-latest
-    
+
     if: github.repository == 'Goorda-Goormi/routine-it-spring-be'
+
+    services:
+      redis:
+        image: redis:latest
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
 
     steps:
       - name: Checkout Repository
@@ -51,12 +62,12 @@ jobs:
           for i in $(seq 1 $TIMEOUT); do
             if curl -s http://localhost:8080/api/health > /dev/null 2>&1; then
               echo "✅ Application started successfully after ${i} seconds"
-              
+          
               # Health check 응답 확인
               echo "Health check response:"
               curl -s http://localhost:8080/api/health | head -100
               echo ""
-              
+          
               break
             fi
             if [ $i -eq $TIMEOUT ]; then
@@ -93,12 +104,12 @@ jobs:
           for attempt in 1 2 3; do
             echo "Attempt $attempt to download OpenAPI JSON..."
             curl -s http://localhost:8080/v3/api-docs -o openapi.json
-            
+          
             if [ -s openapi.json ] && grep -q '"openapi"' openapi.json; then
               echo "Successfully downloaded on attempt $attempt"
               break
             fi
-            
+          
             if [ $attempt -lt 3 ]; then
               echo "Retrying in 3 seconds..."
               sleep 3
