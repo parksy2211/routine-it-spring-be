@@ -18,6 +18,7 @@ import com.goormi.routine.domain.chat.entity.ChatMember;
 import com.goormi.routine.domain.chat.entity.ChatMember.MemberRole;
 import com.goormi.routine.domain.chat.repository.ChatRoomRepository;
 import com.goormi.routine.domain.chat.repository.ChatMemberRepository;
+import com.goormi.routine.domain.chat.service.ChatService;
 import com.goormi.routine.domain.userActivity.dto.UserActivityRequest;
 import com.goormi.routine.domain.userActivity.entity.ActivityType;
 import com.goormi.routine.domain.userActivity.entity.UserActivity;
@@ -45,6 +46,7 @@ public class GroupMemberServiceImpl implements GroupMemberService {
     private final NotificationService notificationService;
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMemberRepository chatMemberRepository;
+    private final ChatService chatService;
 
     private final UserActivityService userActivityService;
 
@@ -108,6 +110,9 @@ public class GroupMemberServiceImpl implements GroupMemberService {
                         .isActive(true)
                         .build();
                 chatMemberRepository.save(chatMember);
+                
+                // 채팅방에 그룹 멤버 가입 알림 전송
+                chatService.notifyMemberJoin(chatRoom.getId(), userId);
             }
         }
         groupMemberRepository.save(groupMember);
@@ -195,6 +200,9 @@ public class GroupMemberServiceImpl implements GroupMemberService {
                             .isActive(true)
                             .build();
                     chatMemberRepository.save(chatMember);
+                    
+                    // 채팅방에 그룹 멤버 가입 알림 전송
+                    chatService.notifyMemberJoin(chatRoom.getId(), groupMember.getUser().getId());
                 }
             }
         }
@@ -215,6 +223,9 @@ public class GroupMemberServiceImpl implements GroupMemberService {
                 ChatMember chatMember = existingChatMember.get();
                 chatMember.setIsActive(false);
                 chatMemberRepository.save(chatMember);
+                
+                // 채팅방에 그룹 멤버 탈퇴 알림 전송
+                chatService.notifyMemberLeave(chatRoom.getId(), groupMember.getUser().getId());
             }
         }
         else if (oldStatus == GroupMemberStatus.BLOCKED ){
@@ -337,6 +348,9 @@ public class GroupMemberServiceImpl implements GroupMemberService {
             chatMember.setIsActive(false);
             chatMember.setLeftAt(java.time.LocalDateTime.now());
             chatMemberRepository.save(chatMember);
+            
+            // 채팅방에 그룹 멤버 탈퇴 알림 전송
+            chatService.notifyMemberLeave(chatRoom.getId(), userId);
         }
 
 //        groupMemberRepository.delete(groupMember);
