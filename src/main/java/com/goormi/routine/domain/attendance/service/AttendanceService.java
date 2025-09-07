@@ -127,7 +127,6 @@ public class AttendanceService {
                 .longestStreak(longest)
                 .totalActiveDays(totalActiveDays)
                 .completedRoutines(0) // TODO: 루틴 완료 로그 연결 시 교체
-                .totalPoints(0L)      // TODO: 포인트 원장 연결 시 교체
                 .build();
     }
 }

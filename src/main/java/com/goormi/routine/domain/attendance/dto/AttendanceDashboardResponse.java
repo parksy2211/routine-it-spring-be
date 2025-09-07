@@ -22,5 +22,4 @@ public class AttendanceDashboardResponse {
     private int longestStreak;            // 최대 연속
     private int totalActiveDays;          // 누적 출석일
     private int completedRoutines;        // (추후 연결)
-    private long totalPoints;             // (추후 연결)
 }

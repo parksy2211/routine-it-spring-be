@@ -42,8 +42,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/storage/group-room/presign").permitAll()
                         .requestMatchers(HttpMethod.GET,  "/api/storage/group-room/presign-get").permitAll()
                         // CORS 사전요청 허용(브라우저 OPTIONS)
-                        //.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/storage/**").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        //.requestMatchers("/api/storage/**").permitAll()
 
                         // 기존 공개 엔드포인트
                         .requestMatchers(
