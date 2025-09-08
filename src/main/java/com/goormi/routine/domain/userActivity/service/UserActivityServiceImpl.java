@@ -84,8 +84,7 @@ public class UserActivityServiceImpl implements UserActivityService{
         if (!Objects.equals(user.getId(), userActivity.getUser().getId())) {
             throw new IllegalArgumentException("권한이 없습니다.");
         }
-
-        userActivity.updateActivity(request.getActivityType(), request.isPublic());
+        userActivity.updateActivity(request.getActivityType(), request.getIsPublic());
         return convertToResponse(userActivity);
     }
 
@@ -115,7 +114,7 @@ public class UserActivityServiceImpl implements UserActivityService{
         if (!isOwner) {
             // 본인이 아니면 공개된 사진만 조회
             return activities.stream()
-                    .filter(UserActivity::isPublic)
+                    .filter(UserActivity::getIsPublic)
                     .map(this::convertToResponse)
                     .toList();
         }

@@ -19,6 +19,6 @@ public class UserActivityRequest {
     private Integer personalRoutineId;
     private Long groupId;
     private String imageUrl;
-    private boolean isPublic;
+    private Boolean isPublic;
 
 }

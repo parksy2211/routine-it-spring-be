@@ -1,6 +1,8 @@
 package com.goormi.routine.domain.userActivity.service;
 
 import com.goormi.routine.domain.group.dto.request.GroupCreateRequest;
+import com.goormi.routine.domain.group.dto.request.GroupJoinRequest;
+import com.goormi.routine.domain.group.dto.response.GroupMemberResponse;
 import com.goormi.routine.domain.group.dto.response.GroupResponse;
 import com.goormi.routine.domain.group.entity.Group;
 import com.goormi.routine.domain.group.entity.GroupType;
@@ -11,6 +13,8 @@ import com.goormi.routine.domain.user.repository.UserRepository;
 import com.goormi.routine.domain.userActivity.dto.UserActivityRequest;
 import com.goormi.routine.domain.userActivity.dto.UserActivityResponse;
 import com.goormi.routine.domain.userActivity.entity.ActivityType;
+import com.goormi.routine.domain.userActivity.entity.UserActivity;
+import com.goormi.routine.domain.userActivity.repository.UserActivityRepository;
 import com.goormi.routine.personal_routines.domain.PersonalRoutine;
 import com.goormi.routine.personal_routines.dto.PersonalRoutineRequest;
 import com.goormi.routine.personal_routines.dto.PersonalRoutineResponse;
@@ -27,6 +31,7 @@ import org.springframework.test.context.ActiveProfiles;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -37,6 +42,8 @@ class UserActivityServiceTest {
 
     @Autowired
     private UserActivityService userActivityService;
+    @Autowired
+    private UserActivityRepository  userActivityRepository;
     @Autowired
     private UserRepository userRepository;
     @Autowired
@@ -143,6 +150,31 @@ class UserActivityServiceTest {
         // when & then
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> userActivityService.create(user.getId(), request));
-        assertThat(exception.getMessage()).isEqualTo("Personal Routine not found");
+        assertThat(exception.getMessage()).isEqualTo("PersonalRoutine Id is null");
+    }
+
+    @Test
+    @DisplayName("개인 루틴 활동 생성 후 업데이트 성공")
+    void update_personal_routine_activity_success() {
+        // given
+        UserActivity activity = UserActivity.createActivity(user, savedRoutine);
+        userActivityRepository.save(activity);
+
+        UserActivityRequest updateRequest = UserActivityRequest.builder()
+                .activityId(activity.getId())
+                .activityType(ActivityType.NOT_COMPLETED)
+                .activityDate(LocalDate.now())
+                .personalRoutineId(savedRoutine.getRoutineId())
+                .isPublic(false)
+                .build();
+
+        // when
+        UserActivityResponse response =userActivityService.updateActivity(user.getId(), updateRequest);
+
+        // then
+        assertThat(response.getUserId()).isEqualTo(user.getId());
+        assertThat(response.getPersonalRoutineId()).isEqualTo(savedRoutine.getRoutineId());
+        assertThat(response.getActivityType()).isEqualTo(ActivityType.NOT_COMPLETED);
+        assertThat(response.getActivityDate()).isNull();
     }
 }

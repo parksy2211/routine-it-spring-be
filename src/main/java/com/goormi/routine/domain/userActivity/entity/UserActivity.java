@@ -41,7 +41,7 @@ public class UserActivity {
     private GroupMember groupMember;
 
     private String imageUrl;
-    private boolean isPublic;
+    private Boolean isPublic;
 
     public static UserActivity createActivity (User user,PersonalRoutine personalRoutine) {
         return UserActivity.builder()
@@ -65,15 +65,16 @@ public class UserActivity {
                 .build();
     }
 
-    public void updateActivity(ActivityType activityType, boolean isPublic) {
-        this.activityType = activityType;
-        this.isPublic = isPublic;
+    public void updateActivity(ActivityType activityType, Boolean isPublic) {
+        if (activityType != null) this.activityType = activityType;
+
+        if (isPublic != null) this.isPublic = isPublic;
 
         if (this.activityDate == null) {
             this.activityDate = LocalDate.now();
         }
 
-        if (activityType == null || activityType == ActivityType.NOT_COMPLETED) {
+        if (activityType == ActivityType.NOT_COMPLETED) {
             this.activityDate = null;
         }
         this.updatedAt = LocalDateTime.now();
