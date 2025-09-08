@@ -32,6 +32,27 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public NotificationResponse createNotification(NotificationType notificationType,
                                                    Long senderId, Long receiverId, Long groupId) {
+        if (notificationType == NotificationType.MONTHLY_REVIEW) {
+            User receiver = userRepository.findById(receiverId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+            Notification notification = Notification.builder()
+                .notificationType(notificationType)
+                .content("월간 회고가 준비되었습니다! 확인해보세요.")
+                .receiver(receiver)
+                .sender(null)
+                .group(null)
+                .isRead(false)
+                .build();
+
+            notificationRepository.save(notification);
+            return NotificationResponse.from(notification);
+        }
+
+        if (senderId == null) {
+            throw new IllegalArgumentException("senderId cannot be null for this notification type");
+        }
+
         User sender = userRepository.findById(senderId)
                 .orElseThrow(()-> new IllegalArgumentException("User not found"));
 
@@ -65,10 +86,6 @@ public class NotificationServiceImpl implements NotificationService {
         } else if (notificationType == NotificationType.GROUP_TODAY_AUTH_REQUEST) {
             content = sender.getNickname() + "님이 "
                     + group.getGroupName() +"의 그룹 인증을 요청했습니다.";
-        } else if (notificationType == NotificationType.MONTHLY_REVIEW) {
-            String monthYear = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
-            content = receiver.getNickname() + "님의 "
-                + monthYear + " 월간 루틴 성과 리포트가 준비되었습니다! 확인해보세요.";
         }
       
         Notification notification =
