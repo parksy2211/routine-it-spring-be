@@ -40,17 +40,13 @@ public class NotificationServiceImpl implements NotificationService {
                 .notificationType(notificationType)
                 .content("월간 회고가 준비되었습니다! 확인해보세요.")
                 .receiver(receiver)
-                .sender(null)
+                .sender(receiver)
                 .group(null)
                 .isRead(false)
                 .build();
 
             notificationRepository.save(notification);
             return NotificationResponse.from(notification);
-        }
-
-        if (senderId == null) {
-            throw new IllegalArgumentException("senderId cannot be null for this notification type");
         }
 
         User sender = userRepository.findById(senderId)
@@ -66,6 +62,7 @@ public class NotificationServiceImpl implements NotificationService {
                 .orElseThrow(() -> new IllegalArgumentException("GroupMember not found"));
 
         String content = "";
+
         if (notificationType == NotificationType.GROUP_JOIN_REQUEST) {
             content = sender.getNickname() + "님이 "
                     + group.getGroupName() +"에 그룹 가입 요청을 보냈습니다.";

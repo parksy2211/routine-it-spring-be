@@ -22,13 +22,24 @@ public class NotificationResponse {
     private LocalDateTime createdAt;
 
     public static NotificationResponse from(Notification notification) {
+        String senderName = null;
+        String groupName = null;
+
+        if (notification.getSender() != null) {
+            senderName = notification.getSender().getNickname();
+        }
+
+        if (notification.getGroup() != null) {
+            groupName = notification.getGroup().getGroupName();
+        }
+
         return NotificationResponse.builder()
                 .id(notification.getId())
                 .content(notification.getContent())
                 .notificationType(notification.getNotificationType())
-                .senderName(notification.getSender().getNickname())
+                .senderName(senderName)
                 .receiverName(notification.getReceiver().getNickname())
-                .groupName(notification.getGroup().getGroupName())
+                .groupName(groupName)
                 .isRead(notification.getIsRead())
                 .createdAt(notification.getCreatedAt())
                 .build();
