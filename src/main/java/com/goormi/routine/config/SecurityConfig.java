@@ -53,20 +53,18 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/login/oauth2/**",
                                 "/oauth2/**",
-                                "/api/auth/signup",
                                 "/api/auth/check-nickname",
                                 "/api/auth/refresh",
-                                "/api/personal-routines/**",
                                 "/ws/**"
                         ).permitAll()
 
                         // 나머지는 인증 필요
                         .anyRequest().authenticated()
                 )
-                .oauth2Login(oauth2 -> oauth2
-                        .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
-                        .successHandler(oAuth2SuccessHandler)
-                )
+//                .oauth2Login(oauth2 -> oauth2
+//                        .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+//                        .successHandler(oAuth2SuccessHandler)
+//                )
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(customAuthenticationEntryPoint)
                 )
