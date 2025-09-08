@@ -16,8 +16,6 @@ public interface RankingService {
 
 	void updateRankingScore(Long userId, Long groupId, int score);
 
-	void updatePersonalScore(Long userId, int score);
-
 	void updateGroupScore(Long userId, Long groupId, int score);
 
 	void resetMonthlyRankings();

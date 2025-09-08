@@ -119,23 +119,19 @@ public class RankingController {
 
 	@Operation(
 		summary = "랭킹 점수 업데이트",
-		description = "사용자의 루틴 완료나 인증에 따른 점수를 업데이트합니다. "
+		description = "사용자의 루틴 완료나 인증에 따른 점수를 업데이트합니다." +
+			"연속 인증 보너스는 조회 시 실시간 계산됩니다."
 	)
 	@PostMapping("/update-score")
 	public ApiResponse<Void> updateRankingScore(
 		@Parameter(description = "사용자 ID", required = true)
 		@RequestParam Long userId,
-		@Parameter(description = "그룹 ID (개인 점수 업데이트시 null)")
-		@RequestParam(required = false) Long groupId,
-		@Parameter(description = "추가할 점수", required = true)
-		@RequestParam Integer score) {
+		@Parameter(description = "그룹 ID", required = true)
+		@RequestParam Long groupId,
+		@Parameter(description = "인증 횟수")
+		@RequestParam Integer authCount) {
 
-		rankingService.updateRankingScore(userId, groupId, score);
-
-		String logMessage = groupId != null ?
-			String.format("그룹 점수 업데이트 완료: 사용자 ID = %d, 그룹 ID = %d, 점수 = %d", userId, groupId, score) :
-			String.format("개인 점수 업데이트 완료: 사용자 ID = %d, 점수 = %d", userId, score);
-		log.info(logMessage);
+		rankingService.updateRankingScore(userId, groupId, authCount);
 
 		return ApiResponse.success("점수 업데이트가 완료되었습니다.", null);
 	}

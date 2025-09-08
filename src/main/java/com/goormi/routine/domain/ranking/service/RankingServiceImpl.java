@@ -175,15 +175,19 @@ public class RankingServiceImpl implements RankingService {
 
 					int authCount = calculateGroupAuthCount(ranking.getUserId(), groupId, currentMonthYear);
 					int consecutiveDays = calculateConsecutiveDays(ranking.getUserId());
+
+					int finalScore = ranking.getScore();
+
+					int baseScore = authCount * 10;
 					double consecutiveBonus = calculateConsecutiveBonus(consecutiveDays);
 
 					GroupTop3RankingResponse.ScoreBreakdown scoreBreakdown =
 						GroupTop3RankingResponse.ScoreBreakdown.builder()
-							.baseScore(authCount * 10)
+							.baseScore(baseScore)
 							.weightMultiplier(groupWeightMultiplier)
-							.weightedScore((int)(authCount * 10 * groupWeightMultiplier))
+							.weightedScore((int)(baseScore * groupWeightMultiplier))
 							.consecutiveBonus(consecutiveBonus)
-							.finalScore(ranking.getScore())
+							.finalScore(finalScore)
 							.build();
 
 					return GroupTop3RankingResponse.UserRankingItem.builder()
@@ -191,7 +195,7 @@ public class RankingServiceImpl implements RankingService {
 						.userId(ranking.getUserId())
 						.nickname(user != null ? user.getNickname() : "탈퇴한 사용자")
 						.profileImageUrl(user != null ? user.getProfileImageUrl() : null)
-						.score(ranking.getScore())
+						.score(finalScore)
 						.authCount(authCount)
 						.consecutiveDays(consecutiveDays)
 						.consecutiveBonus(consecutiveBonus)
@@ -214,54 +218,40 @@ public class RankingServiceImpl implements RankingService {
 
 	@Override
 	@Transactional
-	public void updateRankingScore(Long userId, Long groupId, int score) {
+	public void updateRankingScore(Long userId, Long groupId, int authCount) {
 		if (userId == null) {
 			throw new IllegalArgumentException("사용자 ID는 필수입니다.");
 		}
-		if (score < 0) {
-			throw new IllegalArgumentException("점수는 0 이상이어야 합니다.");
+		if (groupId == null) {
+			throw new IllegalArgumentException("그룹 ID는 필수입니다.");
+		}
+		if (authCount < 0) {
+			throw new IllegalArgumentException("인증 횟수는 0 이상이어야 합니다.");
 		}
 
-		if (groupId != null) {
-			updateGroupScore(userId, groupId, score);
-		} else {
-			updatePersonalScore(userId, score);
-		}
+		int baseScore = authCount * 10;
+		int consecutiveDays = calculateConsecutiveDays(userId);
+		double consecutiveBonus = calculateConsecutiveBonus(consecutiveDays);
+		int finalScore = baseScore + (int)consecutiveBonus;
+
+		updateGroupScore(userId, groupId, finalScore);
 	}
 
 	@Override
 	@Transactional
-	public void updatePersonalScore(Long userId, int score) {
-		Optional<Ranking> existingRanking = rankingRepository.findByUserIdAndGroupId(userId, null);
-
-		if (existingRanking.isPresent()) {
-			Ranking ranking = existingRanking.get();
-			ranking.setScore(ranking.getScore() + score);
-			ranking.setUpdatedAt(LocalDateTime.now());
-			rankingRepository.save(ranking);
-			log.info("개인 점수 업데이트: 사용자 ID = {}, 추가 점수 = {}, 총 점수 = {}",
-				userId, score, ranking.getScore());
-		} else {
-			initializeRanking(userId, null);
-			updatePersonalScore(userId, score);
-		}
-	}
-
-	@Override
-	@Transactional
-	public void updateGroupScore(Long userId, Long groupId, int score) {
+	public void updateGroupScore(Long userId, Long groupId, int finalScore) {
 		Optional<Ranking> existingRanking = rankingRepository.findByUserIdAndGroupId(userId, groupId);
 
 		if (existingRanking.isPresent()) {
 			Ranking ranking = existingRanking.get();
-			ranking.setScore(ranking.getScore() + score);
+			ranking.setScore(ranking.getScore() + finalScore);
 			ranking.setUpdatedAt(LocalDateTime.now());
 			rankingRepository.save(ranking);
-			log.info("그룹 점수 업데이트: 사용자 ID = {}, 그룹 ID = {}, 추가 점수 = {}, 총 점수 = {}",
-				userId, groupId, score, ranking.getScore());
+			log.info("그룹 점수 업데이트: 사용자 ID = {}, 그룹 ID = {}, 기본 점수 = {}, 총 점수 = {}",
+				userId, groupId, finalScore, ranking.getScore());
 		} else {
 			initializeRanking(userId, groupId);
-			updateGroupScore(userId, groupId, score);
+			updateGroupScore(userId, groupId, finalScore);
 		}
 	}
 
