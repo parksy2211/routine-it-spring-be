@@ -40,6 +40,8 @@ public class UserActivityServiceImpl implements UserActivityService{
         UserActivity userActivity;
 
         if (request.getActivityType() == ActivityType.GROUP_AUTH_COMPLETE) {
+            if (request.getGroupId() == null) throw new IllegalArgumentException("GroupId is null");
+
             Group group = groupRepository.findById(request.getGroupId())
                     .orElseThrow(() -> new IllegalArgumentException("Group not found"));
             GroupMember groupMember = groupMemberRepository.findByGroupAndUser(group, user)
@@ -49,6 +51,8 @@ public class UserActivityServiceImpl implements UserActivityService{
 
         }
         else if (request.getActivityType() == ActivityType.PERSONAL_ROUTINE_COMPLETE) {
+            if (request.getPersonalRoutineId() == null) throw new IllegalArgumentException("PersonalRoutine Id is null");
+
             PersonalRoutine personalRoutine = personalRoutineRepository.findById(request.getPersonalRoutineId())
                     .orElseThrow(() -> new IllegalArgumentException("Personal Routine not found"));
             userActivity = UserActivity.createActivity(user, personalRoutine);

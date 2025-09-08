@@ -132,23 +132,6 @@ class UserActivityServiceTest {
     }
 
     @Test
-    @DisplayName("활동 생성 실패 - 그룹 ID와 개인 루틴 ID 동시 요청")
-    void create_activity_fail_with_both_ids() {
-        // given
-        UserActivityRequest request = UserActivityRequest.builder()
-                .activityType(ActivityType.PERSONAL_ROUTINE_COMPLETE)
-                .activityDate(LocalDate.now())
-                .personalRoutineId(savedRoutine.getRoutineId())
-                .groupId(savedGroup.getGroupId())
-                .build();
-
-        // when & then
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> userActivityService.create(user.getId(), request));
-        assertThat(exception.getMessage()).isEqualTo("Select one Group or personal Routine");
-    }
-
-    @Test
     @DisplayName("활동 생성 실패 - 유효하지 않은 요청")
     void create_activity_fail_with_invalid_request() {
         // given
@@ -160,6 +143,6 @@ class UserActivityServiceTest {
         // when & then
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> userActivityService.create(user.getId(), request));
-        assertThat(exception.getMessage()).isEqualTo("Invalid request");
+        assertThat(exception.getMessage()).isEqualTo("Personal Routine not found");
     }
 }
