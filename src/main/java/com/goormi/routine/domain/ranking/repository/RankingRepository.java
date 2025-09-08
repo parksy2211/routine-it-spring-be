@@ -19,9 +19,6 @@ public interface RankingRepository extends JpaRepository<Ranking, Long> {
 
 	Optional<Ranking> findByUserIdAndGroupId(Long userId, Long groupId);
 
-	@Query("SELECT r FROM Ranking r WHERE r.groupId IS NULL ORDER BY r.score DESC")
-	List<Ranking> findPersonalRankingsOrderByScore();
-
 	@Query("SELECT r FROM Ranking r WHERE r.groupId IS NOT NULL ORDER BY r.score DESC")
 	List<Ranking> findGroupRankingsOrderByScore();
 

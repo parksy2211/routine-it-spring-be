@@ -20,9 +20,6 @@ import com.goormi.routine.domain.chat.repository.ChatRoomRepository;
 import com.goormi.routine.domain.chat.repository.ChatMemberRepository;
 import com.goormi.routine.domain.chat.service.ChatService;
 import com.goormi.routine.domain.userActivity.dto.UserActivityRequest;
-import com.goormi.routine.domain.userActivity.entity.ActivityType;
-import com.goormi.routine.domain.userActivity.entity.UserActivity;
-import com.goormi.routine.domain.userActivity.repository.UserActivityRepository;
 import com.goormi.routine.domain.userActivity.service.UserActivityService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -276,14 +273,22 @@ public class GroupMemberServiceImpl implements GroupMemberService {
         return GroupMemberResponse.from(targetGroupMember);
     }
 
+
+    // 리더 승인을 받아 그룹 루틴 완료 처리
     @Override
-    public void approveAuthRequest(Long leaderId, Long groupId, LeaderAnswerRequest leaderAnswerRequest, UserActivityRequest activityRequest){
+    public void approveAuthRequest(Long leaderId, Long groupId, LeaderAnswerRequest leaderAnswerRequest){
         Group group = validateLeader(leaderId, leaderAnswerRequest);
         if (!Objects.equals(groupId, group.getGroupId())) {
             throw new IllegalArgumentException("not equal group id");
         }
         GroupMember groupMember = validateMember(leaderAnswerRequest);
 
+        UserActivityRequest activityRequest = UserActivityRequest.builder()
+                .groupId(group.getGroupId())
+                .activityType(ActivityType.GROUP_AUTH_COMPLETE)
+                .activityDate(leaderAnswerRequest.getActivityDate())
+                .imageUrl(leaderAnswerRequest.getImageUrl())
+                .build();
 
         if (leaderAnswerRequest.isApproved()) {
             userActivityService.create(groupMember.getUser().getId(), activityRequest);

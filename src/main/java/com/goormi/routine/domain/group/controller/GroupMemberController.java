@@ -6,7 +6,6 @@ import com.goormi.routine.domain.group.dto.response.GroupMemberResponse;
 import com.goormi.routine.domain.group.entity.GroupMemberRole;
 import com.goormi.routine.domain.group.entity.GroupMemberStatus;
 import com.goormi.routine.domain.group.service.GroupMemberService;
-import com.goormi.routine.domain.userActivity.dto.UserActivityRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -57,10 +56,9 @@ public class GroupMemberController {
     @PostMapping("/approve-auth")
     public ResponseEntity<Void> approveAuth(@AuthenticationPrincipal Long leaderId,
                                             @PathVariable Long groupId,
-                                            @RequestBody LeaderAnswerRequest leaderAnswerRequest,
-                                            @RequestBody UserActivityRequest userActivityRequest) {
+                                            @RequestBody LeaderAnswerRequest leaderAnswerRequest) {
 
-        groupMemberService.approveAuthRequest(leaderId, groupId,leaderAnswerRequest, userActivityRequest);
+        groupMemberService.approveAuthRequest(leaderId, groupId,leaderAnswerRequest);
         return ResponseEntity.ok().build();
     }
 
