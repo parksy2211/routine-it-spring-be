@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @RestController
@@ -29,6 +31,10 @@ public class ReviewController {
 	public ApiResponse<String> sendMonthlyReviewMessages(
 		@CurrentUser Long userId,
 		@RequestParam(required = false) String monthYear) {
+		if (monthYear == null || monthYear.trim().isEmpty()) {
+			monthYear = LocalDate.now().minusMonths(1).format(DateTimeFormatter.ofPattern("yyyy-MM"));
+		}
+
 			reviewService.sendUserReviewMessage(userId, monthYear);
 			return ApiResponse.success("회고 메시지가 전송되었습니다.");
 	}
