@@ -5,8 +5,11 @@ import com.goormi.routine.domain.group.dto.request.GroupJoinRequest;
 import com.goormi.routine.domain.group.dto.response.GroupMemberResponse;
 import com.goormi.routine.domain.group.dto.response.GroupResponse;
 import com.goormi.routine.domain.group.entity.Group;
+import com.goormi.routine.domain.group.entity.GroupMember;
 import com.goormi.routine.domain.group.entity.GroupType;
+import com.goormi.routine.domain.group.repository.GroupMemberRepository;
 import com.goormi.routine.domain.group.repository.GroupRepository;
+import com.goormi.routine.domain.group.service.GroupMemberService;
 import com.goormi.routine.domain.group.service.GroupService;
 import com.goormi.routine.domain.user.entity.User;
 import com.goormi.routine.domain.user.repository.UserRepository;
@@ -29,9 +32,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
-import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -51,6 +55,10 @@ class UserActivityServiceTest {
     @Autowired
     private GroupService groupService;
     @Autowired
+    private GroupMemberService groupMemberService;
+    @Autowired
+    private GroupMemberRepository groupMemberRepository;
+    @Autowired
     private PersonalRoutineService personalRoutineService;
     @Autowired
     private PersonalRoutineRepository personalRoutineRepository;
@@ -58,6 +66,7 @@ class UserActivityServiceTest {
     private User leader;
     private User user;
     private Group savedGroup;
+    private GroupMember savedGroupMember;
     private PersonalRoutine savedRoutine;
 
     @BeforeEach
@@ -86,6 +95,14 @@ class UserActivityServiceTest {
                 .build();
         GroupResponse groupResponse = groupService.createGroup(leader.getId(), groupCreateRequest);
         savedGroup = groupRepository.findById(groupResponse.getGroupId()).orElseThrow();
+
+        // 테스트용 멤버 가입 처리
+        GroupJoinRequest joinRequest = GroupJoinRequest.builder()
+                .groupId(savedGroup.getGroupId())
+                .build();
+
+        GroupMemberResponse joined = groupMemberService.addMember(user.getId(), savedGroup.getGroupId(), joinRequest);
+        savedGroupMember = groupMemberRepository.findById(joined.getGroupMemberId()).orElseThrow();
 
         // 테스트용 개인 루틴 생성
         PersonalRoutineRequest routineRequest = PersonalRoutineRequest.builder()
@@ -176,5 +193,42 @@ class UserActivityServiceTest {
         assertThat(response.getPersonalRoutineId()).isEqualTo(savedRoutine.getRoutineId());
         assertThat(response.getActivityType()).isEqualTo(ActivityType.NOT_COMPLETED);
         assertThat(response.getActivityDate()).isNull();
+    }
+
+    @Test
+    @DisplayName("사용자 피드 조회")
+    void getImagesFromUserActivity_success() {
+        //given
+        UserActivity activity = UserActivity.createActivity(user, savedGroupMember, "1");
+        userActivityRepository.save(activity);
+
+        UserActivity build1 = UserActivity.builder()
+                .user(user)
+                .groupMember(savedGroupMember)
+                .activityType(ActivityType.GROUP_AUTH_COMPLETE)
+                .activityDate(LocalDate.now().minusDays(1))
+                .imageUrl("2")
+                .isPublic(true)
+                .createdAt(LocalDateTime.now().minusDays(1))
+                .build();
+        UserActivity build2 = UserActivity.builder()
+                .user(user)
+                .groupMember(savedGroupMember)
+                .activityType(ActivityType.GROUP_AUTH_COMPLETE)
+                .activityDate(LocalDate.now().minusDays(2))
+                .imageUrl("3")
+                .isPublic(false)
+                .createdAt(LocalDateTime.now().minusDays(2))
+                .build();
+
+        userActivityRepository.save(build1);
+        userActivityRepository.save(build2);
+        //when
+        build2.updateActivity(ActivityType.GROUP_AUTH_COMPLETE, true);
+        List<UserActivityResponse> myImages = userActivityService.getImagesOfUserActivities(user.getId(), user.getId());
+        List<UserActivityResponse> userImages = userActivityService.getImagesOfUserActivities(leader.getId(), user.getId());
+        //then
+        assertThat(myImages).hasSize(3);
+        assertThat(userImages).hasSize(2);
     }
 }
