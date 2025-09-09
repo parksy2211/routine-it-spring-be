@@ -40,7 +40,7 @@ public class Notification {
     private Group group;
 
     @Column(nullable = false)
-    private Boolean isRead;
+    private boolean isRead;
 
     private LocalDateTime createdAt;
 
