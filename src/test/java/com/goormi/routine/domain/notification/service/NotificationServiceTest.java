@@ -143,13 +143,13 @@ class NotificationServiceTest {
         // given
         Notification notification = notificationRepository.save(Notification.createNotification
                 ("content", NotificationType.GROUP_JOIN_REQUEST, user, leader, savedGroup));
-        assertThat(notification.getIsRead()).isFalse();
+        assertThat(notification.isRead()).isFalse();
 
         // when
         notificationService.updateIsRead(notification.getId(), leader.getId(), true);
 
         // then
         Notification updatedNotification = notificationRepository.findById(notification.getId()).orElseThrow();
-        assertThat(updatedNotification.getIsRead()).isTrue();
+        assertThat(updatedNotification.isRead()).isTrue();
     }
 }

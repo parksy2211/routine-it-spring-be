@@ -40,7 +40,7 @@ public class NotificationResponse {
                 .senderName(senderName)
                 .receiverName(notification.getReceiver().getNickname())
                 .groupName(groupName)
-                .isRead(notification.getIsRead())
+                .isRead(notification.isRead())
                 .createdAt(notification.getCreatedAt())
                 .build();
     }
