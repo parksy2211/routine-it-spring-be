@@ -1,6 +1,6 @@
-package com.goormi.routine.personal_routines.repository;
+package com.goormi.routine.domain.personal_routines.repository;
 
-import com.goormi.routine.personal_routines.domain.PersonalRoutine;
+import com.goormi.routine.domain.personal_routines.domain.PersonalRoutine;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

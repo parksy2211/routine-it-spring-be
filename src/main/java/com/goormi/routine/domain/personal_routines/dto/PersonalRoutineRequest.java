@@ -1,4 +1,4 @@
-package com.goormi.routine.personal_routines.dto;
+package com.goormi.routine.domain.personal_routines.dto;
 
 import jakarta.validation.constraints.*;
 import lombok.*;

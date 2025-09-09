@@ -1,10 +1,10 @@
-package com.goormi.routine.personal_routines.service;
+package com.goormi.routine.domain.personal_routines.service;
 
-import com.goormi.routine.personal_routines.domain.PersonalRoutine;
-import com.goormi.routine.personal_routines.dto.PersonalRoutineRequest;
-import com.goormi.routine.personal_routines.dto.PersonalRoutineResponse;
-import com.goormi.routine.personal_routines.dto.PersonalRoutineUpdateRequest;
-import com.goormi.routine.personal_routines.repository.PersonalRoutineRepository;
+import com.goormi.routine.domain.personal_routines.domain.PersonalRoutine;
+import com.goormi.routine.domain.personal_routines.dto.PersonalRoutineRequest;
+import com.goormi.routine.domain.personal_routines.dto.PersonalRoutineResponse;
+import com.goormi.routine.domain.personal_routines.dto.PersonalRoutineUpdateRequest;
+import com.goormi.routine.domain.personal_routines.repository.PersonalRoutineRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
