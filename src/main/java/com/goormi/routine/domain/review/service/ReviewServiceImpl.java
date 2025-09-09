@@ -23,7 +23,7 @@ import com.goormi.routine.domain.user.repository.UserRepository;
 import com.goormi.routine.domain.userActivity.entity.ActivityType;
 import com.goormi.routine.domain.userActivity.entity.UserActivity;
 import com.goormi.routine.domain.userActivity.repository.UserActivityRepository;
-import com.goormi.routine.personal_routines.domain.PersonalRoutine;
+import com.goormi.routine.domain.personal_routines.domain.PersonalRoutine;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

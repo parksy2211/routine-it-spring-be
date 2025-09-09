@@ -1,4 +1,4 @@
-package com.goormi.routine.personal_routines.domain;
+package com.goormi.routine.domain.personal_routines.domain;
 
 import jakarta.persistence.*;
 import lombok.*;

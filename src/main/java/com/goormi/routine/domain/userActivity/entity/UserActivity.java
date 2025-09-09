@@ -2,7 +2,7 @@ package com.goormi.routine.domain.userActivity.entity;
 
 import com.goormi.routine.domain.group.entity.GroupMember;
 import com.goormi.routine.domain.user.entity.User;
-import com.goormi.routine.personal_routines.domain.PersonalRoutine;
+import com.goormi.routine.domain.personal_routines.domain.PersonalRoutine;
 import jakarta.persistence.*;
 import lombok.*;
 
