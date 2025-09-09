@@ -71,12 +71,12 @@ public class GlobalExceptionHandler {
     /**
      * 기타 모든 예외 처리
      */
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
-        
-        log.error("Unexpected error: ", ex);
-        
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(ApiResponse.error("서버 내부 오류가 발생했습니다."));
-    }
+//    @ExceptionHandler(Exception.class)
+//    public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
+//
+//        log.error("Unexpected error: ", ex);
+//
+//        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+//            .body(ApiResponse.error("서버 내부 오류가 발생했습니다."));
+//    }
 }
