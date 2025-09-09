@@ -45,7 +45,7 @@ public class NotificationController {
         return ResponseEntity.ok(notifications);
     }
 
-    @PostMapping("/{notificationId}/read")
+    @PutMapping("/{notificationId}/read")
     @Operation(summary = "유저의 알림 읽음 표시", description = "인증된 사용자가 알림을 읽었습니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "읽음 처리 성공"),
