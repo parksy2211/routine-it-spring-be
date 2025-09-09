@@ -13,5 +13,5 @@ public interface NotificationService {
 
     List<NotificationResponse> getNotificationsByNotificationType(Long receiverId, NotificationType notificationType);
 
-    void updateIsRead(Long notificationId, Long receiverId, Boolean isRead);
+    void updateIsRead(Long notificationId, Long receiverId, boolean isRead);
 }

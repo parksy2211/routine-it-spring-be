@@ -14,9 +14,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 
@@ -108,7 +105,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public void updateIsRead(Long notificationId, Long receiverId, Boolean isRead) {
+    public void updateIsRead(Long notificationId, Long receiverId, boolean isRead) {
         User receiver = userRepository.findById(receiverId)
                 .orElseThrow(()-> new IllegalArgumentException("User not found"));
 

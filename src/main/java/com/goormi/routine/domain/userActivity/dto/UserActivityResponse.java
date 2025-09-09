@@ -31,7 +31,7 @@ public class UserActivityResponse {
     @Schema(description = "그룹 인증 사진 (PersonalRoutine 활동일 경우 null)")
     private String imageUrl;
     @Schema(description = "공개 여부 (기본값 false)")
-    private boolean isPublic;
+    private Boolean isPublic;
 
     public static UserActivityResponse fromPersonalActivity(UserActivity userActivity) {
         return UserActivityResponse.builder()
@@ -42,7 +42,7 @@ public class UserActivityResponse {
                 .updatedAt(userActivity.getUpdatedAt())
                 .personalRoutineId(userActivity.getPersonalRoutine().getRoutineId())
                 .personalRoutineName(userActivity.getPersonalRoutine().getRoutineName())
-                .isPublic(userActivity.isPublic())
+                .isPublic(userActivity.getIsPublic())
                 .build();
     }
 
@@ -56,7 +56,7 @@ public class UserActivityResponse {
                 .groupId(userActivity.getGroupMember().getGroup().getGroupId())
                 .groupName(userActivity.getGroupMember().getGroup().getGroupName())
                 .imageUrl(userActivity.getImageUrl())
-                .isPublic(userActivity.isPublic())
+                .isPublic(userActivity.getIsPublic())
                 .build();
     }
 }
