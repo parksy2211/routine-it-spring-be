@@ -1,9 +1,9 @@
-package com.goormi.routine.personal_routines.controller;
+package com.goormi.routine.domain.personal_routines.controller;
 
-import com.goormi.routine.personal_routines.dto.PersonalRoutineRequest;
-import com.goormi.routine.personal_routines.dto.PersonalRoutineResponse;
-import com.goormi.routine.personal_routines.dto.PersonalRoutineUpdateRequest;
-import com.goormi.routine.personal_routines.service.PersonalRoutineService;
+import com.goormi.routine.domain.personal_routines.dto.PersonalRoutineRequest;
+import com.goormi.routine.domain.personal_routines.dto.PersonalRoutineResponse;
+import com.goormi.routine.domain.personal_routines.dto.PersonalRoutineUpdateRequest;
+import com.goormi.routine.domain.personal_routines.service.PersonalRoutineService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
