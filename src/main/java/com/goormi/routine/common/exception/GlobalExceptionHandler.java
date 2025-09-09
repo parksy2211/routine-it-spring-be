@@ -1,6 +1,5 @@
 package com.goormi.routine.common.exception;
 
-import com.goormi.routine.common.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +19,7 @@ public class GlobalExceptionHandler {
      * @Valid 검증 실패 시 발생하는 예외 처리
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Void>> handleValidationException(
+    public ResponseEntity<ErrorResponse> handleValidationException(
             MethodArgumentNotValidException ex) {
         
         log.error("Validation error: {}", ex.getMessage());
@@ -32,14 +31,14 @@ public class GlobalExceptionHandler {
             .collect(Collectors.joining(", "));
             
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-            .body(ApiResponse.error(errorMessage));
+            .body(ErrorResponse.of(errorMessage));
     }
 
     /**
      * JSON 파싱 실패 시 발생하는 예외 처리 (LocalTime 파싱 에러 포함)
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadableException(
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(
             HttpMessageNotReadableException ex) {
         
         log.error("JSON parsing error: {}", ex.getMessage());
@@ -52,31 +51,31 @@ public class GlobalExceptionHandler {
         }
         
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-            .body(ApiResponse.error(errorMessage));
+            .body(ErrorResponse.of(errorMessage));
     }
 
     /**
      * IllegalArgumentException 처리
      */
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
             IllegalArgumentException ex) {
         
         log.error("IllegalArgument error: {}", ex.getMessage());
         
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-            .body(ApiResponse.error(ex.getMessage()));
+            .body(ErrorResponse.of(ex.getMessage()));
     }
 
     /**
      * 기타 모든 예외 처리
      */
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
-        
-        log.error("Unexpected error: ", ex);
-        
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(ApiResponse.error("서버 내부 오류가 발생했습니다."));
-    }
+//    @ExceptionHandler(Exception.class)
+//    public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+//
+//        log.error("Unexpected error: ", ex);
+//
+//        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+//            .body(ErrorResponse.of("서버 내부 오류가 발생했습니다."));
+//    }
 }
