@@ -19,8 +19,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Service
 @Transactional
@@ -134,4 +137,39 @@ public class UserActivityServiceImpl implements UserActivityService{
     }
 
 
+
+    private static final Set<ActivityType> ATTENDANCE_TYPES =
+            EnumSet.of(ActivityType.PERSONAL_ROUTINE_COMPLETE, ActivityType.GROUP_AUTH_COMPLETE);
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasAttendanceOn(Long userId, LocalDate date) {
+        return userActivityRepository.existsByUserIdAndActivityDateAndActivityTypeIn(
+                userId, date, ATTENDANCE_TYPES
+        );
+    }
+
+
+    //연속출석부분
+    @Override
+    @Transactional(readOnly = true)
+    public int getConsecutiveAttendanceDays(Long userId, LocalDate today) {
+        // today가 null이면 KST 기준 오늘로
+        LocalDate base = (today != null) ? today : LocalDate.now(ZoneId.of("Asia/Seoul"));
+
+        int streak = 0;
+        LocalDate cursor = base;
+
+        while (true) {
+            boolean attended = userActivityRepository
+                    .existsByUserIdAndActivityDateAndActivityTypeIn(
+                            userId, cursor, ATTENDANCE_TYPES.stream().toList()
+                    );
+            if (!attended) break;
+
+            streak++;
+            cursor = cursor.minusDays(1);
+        }
+        return streak;
+    }
 }

@@ -15,4 +15,10 @@ public interface UserActivityService {
     List<UserActivityResponse> getUserActivitiesPerDay(Long userId, LocalDate activityDate);
 
     List<UserActivityResponse> getImagesOfUserActivities(Long currentUserIdm, Long targetUserId);
+
+
+    //출석
+    int getConsecutiveAttendanceDays(Long userId, LocalDate today);
+
+    boolean hasAttendanceOn(Long userId, LocalDate date);
 }
