@@ -118,7 +118,7 @@ class NotificationServiceTest {
         List<NotificationResponse> responses = notificationService.getNotificationsByReceiver(user.getId());
 
         // then
-        assertThat(responses).hasSize(2);
+        assertThat(responses).hasSize(3); // setUp에서 가입 알림 받음
     }
 
     @Test

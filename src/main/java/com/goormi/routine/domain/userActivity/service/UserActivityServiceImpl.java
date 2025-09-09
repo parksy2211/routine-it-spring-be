@@ -19,8 +19,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Service
 @Transactional
@@ -40,6 +43,8 @@ public class UserActivityServiceImpl implements UserActivityService{
         UserActivity userActivity;
 
         if (request.getActivityType() == ActivityType.GROUP_AUTH_COMPLETE) {
+            if (request.getGroupId() == null) throw new IllegalArgumentException("GroupId is null");
+
             Group group = groupRepository.findById(request.getGroupId())
                     .orElseThrow(() -> new IllegalArgumentException("Group not found"));
             GroupMember groupMember = groupMemberRepository.findByGroupAndUser(group, user)
@@ -49,6 +54,8 @@ public class UserActivityServiceImpl implements UserActivityService{
 
         }
         else if (request.getActivityType() == ActivityType.PERSONAL_ROUTINE_COMPLETE) {
+            if (request.getPersonalRoutineId() == null) throw new IllegalArgumentException("PersonalRoutine Id is null");
+
             PersonalRoutine personalRoutine = personalRoutineRepository.findById(request.getPersonalRoutineId())
                     .orElseThrow(() -> new IllegalArgumentException("Personal Routine not found"));
             userActivity = UserActivity.createActivity(user, personalRoutine);
@@ -80,8 +87,7 @@ public class UserActivityServiceImpl implements UserActivityService{
         if (!Objects.equals(user.getId(), userActivity.getUser().getId())) {
             throw new IllegalArgumentException("권한이 없습니다.");
         }
-
-        userActivity.updateActivity(request.getActivityType(), request.isPublic());
+        userActivity.updateActivity(request.getActivityType(), request.getIsPublic());
         return convertToResponse(userActivity);
     }
 
@@ -111,7 +117,7 @@ public class UserActivityServiceImpl implements UserActivityService{
         if (!isOwner) {
             // 본인이 아니면 공개된 사진만 조회
             return activities.stream()
-                    .filter(UserActivity::isPublic)
+                    .filter(UserActivity::getIsPublic)
                     .map(this::convertToResponse)
                     .toList();
         }
@@ -134,4 +140,39 @@ public class UserActivityServiceImpl implements UserActivityService{
     }
 
 
+
+    private static final Set<ActivityType> ATTENDANCE_TYPES =
+            EnumSet.of(ActivityType.PERSONAL_ROUTINE_COMPLETE, ActivityType.GROUP_AUTH_COMPLETE);
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasAttendanceOn(Long userId, LocalDate date) {
+        return userActivityRepository.existsByUserIdAndActivityDateAndActivityTypeIn(
+                userId, date, ATTENDANCE_TYPES
+        );
+    }
+
+
+    //연속출석부분
+    @Override
+    @Transactional(readOnly = true)
+    public int getConsecutiveAttendanceDays(Long userId, LocalDate today) {
+        // today가 null이면 KST 기준 오늘로
+        LocalDate base = (today != null) ? today : LocalDate.now(ZoneId.of("Asia/Seoul"));
+
+        int streak = 0;
+        LocalDate cursor = base;
+
+        while (true) {
+            boolean attended = userActivityRepository
+                    .existsByUserIdAndActivityDateAndActivityTypeIn(
+                            userId, cursor, ATTENDANCE_TYPES.stream().toList()
+                    );
+            if (!attended) break;
+
+            streak++;
+            cursor = cursor.minusDays(1);
+        }
+        return streak;
+    }
 }

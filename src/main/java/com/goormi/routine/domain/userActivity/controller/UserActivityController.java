@@ -81,4 +81,26 @@ public class UserActivityController {
         UserActivityResponse response = userActivityService.updateActivity(userId, request);
         return ResponseEntity.ok(response);
     }
+
+
+    //******** attendance ********//
+    @Operation(summary = "특정 날짜 출석 여부", description = "개인루틴/그룹루틴 완료가 하나라도 있으면 해당 일자는 출석으로 인정합니다.")
+    @GetMapping("/attendance/check")
+    public ResponseEntity<Boolean> checkAttendance(
+            @AuthenticationPrincipal Long userId,
+            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
+        return ResponseEntity.ok(userActivityService.hasAttendanceOn(userId, date));
+    }
+
+    @Operation(summary = "오늘 기준 연속 출석 일수", description = "baseDate를 주면 그 날짜를 기준으로 계산합니다. 없으면 KST 오늘 기준.")
+    @GetMapping("/attendance/streak")
+    public ResponseEntity<Integer> getConsecutiveAttendance(
+            @AuthenticationPrincipal Long userId,
+            @RequestParam(value = "baseDate", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate baseDate
+    ) {
+        int streak = userActivityService.getConsecutiveAttendanceDays(userId, baseDate);
+        return ResponseEntity.ok(streak);
+    }
 }
