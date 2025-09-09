@@ -90,8 +90,7 @@ public class ReviewServiceImpl implements ReviewService{
 			NotificationType.MONTHLY_REVIEW,
 			null,
 			userId,
-			null
-		);
+			null);
 
 		log.info("사용자 회고 메시지 전송 완료: 사용자 ID = {}, 월 = {}", userId, monthYear);
 

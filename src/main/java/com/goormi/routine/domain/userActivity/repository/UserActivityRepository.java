@@ -10,8 +10,10 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.EnumSet;
 
 @Repository
 public interface UserActivityRepository extends JpaRepository<UserActivity, Long> {
@@ -25,4 +27,10 @@ public interface UserActivityRepository extends JpaRepository<UserActivity, Long
 
     long countByUserIdAndActivityTypeAndCreatedAtBetween(Long userId, ActivityType activityType, LocalDateTime startDate, LocalDateTime endDate);
     List<UserActivity> findByUserIdAndActivityTypeAndActivityDateBetween(Long userId, ActivityType activityType, LocalDate startDate, LocalDate endDate);
+
+    boolean existsByUserIdAndActivityDateAndActivityTypeIn(
+            Long userId, LocalDate activityDate, Collection<ActivityType> activityTypes);
+
+    List<UserActivity> findByUserIdAndActivityTypeInAndActivityDateBetween(
+            Long userId, List<ActivityType> activityTypes, LocalDate startDate, LocalDate endDate);
 }
