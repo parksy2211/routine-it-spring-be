@@ -34,7 +34,10 @@ public class KakaoCalendarClient {
      * @return 생성된 서브캘린더 정보
      */
     public CreateSubCalendarResponse createSubCalendar(String accessToken, CreateSubCalendarRequest request) {
+        log.info("=== 카카오 서브캘린더 생성 API 호출 시작 ===");
+        log.debug("Base URL: {}", baseUrl);
         log.debug("카카오 서브캘린더 생성 요청: name={}, color={}", request.name(), request.color());
+        log.debug("Access Token 존재 여부: {}", accessToken != null && !accessToken.trim().isEmpty());
         
         try {
             return webClient.post()
@@ -61,7 +64,9 @@ public class KakaoCalendarClient {
      * @param subCalendarId 삭제할 서브캘린더 ID
      */
     public void deleteSubCalendar(String accessToken, String subCalendarId) {
+        log.info("=== 카카오 서브캘린더 삭제 API 호출 시작 ===");
         log.debug("카카오 서브캘린더 삭제 요청: subCalendarId={}", subCalendarId);
+        log.debug("Access Token 존재 여부: {}", accessToken != null && !accessToken.trim().isEmpty());
         
         try {
             webClient.delete()

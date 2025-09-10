@@ -9,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -25,6 +28,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final TokenService tokenService;
+    private final OAuth2AuthorizedClientService authorizedClientService;
     
     @Value("${app.oauth2.redirect-uri:http://localhost:3000}")
     private String redirectUri;
@@ -49,9 +53,27 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             throw new IllegalStateException("카카오 ID 타입이 예상과 다릅니다: " + (idAttribute != null ? idAttribute.getClass().getName() : "null"));
         }
         
-        // 사용자 조회 (이미 CustomOAuth2UserService에서 생성되었을 것임)
+                // 사용자 조회 (이미 CustomOAuth2UserService에서 생성되었을 것임)
         User user = userRepository.findByKakaoId(kakaoId)
                 .orElseThrow(() -> new IllegalStateException("사용자를 찾을 수 없습니다."));
+
+        // 카카오 리프레시 토큰 저장
+        if (authentication instanceof OAuth2AuthenticationToken) {
+            OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+            OAuth2AuthorizedClient authorizedClient = authorizedClientService.loadAuthorizedClient(
+                    oauthToken.getAuthorizedClientRegistrationId(),
+                    oauthToken.getName()
+            );
+
+            if (authorizedClient != null && authorizedClient.getRefreshToken() != null) {
+                String kakaoRefreshToken = authorizedClient.getRefreshToken().getTokenValue();
+                log.debug("획득한 카카오 리프레시 토큰: {}", kakaoRefreshToken); // Added debug log
+                user.updateKakaoRefreshToken(kakaoRefreshToken);
+                log.info("카카오 리프레시 토큰 저장 완료: userId={}", user.getId());
+            } else {
+                log.warn("카카오 리프레시 토큰을 찾을 수 없습니다. 'offline_access' 스코프를 요청했는지 확인하세요.");
+            }
+        }
         
         // JWT 토큰 발급
         String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail());

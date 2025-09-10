@@ -47,6 +47,7 @@ public class SecurityConfig {
                     "/oauth2/**",
                     "/api/auth/check-nickname",
                     "/api/auth/refresh",
+                    "/api/calendar/**",  // 캘린더 API 테스트를 위해 추가 (올바른 경로)
                     "/ws/**"
                 ).permitAll()
                 .anyRequest().authenticated()

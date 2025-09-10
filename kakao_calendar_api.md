@@ -1,7 +1,7 @@
 ### 서브 캘린더 생성
 
 - https://developers.kakao.com/docs/latest/ko/talkcalendar/rest-api#calendar-create-sub
-    - 유저가 처음으로 그룹에 가입할 때 서브 캘린더 생성
+    - 유저가 처음으로 그룹에 가입할 때 서브 캘린더 생성 (그룹멤버의 상태가 JOINED)
         - 이미 서브 캘린더가 있다면 생성하지 않음
         - name = "routine-it for group",  color = "LIME", reminder = 10
 

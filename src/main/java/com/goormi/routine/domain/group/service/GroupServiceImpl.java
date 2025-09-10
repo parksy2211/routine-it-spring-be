@@ -18,7 +18,9 @@ import com.goormi.routine.domain.chat.repository.ChatRoomRepository;
 import com.goormi.routine.domain.chat.repository.ChatMemberRepository;
 import com.goormi.routine.domain.calendar.service.CalendarIntegrationService.GroupInfoUpdateEvent;
 import com.goormi.routine.domain.calendar.service.CalendarIntegrationService.GroupDeletionEvent;
+import com.goormi.routine.domain.calendar.service.CalendarIntegrationService.GroupMemberStatusChangeEvent;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -60,6 +63,18 @@ public class GroupServiceImpl implements GroupService {
         group.addLeader(leader);
         group.setInitialValues(group);
         Group saved = groupRepository.save(group);
+        
+        // 리더 추가에 대한 캘린더 연동 이벤트 발행
+        // 리더는 그룹 생성과 동시에 JOINED 상태가 되므로 이벤트 발행 필요
+        List<GroupMember> groupMembers = saved.getGroupMembers();
+        if (!groupMembers.isEmpty()) {
+            GroupMember leaderMember = groupMembers.get(0); // 리더는 첫 번째로 추가됨
+            if (leaderMember.getStatus() == GroupMemberStatus.JOINED) {
+                log.info("그룹 생성 시 리더에 대한 캘린더 이벤트 발행: groupId={}, leaderId={}", 
+                        saved.getGroupId(), leader.getId());
+                applicationEventPublisher.publishEvent(new GroupMemberStatusChangeEvent(leaderMember));
+            }
+        }
         
         // 그룹 생성 시 자동으로 채팅방 생성
         ChatRoom chatRoom = ChatRoom.builder()

@@ -45,11 +45,16 @@ public class CalendarController {
             @Parameter(description = "카카오 액세스 토큰", required = true)
             @RequestHeader("Authorization") String authHeader
     ) {
-        log.info("캘린더 연동 요청: userId={}", userId);
+        log.info("=== 캘린더 연동 요청 받음 ===");
+        log.info("요청 userId: {}", userId);
+        log.debug("Authorization 헤더 존재 여부: {}", authHeader != null && !authHeader.trim().isEmpty());
         
         String accessToken = extractAccessToken(authHeader);
+        log.debug("액세스 토큰 추출 완료");
+        
         CalendarResponse response = calendarService.createUserCalendar(userId, accessToken);
         
+        log.info("캘린더 연동 요청 처리 완료: userId={}", userId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -62,11 +67,16 @@ public class CalendarController {
             @AuthenticationPrincipal Long userId,
             @RequestHeader("Authorization") String authHeader
     ) {
-        log.info("캘린더 연동 해제 요청: userId={}", userId);
+        log.info("=== 캘린더 연동 해제 요청 받음 ===");
+        log.info("요청 userId: {}", userId);
+        log.debug("Authorization 헤더 존재 여부: {}", authHeader != null && !authHeader.trim().isEmpty());
         
         String accessToken = extractAccessToken(authHeader);
+        log.debug("액세스 토큰 추출 완료");
+        
         calendarService.deleteUserCalendar(userId, accessToken);
         
+        log.info("캘린더 연동 해제 요청 처리 완료: userId={}", userId);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
