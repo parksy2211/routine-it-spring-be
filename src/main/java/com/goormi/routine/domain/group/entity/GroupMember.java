@@ -39,6 +39,9 @@ public class GroupMember {
 
     private LocalDateTime updatedAt;
 
+    @Column(name = "calendar_event_id")
+    private String calendarEventId; // 카카오 캘린더 이벤트 ID
+
 
     @Builder
     private GroupMember(Group group, User user, GroupMemberRole role, GroupMemberStatus status) {
@@ -70,6 +73,29 @@ public class GroupMember {
     public void changeStatus(GroupMemberStatus status) {
         this.status = status;
         this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 캘린더 이벤트 ID 업데이트 (그룹 가입 시 호출)
+     */
+    public void updateCalendarEventId(String eventId) {
+        this.calendarEventId = eventId;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 캘린더 이벤트 ID 제거 (그룹 탈퇴 시 호출)
+     */
+    public void clearCalendarEventId() {
+        this.calendarEventId = null;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 캘린더 이벤트가 연동되어 있는지 확인
+     */
+    public boolean hasCalendarEvent() {
+        return this.calendarEventId != null && !this.calendarEventId.trim().isEmpty();
     }
 
 
