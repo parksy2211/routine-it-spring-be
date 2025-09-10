@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 
@@ -33,9 +35,11 @@ public class NotificationServiceImpl implements NotificationService {
             User receiver = userRepository.findById(receiverId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
+            String currentMonth = LocalDate.now().minusMonths(1).format(DateTimeFormatter.ofPattern("yyyy년 MM월"));
+
             Notification notification = Notification.builder()
                 .notificationType(notificationType)
-                .content("월간 회고가 준비되었습니다! 확인해보세요.")
+                .content(currentMonth + "월간 회고가 준비되었습니다! 확인해보세요.")
                 .receiver(receiver)
                 .sender(receiver)
                 .group(null)
