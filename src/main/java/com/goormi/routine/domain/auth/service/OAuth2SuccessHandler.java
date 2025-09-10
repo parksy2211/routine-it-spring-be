@@ -2,6 +2,7 @@ package com.goormi.routine.domain.auth.service;
 
 import com.goormi.routine.domain.user.entity.User;
 import com.goormi.routine.domain.user.repository.UserRepository;
+import com.goormi.routine.domain.calendar.service.CalendarService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -26,6 +27,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final TokenService tokenService;
+    private final CalendarService calendarService;
     
     @Value("${app.oauth2.redirect-uri:http://localhost:3000}")
     private String redirectUri;
@@ -63,6 +65,17 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         
         // 새로운 사용자인지 확인 (최초 로그인 시간과 현재 시간 비교)
         boolean isNewUser = user.getCreatedAt().plusMinutes(1).isAfter(java.time.LocalDateTime.now());
+        
+        // 신규 사용자인 경우 캘린더 연동
+        if (isNewUser) {
+            try {
+                calendarService.createUserCalendar(user.getId());
+                log.info("신규 사용자 캘린더 연동 완료: userId={}", user.getId());
+            } catch (Exception e) {
+                log.error("신규 사용자 캘린더 연동 실패: userId={}", user.getId(), e);
+                // 캘린더 연동 실패해도 로그인은 계속 진행
+            }
+        }
         
         // Refresh Token을 HttpOnly 쿠키에 저장
         Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);

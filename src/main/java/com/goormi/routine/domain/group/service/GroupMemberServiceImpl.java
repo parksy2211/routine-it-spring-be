@@ -21,7 +21,9 @@ import com.goormi.routine.domain.chat.repository.ChatMemberRepository;
 import com.goormi.routine.domain.chat.service.ChatService;
 import com.goormi.routine.domain.userActivity.dto.UserActivityRequest;
 import com.goormi.routine.domain.userActivity.service.UserActivityService;
+import com.goormi.routine.domain.calendar.service.CalendarIntegrationService.GroupMemberStatusChangeEvent;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +48,7 @@ public class GroupMemberServiceImpl implements GroupMemberService {
     private final ChatService chatService;
 
     private final UserActivityService userActivityService;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
 
     // 그룹에 멤버가 참여 신청시 펜딩으로 추가
@@ -231,6 +234,10 @@ public class GroupMemberServiceImpl implements GroupMemberService {
             }
         }
         groupMember.changeStatus(newStatus); // JOINED, BLOCKED, LEFT
+        
+        // 캘린더 연동을 위한 이벤트 발행
+        applicationEventPublisher.publishEvent(new GroupMemberStatusChangeEvent(groupMember));
+        
         // 유저에게 역할 변경 알림
         notificationService.createNotification(NotificationType.GROUP_MEMBER_STATUS_UPDATED,
                 group.getLeader().getId(), groupMember.getUser().getId(), group.getGroupId());
@@ -340,6 +347,9 @@ public class GroupMemberServiceImpl implements GroupMemberService {
             throw new IllegalArgumentException("차단된 멤버는 떠날 수 없습니다.");
         }
         groupMember.changeStatus(GroupMemberStatus.LEFT);
+
+        // 캘린더 연동을 위한 이벤트 발행
+        applicationEventPublisher.publishEvent(new GroupMemberStatusChangeEvent(groupMember));
 
         // 채팅방에서 자동 탈퇴
         ChatRoom chatRoom = chatRoomRepository.findFirstByGroupIdAndIsActiveTrue(group.getGroupId())

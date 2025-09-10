@@ -16,7 +16,10 @@ import com.goormi.routine.domain.chat.entity.ChatMember;
 import com.goormi.routine.domain.chat.entity.ChatMember.MemberRole;
 import com.goormi.routine.domain.chat.repository.ChatRoomRepository;
 import com.goormi.routine.domain.chat.repository.ChatMemberRepository;
+import com.goormi.routine.domain.calendar.service.CalendarIntegrationService.GroupInfoUpdateEvent;
+import com.goormi.routine.domain.calendar.service.CalendarIntegrationService.GroupDeletionEvent;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +37,7 @@ public class GroupServiceImpl implements GroupService {
     private final UserRepository userRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMemberRepository chatMemberRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     // -- create
     @Override
@@ -181,6 +185,9 @@ public class GroupServiceImpl implements GroupService {
         group.updateTimeInfo(request.getAlarmTime(), request.getAuthDays());
         group.updateOtherInfo(request.getCategory(), request.getImageUrl(), request.getMaxMembers());
 
+        // 캘린더 연동을 위한 이벤트 발행
+        applicationEventPublisher.publishEvent(new GroupInfoUpdateEvent(group));
+
         return GroupResponse.from(group);
     }
 
@@ -193,6 +200,10 @@ public class GroupServiceImpl implements GroupService {
         if (!Objects.equals(leaderId, group.getLeader().getId())){
             throw new IllegalArgumentException("권한이 없습니다.");
         }
+        
+        // 캘린더 연동을 위한 이벤트 발행 (비활성화 전에 발행)
+        applicationEventPublisher.publishEvent(new GroupDeletionEvent(group));
+        
         group.deactivate(); // 비활성화 후 일정기간 후 삭제?
 //        groupRepository.delete(group);
     }
