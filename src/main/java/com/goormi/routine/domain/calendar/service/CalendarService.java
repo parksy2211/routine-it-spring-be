@@ -1,0 +1,46 @@
+package com.goormi.routine.domain.calendar.service;
+
+import com.goormi.routine.domain.calendar.dto.CalendarResponse;
+import com.goormi.routine.domain.group.entity.Group;
+
+/**
+ * 캘린더 서비스 인터페이스
+ * 김영한 스타일: 서비스 계층은 인터페이스와 구현체로 분리
+ */
+public interface CalendarService {
+
+    /**
+     * 사용자 캘린더 생성 (회원가입 시 호출)
+     */
+    CalendarResponse createUserCalendar(Long userId, String accessToken);
+
+    /**
+     * 사용자 캘린더 삭제 (회원탈퇴 시 호출)
+     */
+    void deleteUserCalendar(Long userId, String accessToken);
+
+    /**
+     * 그룹 일정 생성 (그룹 가입 시 호출)
+     */
+    String createGroupSchedule(Long userId, Group group, String accessToken);
+
+    /**
+     * 그룹 일정 수정 (그룹 정보 변경 시 호출)
+     */
+    void updateGroupSchedule(Long userId, Group group, String eventId, String accessToken);
+
+    /**
+     * 그룹 일정 삭제 (그룹 탈퇴/삭제 시 호출)
+     */
+    void deleteGroupSchedule(String eventId, String accessToken);
+
+    /**
+     * 사용자 캘린더 조회
+     */
+    CalendarResponse getUserCalendar(Long userId);
+
+    /**
+     * 캘린더 연동 상태 확인
+     */
+    boolean isCalendarConnected(Long userId);
+}

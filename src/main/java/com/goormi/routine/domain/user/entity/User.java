@@ -60,6 +60,11 @@ public class User {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    //카카오 캘린더 연동 관련 필드
+    @Column(name = "calendar_connected")
+    @Builder.Default
+    private boolean calendarConnected = false;
+
     public void createProfile(String nickname, String profileImageUrl) {
         if (nickname != null) {
             this.nickname = nickname;
@@ -80,6 +85,21 @@ public class User {
     
     public void updateRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
+    }
+
+    public void connectCalendar() {
+        this.calendarConnected = true;
+    }
+    public void disconnectCalendar() {
+        this.calendarConnected = false;
+    }
+    /**
+     * 기존 로직에 캘린더 연동 해제 추가
+     */
+    public void deactivateAccount() {
+        this.active = false;
+        this.calendarConnected = false;
+        this.refreshToken = null;
     }
     
     public static User createKakaoUser(String kakaoId, String email, String nickname, String profileImageUrl) {
