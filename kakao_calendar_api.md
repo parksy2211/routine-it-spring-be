@@ -1,14 +1,14 @@
 ### 서브 캘린더 생성
 
 - https://developers.kakao.com/docs/latest/ko/talkcalendar/rest-api#calendar-create-sub
-    - 유저가 처음으로 그룹에 가입할 때 서브 캘린더 생성 (그룹멤버의 상태가 JOINED)
-        - 이미 서브 캘린더가 있다면 생성하지 않음
+    - 유저가 캘린더 연동 버튼을 눌러서 서브 캘린더 생성.
+        - 이미 서브 캘린더가 있다면 새로 생성하지 않도록 함.
         - name = "routine-it for group",  color = "LIME", reminder = 10
 
 ### 서브 캘린더 삭제
 
 - https://developers.kakao.com/docs/latest/ko/talkcalendar/rest-api#calendar-delete-sub
-    - 회원 탈퇴시 서브 캘린더 삭제
+    - 회원 탈퇴시 또는 연동 취소 시 서브 캘린더 삭제
 
 ### 일정 생성
 

@@ -13,21 +13,11 @@ public interface CalendarService {
      * 사용자 캘린더 생성 (회원가입 시 호출)
      */
     CalendarResponse createUserCalendar(Long userId);
-    
-    /**
-     * 사용자 캘린더 생성 (관리용 - 토큰 직접 전달)
-     */
-    CalendarResponse createUserCalendar(Long userId, String accessToken);
 
     /**
      * 사용자 캘린더 삭제 (회원탈퇴 시 호출)
      */
     void deleteUserCalendar(Long userId);
-    
-    /**
-     * 사용자 캘린더 삭제 (관리용 - 토큰 직접 전달)
-     */
-    void deleteUserCalendar(Long userId, String accessToken);
 
     /**
      * 그룹 일정 생성 (그룹 가입 시 호출)

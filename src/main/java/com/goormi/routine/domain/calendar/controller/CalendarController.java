@@ -4,7 +4,6 @@ import com.goormi.routine.common.response.ApiResponse;
 import com.goormi.routine.domain.calendar.dto.CalendarResponse;
 import com.goormi.routine.domain.calendar.service.CalendarService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -41,18 +40,12 @@ public class CalendarController {
     })
     @PostMapping("/connect")
     public ResponseEntity<ApiResponse<CalendarResponse>> connectCalendar(
-            @AuthenticationPrincipal Long userId,
-            @Parameter(description = "카카오 액세스 토큰", required = true)
-            @RequestHeader("Authorization") String authHeader
+            @AuthenticationPrincipal Long userId
     ) {
         log.info("=== 캘린더 연동 요청 받음 ===");
         log.info("요청 userId: {}", userId);
-        log.debug("Authorization 헤더 존재 여부: {}", authHeader != null && !authHeader.trim().isEmpty());
         
-        String accessToken = extractAccessToken(authHeader);
-        log.debug("액세스 토큰 추출 완료");
-        
-        CalendarResponse response = calendarService.createUserCalendar(userId, accessToken);
+        CalendarResponse response = calendarService.createUserCalendar(userId);
         
         log.info("캘린더 연동 요청 처리 완료: userId={}", userId);
         return ResponseEntity.ok(ApiResponse.success(response));
@@ -64,17 +57,12 @@ public class CalendarController {
     @Operation(summary = "캘린더 연동 해제", description = "사용자의 카카오 캘린더 연동을 해제하고 서브캘린더를 삭제합니다")
     @DeleteMapping("/disconnect")
     public ResponseEntity<ApiResponse<Void>> disconnectCalendar(
-            @AuthenticationPrincipal Long userId,
-            @RequestHeader("Authorization") String authHeader
+            @AuthenticationPrincipal Long userId
     ) {
         log.info("=== 캘린더 연동 해제 요청 받음 ===");
         log.info("요청 userId: {}", userId);
-        log.debug("Authorization 헤더 존재 여부: {}", authHeader != null && !authHeader.trim().isEmpty());
         
-        String accessToken = extractAccessToken(authHeader);
-        log.debug("액세스 토큰 추출 완료");
-        
-        calendarService.deleteUserCalendar(userId, accessToken);
+        calendarService.deleteUserCalendar(userId);
         
         log.info("캘린더 연동 해제 요청 처리 완료: userId={}", userId);
         return ResponseEntity.ok(ApiResponse.success(null));
@@ -104,15 +92,5 @@ public class CalendarController {
     ) {
         boolean connected = calendarService.isCalendarConnected(userId);
         return ResponseEntity.ok(ApiResponse.success(connected));
-    }
-
-    /**
-     * Authorization 헤더에서 액세스 토큰 추출
-     */
-    private String extractAccessToken(String authHeader) {
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new IllegalArgumentException("유효하지 않은 Authorization 헤더입니다");
-        }
-        return authHeader.substring(7);
     }
 }

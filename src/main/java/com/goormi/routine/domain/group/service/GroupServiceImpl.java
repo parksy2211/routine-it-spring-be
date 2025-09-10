@@ -63,18 +63,17 @@ public class GroupServiceImpl implements GroupService {
         group.addLeader(leader);
         group.setInitialValues(group);
         Group saved = groupRepository.save(group);
-        
+
         // 리더 추가에 대한 캘린더 연동 이벤트 발행
         // 리더는 그룹 생성과 동시에 JOINED 상태가 되므로 이벤트 발행 필요
-        List<GroupMember> groupMembers = saved.getGroupMembers();
-        if (!groupMembers.isEmpty()) {
-            GroupMember leaderMember = groupMembers.get(0); // 리더는 첫 번째로 추가됨
-            if (leaderMember.getStatus() == GroupMemberStatus.JOINED) {
-                log.info("그룹 생성 시 리더에 대한 캘린더 이벤트 발행: groupId={}, leaderId={}", 
-                        saved.getGroupId(), leader.getId());
-                applicationEventPublisher.publishEvent(new GroupMemberStatusChangeEvent(leaderMember));
-            }
+        GroupMember leaderMember = groupMemberRepository.findByGroupAndUser(saved, leader)
+                .orElseThrow(()-> new IllegalArgumentException("User not found"));
+        if (leaderMember.getStatus() == GroupMemberStatus.JOINED) {
+            log.info("그룹 생성 시 리더에 대한 캘린더 이벤트 발행: groupId={}, leaderId={}",
+                    saved.getGroupId(), leader.getId());
+            applicationEventPublisher.publishEvent(new GroupMemberStatusChangeEvent(leaderMember));
         }
+
         
         // 그룹 생성 시 자동으로 채팅방 생성
         ChatRoom chatRoom = ChatRoom.builder()

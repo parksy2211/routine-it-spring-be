@@ -80,51 +80,6 @@ public class CalendarServiceImpl implements CalendarService {
             throw new KakaoApiException("캘린더 생성에 실패했습니다", e, 500, "CALENDAR_CREATE_FAILED");
         }
     }
-    
-    /**
-     * 사용자 캘린더 생성 (관리용 - 토큰 직접 전달)
-     */
-    @Override
-    @Transactional
-    public CalendarResponse createUserCalendar(Long userId, String accessToken) {
-        log.info("사용자 캘린더 생성 시작 (관리용): userId={}", userId);
-        
-        // 사용자 조회
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userId));
-        
-        // 이미 캘린더가 있는지 확인
-        if (calendarRepository.existsByUser(user)) {
-            throw new CalendarAlreadyConnectedException("이미 캘린더가 연동되어 있습니다: " + userId);
-        }
-        
-        try {
-            // 카카오 서브캘린더 생성
-            CreateSubCalendarRequest request = CreateSubCalendarRequest.builder()
-                    .name("routine-it for group")
-                    .color("YELLOW")
-                    .reminderMinutes(10)
-                    .build();
-            
-            CreateSubCalendarResponse kakaoResponse = kakaoCalendarClient.createSubCalendar(accessToken, request);
-            
-            // UserCalendar 엔티티 생성 및 저장
-            UserCalendar savedCalendar = calendarRepository.save(
-                    UserCalendar.createUserCalendar(user, kakaoResponse.subCalendarId())
-            );
-            
-            // User 엔티티의 캘린더 연동 상태 업데이트 (변경 감지 활용)
-            user.connectCalendar();
-            
-            log.info("사용자 캘린더 생성 완료 (관리용): userId={}, subCalendarId={}", userId, kakaoResponse.subCalendarId());
-            
-            return CalendarResponse.from(savedCalendar);
-            
-        } catch (Exception e) {
-            log.error("캘린더 생성 실패 (관리용): userId={}", userId, e);
-            throw new KakaoApiException("캘린더 생성에 실패했습니다", e, 500, "CALENDAR_CREATE_FAILED");
-        }
-    }
 
     /**
      * 사용자 캘린더 삭제
@@ -161,44 +116,6 @@ public class CalendarServiceImpl implements CalendarService {
             log.error("캘린더 삭제 실패: userId={}", userId, e);
             // 카카오 API 실패해도 로컬 데이터는 정리
             calendarRepository.delete(userCalendar);
-            userCalendar.getUser().disconnectCalendar();
-        }
-    }
-    
-    /**
-     * 사용자 캘린더 삭제 (관리용 - 토큰 직접 전달)
-     */
-    @Override
-    @Transactional
-    public void deleteUserCalendar(Long userId, String accessToken) {
-        log.info("사용자 캘린더 삭제 시작 (관리용): userId={}", userId);
-        
-        UserCalendar userCalendar = calendarRepository.findByUserId(userId)
-                .orElse(null);
-        
-        if (userCalendar == null) {
-            log.warn("삭제할 캘린더가 없습니다 (관리용): userId={}", userId);
-            return;
-        }
-        
-        try {
-            // 카카오 서브캘린더 삭제
-            kakaoCalendarClient.deleteSubCalendar(accessToken, userCalendar.getSubCalendarId());
-            
-            // DB에서 삭제
-            calendarRepository.delete(userCalendar);
-            
-            // User 엔티티의 캘린더 연동 상태 업데이트 (변경 감지 활용)
-            User user = userCalendar.getUser();
-            user.disconnectCalendar();
-            
-            log.info("사용자 캘린더 삭제 완료 (관리용): userId={}, subCalendarId={}", userId, userCalendar.getSubCalendarId());
-            
-        } catch (Exception e) {
-            log.error("캘린더 삭제 실패 (관리용): userId={}", userId, e);
-            throw new KakaoApiException("캘린더 삭제에 실패했습니다", e, 500, "CALENDAR_DELETE_FAILED");
-        } finally {
-            // 실패해도 DB 정리는 수행
             userCalendar.getUser().disconnectCalendar();
         }
     }

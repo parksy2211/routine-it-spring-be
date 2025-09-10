@@ -3,14 +3,11 @@ package com.goormi.routine.domain.calendar.service;
 import com.goormi.routine.domain.group.entity.Group;
 import com.goormi.routine.domain.group.entity.GroupMember;
 import com.goormi.routine.domain.group.entity.GroupMemberStatus;
-import com.goormi.routine.domain.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 import jakarta.annotation.PostConstruct;
 
 /**
@@ -23,7 +20,6 @@ import jakarta.annotation.PostConstruct;
 public class CalendarIntegrationService {
 
     private final CalendarService calendarService;
-    private final KakaoTokenService kakaoTokenService;
 
     @PostConstruct
     public void postConstruct() {
@@ -33,7 +29,7 @@ public class CalendarIntegrationService {
     /**
      * 그룹 멤버 상태 변경 시 캘린더 일정 처리
      */
-        @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @EventListener
     public void handleGroupMemberStatusChange(GroupMemberStatusChangeEvent event) {
         log.info("=== 그룹 멤버 상태 변경 이벤트 처리 시작 ===");
         GroupMember groupMember = event.getGroupMember();
@@ -58,7 +54,7 @@ public class CalendarIntegrationService {
     /**
      * 그룹 정보 변경 시 일정 업데이트
      */
-        @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @EventListener
     public void handleGroupInfoUpdate(GroupInfoUpdateEvent event) {
         Group group = event.getGroup();
         
@@ -85,7 +81,7 @@ public class CalendarIntegrationService {
     /**
      * 그룹 삭제 시 모든 관련 일정 삭제
      */
-        @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @EventListener
     public void handleGroupDeletion(GroupDeletionEvent event) {
         Group group = event.getGroup();
         
@@ -101,33 +97,18 @@ public class CalendarIntegrationService {
             Group group = groupMember.getGroup();
             log.debug("사용자 ID: {}, 그룹 ID: {}", userId, group.getGroupId());
             
-            // 1. 카카오 OAuth 토큰이 있는지 확인
-            User user = groupMember.getUser();
-            log.debug("카카오 리프레시 토큰 존재 여부: {}", user.getKakaoRefreshToken() != null);
-            if (user.getKakaoRefreshToken() == null) {
-                log.info("카카오 토큰이 없어 캘린더 연동을 건너뜁니다: userId={}", userId);
+            // 캘린더 연동 여부 확인
+            if (!calendarService.isCalendarConnected(userId)) {
+                log.info("캘린더가 연동되지 않은 사용자입니다. 캘린더 연동 후 그룹 일정을 생성해주세요: userId={}", userId);
                 return;
             }
             
-            // 2. 서브 캘린더가 없다면 생성 (처음 그룹 가입 시)
-            log.debug("캘린더 연동 상태 확인 중: userId={}", userId);
-            boolean isConnected = calendarService.isCalendarConnected(userId);
-            log.debug("캘린더 연동 상태: {}", isConnected);
-            if (!isConnected) {
-                log.debug("서브 캘린더 생성 필요: userId={}", userId);
-                String accessToken = kakaoTokenService.getKakaoAccessTokenByUserId(userId);
-                calendarService.createUserCalendar(userId, accessToken);
-                log.info("첫 그룹 가입으로 서브 캘린더 생성: userId={}", userId);
-            } else {
-                log.info("이미 캘린더가 연동되어 있어 서브 캘린더 생성을 건너뜁니다: userId={}", userId);
-            }
-            
-            // 3. 그룹 일정 생성
+            // 그룹 일정 생성
             log.debug("그룹 일정 생성 시작: userId={}, groupId={}", userId, group.getGroupId());
             String eventId = calendarService.createGroupSchedule(userId, group);
             log.debug("그룹 일정 생성 결과 eventId: {}", eventId);
             
-            // 4. 생성된 eventId를 GroupMember에 저장
+            // 생성된 eventId를 GroupMember에 저장
             groupMember.updateCalendarEventId(eventId);
             
             log.info("그룹 일정 생성 완료: userId={}, groupId={}, eventId={}", 
