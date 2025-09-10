@@ -13,7 +13,6 @@ import reactor.core.publisher.Mono;
 
 /**
  * 카카오 캘린더 API 호출 클라이언트
- * 김영한 스타일: 외부 시스템과의 통신은 별도 클라이언트로 분리
  */
 @Slf4j
 @Component

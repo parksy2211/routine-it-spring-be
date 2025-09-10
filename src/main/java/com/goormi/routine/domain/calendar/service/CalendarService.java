@@ -12,27 +12,37 @@ public interface CalendarService {
     /**
      * 사용자 캘린더 생성 (회원가입 시 호출)
      */
+    CalendarResponse createUserCalendar(Long userId);
+    
+    /**
+     * 사용자 캘린더 생성 (관리용 - 토큰 직접 전달)
+     */
     CalendarResponse createUserCalendar(Long userId, String accessToken);
 
     /**
      * 사용자 캘린더 삭제 (회원탈퇴 시 호출)
+     */
+    void deleteUserCalendar(Long userId);
+    
+    /**
+     * 사용자 캘린더 삭제 (관리용 - 토큰 직접 전달)
      */
     void deleteUserCalendar(Long userId, String accessToken);
 
     /**
      * 그룹 일정 생성 (그룹 가입 시 호출)
      */
-    String createGroupSchedule(Long userId, Group group, String accessToken);
+    String createGroupSchedule(Long userId, Group group);
 
     /**
      * 그룹 일정 수정 (그룹 정보 변경 시 호출)
      */
-    void updateGroupSchedule(Long userId, Group group, String eventId, String accessToken);
+    void updateGroupSchedule(Long userId, Group group, String eventId);
 
     /**
      * 그룹 일정 삭제 (그룹 탈퇴/삭제 시 호출)
      */
-    void deleteGroupSchedule(String eventId, String accessToken);
+    void deleteGroupSchedule(String eventId, Long userId);
 
     /**
      * 사용자 캘린더 조회

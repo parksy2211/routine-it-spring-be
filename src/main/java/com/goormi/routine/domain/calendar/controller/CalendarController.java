@@ -15,8 +15,6 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * 캘린더 컨트롤러
- * 김영한 스타일:
- * - 웹 계층에서 엔티티 직접 사용 지양, DTO 활용
  * - Bean Validation을 통한 서버 측 검증
  * - 예외 처리는 @ControllerAdvice에서 공통 처리
  */
@@ -24,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/calendar")
-@Tag(name = "캘린더", description = "카카오 캘린더 연동 관련 API")
+@Tag(name = "캘린더", description = "카카오 캘린더 연동 관련 API (관리 및 테스트용)")
 public class CalendarController {
 
     private final CalendarService calendarService;
@@ -98,7 +96,6 @@ public class CalendarController {
 
     /**
      * Authorization 헤더에서 액세스 토큰 추출
-     * 김영한 스타일: 공통 로직은 별도 메서드로 분리
      */
     private String extractAccessToken(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {

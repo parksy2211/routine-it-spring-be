@@ -72,7 +72,7 @@ public class CalendarIntegrationService {
             Group group = groupMember.getGroup();
             
             if (calendarService.isCalendarConnected(userId)) {
-                String eventId = calendarService.createGroupSchedule(userId, group, accessToken);
+                String eventId = calendarService.createGroupSchedule(userId, group);
                 log.info("그룹 일정 생성 완료: userId={}, groupId={}, eventId={}", 
                         userId, group.getGroupId(), eventId);
             }

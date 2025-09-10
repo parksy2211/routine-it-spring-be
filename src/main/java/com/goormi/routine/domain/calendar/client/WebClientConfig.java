@@ -1,4 +1,4 @@
-package com.goormi.routine.config;
+package com.goormi.routine.domain.calendar.client;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -6,7 +6,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * WebClient 설정
- * 김영한 스타일: 외부 설정은 별도 Configuration으로 분리
  */
 @Configuration
 public class WebClientConfig {

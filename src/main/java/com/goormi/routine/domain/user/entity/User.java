@@ -41,7 +41,10 @@ public class User {
     private String profileMessage;
 
     @Column(name = "refresh_token", columnDefinition = "TEXT")
-    private String refreshToken;
+    private String refreshToken; // JWT RefreshToken (Redis 대신 DB 백업용)
+    
+    @Column(name = "kakao_refresh_token", columnDefinition = "TEXT")
+    private String kakaoRefreshToken; // 카카오 API용 RefreshToken
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -85,6 +88,10 @@ public class User {
     
     public void updateRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
+    }
+    
+    public void updateKakaoRefreshToken(String kakaoRefreshToken) {
+        this.kakaoRefreshToken = kakaoRefreshToken;
     }
 
     public void connectCalendar() {
