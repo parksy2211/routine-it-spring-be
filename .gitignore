@@ -128,3 +128,14 @@ Desktop.ini
 
 # scripts
 scripts/
+
+# Performance Test
+/performance-test/jmeter/results/
+*.jtl
+*.log
+/performance-test/bulk-data/generated-data/
+/performance-test/monitoring/data/
+
+# JMeter Temporary File
+jmeter.log
+reportgenerator_*
