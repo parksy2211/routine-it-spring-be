@@ -39,7 +39,7 @@ public class NotificationServiceImpl implements NotificationService {
 
             Notification notification = Notification.builder()
                 .notificationType(notificationType)
-                .content(currentMonth + "월간 회고가 준비되었습니다! 확인해보세요.")
+                .content(currentMonth + " 월간 회고가 준비되었습니다! 확인해보세요.")
                 .receiver(receiver)
                 .sender(receiver)
                 .group(null)
