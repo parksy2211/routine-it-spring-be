@@ -70,7 +70,14 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         refreshTokenCookie.setSecure(false); // HTTPS 환경에서는 true로 설정
         refreshTokenCookie.setPath("/");
         refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60); // 7일
-        response.addCookie(refreshTokenCookie);
+
+        // 크로스 도메인 허용
+        String cookieHeader = String.format(
+            "refreshToken=%s; Path=/; Max-Age=%d; HttpOnly; SameSite=None",
+            refreshToken,
+            7 * 24 * 60 * 60
+        );
+        response.setHeader("Set-Cookie", cookieHeader);
         
         // Access Token과 사용자 정보는 URL 파라미터로 전달 (한글은 URL 인코딩)
         String targetUrl = UriComponentsBuilder.fromUriString(redirectUri)

@@ -71,12 +71,12 @@ public class AuthController {
         TokenResponse tokenResponse = authService.refreshToken(refreshToken);
         
         // 새로운 refresh token을 쿠키에 저장
-        Cookie newRefreshTokenCookie = new Cookie("refreshToken", tokenResponse.refreshToken());
-        newRefreshTokenCookie.setHttpOnly(true);
-        newRefreshTokenCookie.setSecure(false); // HTTPS 환경에서는 true로 설정
-        newRefreshTokenCookie.setPath("/");
-        newRefreshTokenCookie.setMaxAge(7 * 24 * 60 * 60); // 7일
-        response.addCookie(newRefreshTokenCookie);
+        String cookieHeader = String.format(
+            "refreshToken=%s; Path=/; Max-Age=%d; HttpOnly; SameSite=None",
+            tokenResponse.refreshToken(),
+            7 * 24 * 60 * 60
+        );
+        response.setHeader("Set-Cookie", cookieHeader);
         
         return ApiResponse.success(tokenResponse);
     }
