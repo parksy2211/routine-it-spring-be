@@ -4,6 +4,9 @@ import com.goormi.routine.domain.calendar.client.KakaoCalendarClient;
 import com.goormi.routine.domain.calendar.dto.CalendarResponse;
 import com.goormi.routine.domain.calendar.dto.KakaoCalendarDto.*;
 import com.goormi.routine.domain.calendar.entity.UserCalendar;
+import com.goormi.routine.domain.calendar.exception.CalendarAlreadyConnectedException;
+import com.goormi.routine.domain.calendar.exception.CalendarNotFoundException;
+import com.goormi.routine.domain.calendar.exception.KakaoApiException;
 import com.goormi.routine.domain.calendar.repository.CalendarRepository;
 import com.goormi.routine.domain.group.entity.Group;
 import com.goormi.routine.domain.user.entity.User;
@@ -18,10 +21,6 @@ import java.time.format.DateTimeFormatter;
 
 /**
  * 캘린더 서비스 구현체
- * 김영한 스타일:
- * - 서비스 계층의 순수성 유지 (비즈니스 로직에 집중)
- * - 트랜잭션 관리
- * - 변경 감지(Dirty Checking) 활용
  */
 @Slf4j
 @Service
@@ -35,7 +34,6 @@ public class CalendarServiceImpl implements CalendarService {
 
     /**
      * 사용자 캘린더 생성
-     * 김영한 스타일: @Transactional로 트랜잭션 관리
      */
     @Override
     @Transactional
@@ -48,7 +46,7 @@ public class CalendarServiceImpl implements CalendarService {
         
         // 이미 캘린더가 있는지 확인
         if (calendarRepository.existsByUser(user)) {
-            throw new IllegalStateException("이미 캘린더가 연동되어 있습니다: " + userId);
+            throw new CalendarAlreadyConnectedException("이미 캘린더가 연동되어 있습니다: " + userId);
         }
         
         try {
@@ -74,13 +72,12 @@ public class CalendarServiceImpl implements CalendarService {
             
         } catch (Exception e) {
             log.error("캘린더 생성 실패: userId={}", userId, e);
-            throw new RuntimeException("캘린더 생성에 실패했습니다", e);
+            throw new KakaoApiException("캘린더 생성에 실패했습니다", e, 500, "CALENDAR_CREATE_FAILED");
         }
     }
 
     /**
      * 사용자 캘린더 삭제
-     * 김영한 스타일: 트랜잭션 내에서 연관된 데이터 일괄 처리
      */
     @Override
     @Transactional
@@ -125,7 +122,7 @@ public class CalendarServiceImpl implements CalendarService {
         log.info("그룹 일정 생성 시작: userId={}, groupId={}", userId, group.getGroupId());
         
         UserCalendar userCalendar = calendarRepository.findByUserIdAndActiveTrue(userId)
-                .orElseThrow(() -> new IllegalStateException("활성화된 캘린더를 찾을 수 없습니다: " + userId));
+                .orElseThrow(() -> new CalendarNotFoundException("활성화된 캘린더를 찾을 수 없습니다: " + userId));
         
         try {
             // 그룹 정보를 바탕으로 일정 생성
@@ -138,7 +135,7 @@ public class CalendarServiceImpl implements CalendarService {
             
         } catch (Exception e) {
             log.error("그룹 일정 생성 실패: userId={}, groupId={}", userId, group.getGroupId(), e);
-            throw new RuntimeException("그룹 일정 생성에 실패했습니다", e);
+            throw new KakaoApiException("그룹 일정 생성에 실패했습니다", e, 500, "EVENT_CREATE_FAILED");
         }
     }
 
@@ -158,7 +155,7 @@ public class CalendarServiceImpl implements CalendarService {
             
         } catch (Exception e) {
             log.error("그룹 일정 수정 실패: userId={}, eventId={}", userId, eventId, e);
-            throw new RuntimeException("그룹 일정 수정에 실패했습니다", e);
+            throw new KakaoApiException("그룹 일정 수정에 실패했습니다", e, 500, "EVENT_UPDATE_FAILED");
         }
     }
 
@@ -176,7 +173,7 @@ public class CalendarServiceImpl implements CalendarService {
             
         } catch (Exception e) {
             log.error("그룹 일정 삭제 실패: eventId={}", eventId, e);
-            throw new RuntimeException("그룹 일정 삭제에 실패했습니다", e);
+            throw new KakaoApiException("그룹 일정 삭제에 실패했습니다", e, 500, "EVENT_DELETE_FAILED");
         }
     }
 
@@ -186,7 +183,7 @@ public class CalendarServiceImpl implements CalendarService {
     @Override
     public CalendarResponse getUserCalendar(Long userId) {
         UserCalendar userCalendar = calendarRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("캘린더를 찾을 수 없습니다: " + userId));
+                .orElseThrow(() -> new CalendarNotFoundException("캘린더를 찾을 수 없습니다: " + userId));
         
         return CalendarResponse.from(userCalendar);
     }

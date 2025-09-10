@@ -1,6 +1,5 @@
 package com.goormi.routine.common.exception;
 
-import com.goormi.routine.domain.calendar.exception.CalendarAlreadyConnectedException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -69,35 +68,15 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * 캘린더 이미 연동된 예외 처리
+     * 일반적인 런타임 예외 처리
      */
-    @ExceptionHandler(CalendarAlreadyConnectedException.class)
-    public ResponseEntity<ErrorResponse> handleCalendarAlreadyConnectedException(
-            CalendarAlreadyConnectedException ex) {
-        
-        log.error("Calendar already connected error: {}", ex.getMessage());
-        
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-            .body(ErrorResponse.of(ex.getMessage()));
-    }
-
-    /**
-     * 캘린더 관련 일반 런타임 예외 처리
-     */
-    @ExceptionHandler({RuntimeException.class})
-    public ResponseEntity<ErrorResponse> handleCalendarRuntimeException(
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ErrorResponse> handleRuntimeException(
             RuntimeException ex) {
-        
-        // 카카오 API 관련 에러인 경우
-        if (ex.getMessage() != null && ex.getMessage().contains("캘린더")) {
-            log.error("Calendar API error: {}", ex.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                .body(ErrorResponse.of("캘린더 서비스 연동 중 오류가 발생했습니다."));
-        }
         
         log.error("Runtime error: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(ErrorResponse.of("처리 중 오류가 발생했습니다."));
+            .body(ErrorResponse.of("내부 서버 오류가 발생했습니다"));
     }
 
     /**
