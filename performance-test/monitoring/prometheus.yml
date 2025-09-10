@@ -17,14 +17,6 @@ scrape_configs:
       - targets: ['node-exporter:9100']
     scrape_interval: 5s
 
-  - job_name: 'jmeter-slaves'
-    static_configs:
-      - targets:
-          - '192.168.1.100:9270'  # 2
-          - '192.168.1.101:9270'  # 3
-          - '192.168.1.102:9270'  # 4
-    scrape_interval: 10s
-
 alerting:
   alertmanagers:
     - static_configs:

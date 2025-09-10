@@ -43,6 +43,20 @@ services:
       - /:/rootfs:ro
     privileged: true
 
+  jmeter-exporter:
+    image: jmeter-prometheus-plugin
+    ports:
+      - "9270:9270"
+    volumes:
+      - ./jmeter/results:/results:ro
+
+  mysql-exporter:
+    image: prom/mysqld-exporter
+    ports:
+      - "9104:9104"
+    environment:
+      - DATA_SOURCE_NAME=exporter:password@(routine-db:3306)/
+
 volumes:
   prometheus_data:
   grafana_data:
