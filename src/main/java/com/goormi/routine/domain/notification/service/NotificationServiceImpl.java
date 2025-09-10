@@ -8,6 +8,7 @@ import com.goormi.routine.domain.notification.dto.NotificationResponse;
 import com.goormi.routine.domain.notification.entity.Notification;
 import com.goormi.routine.domain.notification.entity.NotificationType;
 import com.goormi.routine.domain.notification.repository.NotificationRepository;
+import com.goormi.routine.domain.review.service.ReviewService;
 import com.goormi.routine.domain.user.entity.User;
 import com.goormi.routine.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
@@ -23,6 +25,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 @Transactional
 public class NotificationServiceImpl implements NotificationService {
+    private final ReviewService reviewService;
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
@@ -44,6 +47,7 @@ public class NotificationServiceImpl implements NotificationService {
                 .sender(receiver)
                 .group(null)
                 .isRead(false)
+                .createdAt(LocalDateTime.now())
                 .build();
 
             notificationRepository.save(notification);
@@ -120,6 +124,30 @@ public class NotificationServiceImpl implements NotificationService {
             throw new IllegalArgumentException("user id not equals to receiver id");
         }
 
+        if (notification.getNotificationType() == NotificationType.MONTHLY_REVIEW && isRead) {
+            try {
+                String monthYear = extractMonthFromContent(notification.getContent());
+                reviewService.getMonthlyReview(receiverId, monthYear);
+            } catch (Exception e) {
+                throw new IllegalArgumentException("회고 내용 확인에 실패했습니다: " + e.getMessage());
+            }
+        }
+
         notification.updateIsRead(isRead);
+    }
+
+    private String extractMonthFromContent(String content) {
+        try {
+            if (content.contains("년") && content.contains("월")) {
+                String[] parts = content.split("년");
+                String year = parts[0].trim();
+                String monthPart = parts[1].split("월")[0].trim();
+                String month = String.format("%02d", Integer.parseInt(monthPart));
+                return year + "-" + month;
+            }
+        } catch (Exception e) {
+            // 파싱 실패시 전월 반환
+        }
+        return LocalDate.now().minusMonths(1).format(DateTimeFormatter.ofPattern("yyyy-MM"));
     }
 }
