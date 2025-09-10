@@ -25,7 +25,6 @@ import java.util.Objects;
 @RequiredArgsConstructor
 @Transactional
 public class NotificationServiceImpl implements NotificationService {
-    private final ReviewService reviewService;
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
@@ -122,15 +121,6 @@ public class NotificationServiceImpl implements NotificationService {
 
         if (!Objects.equals(notification.getReceiver().getId(), receiver.getId())) {
             throw new IllegalArgumentException("user id not equals to receiver id");
-        }
-
-        if (notification.getNotificationType() == NotificationType.MONTHLY_REVIEW && isRead) {
-            try {
-                String monthYear = extractMonthFromContent(notification.getContent());
-                reviewService.getMonthlyReview(receiverId, monthYear);
-            } catch (Exception e) {
-                throw new IllegalArgumentException("회고 내용 확인에 실패했습니다: " + e.getMessage());
-            }
         }
 
         notification.updateIsRead(isRead);
