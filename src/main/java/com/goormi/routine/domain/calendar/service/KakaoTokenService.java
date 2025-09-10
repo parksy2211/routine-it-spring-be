@@ -2,6 +2,7 @@ package com.goormi.routine.domain.calendar.service;
 
 import com.goormi.routine.domain.user.entity.User;
 import com.goormi.routine.domain.user.repository.UserRepository;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,7 +14,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * 카카오 토큰 관리 서비스
- * 김영한 스타일: 외부 API 의존성 관리를 별도 서비스로 분리
  */
 @Slf4j
 @Service
@@ -77,15 +77,18 @@ public class KakaoTokenService {
                     .block();
 
             log.debug("카카오 토큰 갱신 API 응답 수신");
+            log.debug("TokenResponse 파싱 결과: {}", response);
 
             if (response == null || response.accessToken == null) {
-                log.error("카카오 토큰 갱신 실패: 응답이 비었거나 액세스 토큰이 없습니다. 응답: {}", response);
+                log.error("카카오 토큰 갱신 실패: 응답이 비었거나 액세스 토큰이 없습니다.");
+                log.error("응답 상세: {}", response);
                 throw new RuntimeException("카카오 토큰 갱신에 실패했습니다");
             }
 
             log.info("카카오 액세스 토큰 갱신 성공");
             log.debug("AccessToken 존재 여부: {}", response.accessToken != null);
             log.debug("RefreshToken 존재 여부: {}", response.refreshToken != null);
+            log.debug("ExpiresIn: {}", response.expiresIn);
             
             return response.accessToken;
 
@@ -114,9 +117,26 @@ public class KakaoTokenService {
      * 카카오 토큰 응답 DTO
      */
     public static class TokenResponse {
+        @JsonProperty("access_token")
         public String accessToken;
+        
+        @JsonProperty("refresh_token")
         public String refreshToken;
+        
+        @JsonProperty("expires_in")
         public Integer expiresIn;
+        
+        @JsonProperty("refresh_token_expires_in")
         public Integer refreshTokenExpiresIn;
+        
+        @Override
+        public String toString() {
+            return "TokenResponse{" +
+                    "accessToken=" + (accessToken != null ? "***" : "null") +
+                    ", refreshToken=" + (refreshToken != null ? "***" : "null") +
+                    ", expiresIn=" + expiresIn +
+                    ", refreshTokenExpiresIn=" + refreshTokenExpiresIn +
+                    '}';
+        }
     }
 }

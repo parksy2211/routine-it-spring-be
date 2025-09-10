@@ -1,5 +1,6 @@
 package com.goormi.routine.domain.calendar.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.goormi.routine.domain.calendar.dto.KakaoCalendarDto.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,6 +9,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
@@ -40,11 +43,18 @@ public class KakaoCalendarClient {
         log.debug("Access Token 존재 여부: {}", accessToken != null && !accessToken.trim().isEmpty());
         
         try {
+            MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+            formData.add("name", request.name());
+            formData.add("color", request.color());
+            if (request.reminderMinutes() != null) {
+                formData.add("reminder", request.reminderMinutes().toString());
+            }
+            
             return webClient.post()
-                    .uri(baseUrl + "/sub")
+                    .uri(baseUrl + "/create/calendar")
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .bodyValue(formData)
                     .retrieve()
                     .bodyToMono(CreateSubCalendarResponse.class)
                     .doOnSuccess(response -> log.info("서브캘린더 생성 성공: subCalendarId={}", response.subCalendarId()))
@@ -70,7 +80,10 @@ public class KakaoCalendarClient {
         
         try {
             webClient.delete()
-                    .uri(baseUrl + "/sub/{subCalendarId}", subCalendarId)
+                    .uri(uriBuilder -> uriBuilder
+                            .path(baseUrl + "/delete/calendar")
+                            .queryParam("calendar_id", subCalendarId)
+                            .build())
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                     .retrieve()
                     .bodyToMono(Void.class)
@@ -95,19 +108,37 @@ public class KakaoCalendarClient {
         log.debug("카카오 일정 생성 요청: title={}, subCalendarId={}", request.title(), request.subCalendarId());
         
         try {
+            MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+            if (request.subCalendarId() != null) {
+                formData.add("calendar_id", request.subCalendarId());
+            }
+            
+            // JSON 형태로 event 데이터 변환 (subCalendarId 제외)
+            ObjectMapper objectMapper = new ObjectMapper();
+            CreateEventRequest eventData = CreateEventRequest.builder()
+                    .title(request.title())
+                    .description(request.description())
+                    .startTime(request.startTime())
+                    .endTime(request.endTime())
+                    .recurRule(request.recurRule())
+                    .alarmTime(request.alarmTime())
+                    .build();
+            String eventJson = objectMapper.writeValueAsString(eventData);
+            formData.add("event", eventJson);
+            
             return webClient.post()
-                    .uri(baseUrl + "/event")
+                    .uri(baseUrl + "/create/event")
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .bodyValue(formData)
                     .retrieve()
                     .bodyToMono(CreateEventResponse.class)
                     .doOnSuccess(response -> log.info("일정 생성 성공: eventId={}", response.eventId()))
                     .doOnError(error -> log.error("일정 생성 실패", error))
                     .block();
                     
-        } catch (WebClientResponseException e) {
-            log.error("카카오 API 호출 오류: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
+        } catch (Exception e) {
+            log.error("카카오 API 호출 오류", e);
             throw new RuntimeException("일정 생성에 실패했습니다: " + e.getMessage(), e);
         }
     }
@@ -123,19 +154,27 @@ public class KakaoCalendarClient {
         log.debug("카카오 일정 수정 요청: eventId={}, title={}", eventId, request.title());
         
         try {
-            webClient.put()
-                    .uri(baseUrl + "/event/{eventId}", eventId)
+            MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+            formData.add("event_id", eventId);
+            
+            // JSON 형태로 event 데이터 변환
+            ObjectMapper objectMapper = new ObjectMapper();
+            String eventJson = objectMapper.writeValueAsString(request);
+            formData.add("event", eventJson);
+            
+            webClient.post()
+                    .uri(baseUrl + "/update/event/host")
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .bodyValue(formData)
                     .retrieve()
                     .bodyToMono(Void.class)
                     .doOnSuccess(response -> log.info("일정 수정 성공: eventId={}", eventId))
                     .doOnError(error -> log.error("일정 수정 실패: eventId={}", eventId, error))
                     .block();
                     
-        } catch (WebClientResponseException e) {
-            log.error("카카오 API 호출 오류: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
+        } catch (Exception e) {
+            log.error("카카오 API 호출 오류: eventId={}", eventId, e);
             throw new RuntimeException("일정 수정에 실패했습니다: " + e.getMessage(), e);
         }
     }
@@ -151,7 +190,10 @@ public class KakaoCalendarClient {
         
         try {
             webClient.delete()
-                    .uri(baseUrl + "/event/{eventId}", eventId)
+                    .uri(uriBuilder -> uriBuilder
+                            .path(baseUrl + "/delete/event")
+                            .queryParam("event_id", eventId)
+                            .build())
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                     .retrieve()
                     .bodyToMono(Void.class)

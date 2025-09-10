@@ -22,7 +22,7 @@ public class KakaoCalendarDto {
      * 서브캘린더 생성 응답 DTO
      */
     public record CreateSubCalendarResponse(
-            @JsonProperty("sub_calendar_id") String subCalendarId,
+            @JsonProperty("calendar_id") String subCalendarId,
             String name,
             String color,
             Integer reminder
