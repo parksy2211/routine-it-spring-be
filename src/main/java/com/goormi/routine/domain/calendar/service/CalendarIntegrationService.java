@@ -3,8 +3,10 @@ package com.goormi.routine.domain.calendar.service;
 import com.goormi.routine.domain.group.entity.Group;
 import com.goormi.routine.domain.group.entity.GroupMember;
 import com.goormi.routine.domain.group.entity.GroupMemberStatus;
+import com.goormi.routine.domain.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,9 +17,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "calendar.integration.enabled", havingValue = "true", matchIfMissing = true)
 public class CalendarIntegrationService {
 
     private final CalendarService calendarService;
+    private final KakaoTokenService kakaoTokenService;
 
     /**
      * 그룹 멤버 상태 변경 시 캘린더 일정 처리
@@ -82,15 +86,28 @@ public class CalendarIntegrationService {
             Long userId = groupMember.getUser().getId();
             Group group = groupMember.getGroup();
             
-            if (calendarService.isCalendarConnected(userId)) {
-                String eventId = calendarService.createGroupSchedule(userId, group);
-                
-                // 생성된 eventId를 GroupMember에 저장
-                groupMember.updateCalendarEventId(eventId);
-                
-                log.info("그룹 일정 생성 완료: userId={}, groupId={}, eventId={}", 
-                        userId, group.getGroupId(), eventId);
+            // 1. 카카오 OAuth 토큰이 있는지 확인
+            User user = groupMember.getUser();
+            if (user.getKakaoRefreshToken() == null) {
+                log.info("카카오 토큰이 없어 캘린더 연동을 건너뜁니다: userId={}", userId);
+                return;
             }
+            
+            // 2. 서브 캘린더가 없다면 생성 (처음 그룹 가입 시)
+            if (!calendarService.isCalendarConnected(userId)) {
+                String accessToken = kakaoTokenService.getKakaoAccessTokenByUserId(userId);
+                calendarService.createUserCalendar(userId, accessToken);
+                log.info("첫 그룹 가입으로 서브 캘린더 생성: userId={}", userId);
+            }
+            
+            // 3. 그룹 일정 생성
+            String eventId = calendarService.createGroupSchedule(userId, group);
+            
+            // 4. 생성된 eventId를 GroupMember에 저장
+            groupMember.updateCalendarEventId(eventId);
+            
+            log.info("그룹 일정 생성 완료: userId={}, groupId={}, eventId={}", 
+                    userId, group.getGroupId(), eventId);
         } catch (Exception e) {
             log.error("그룹 일정 생성 실패: groupMemberId={}", groupMember.getMemberId(), e);
         }
