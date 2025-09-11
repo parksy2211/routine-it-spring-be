@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
@@ -33,41 +34,49 @@ public class KakaoTokenService {
     /**
      * 카카오 Refresh Token으로 새로운 Access Token 발급
      */
+    @Transactional
     public String getKakaoAccessTokenByUserId(Long userId) {
         log.info("=== 카카오 액세스 토큰 조회 시작 ===");
         log.debug("요청 userId: {}", userId);
-        
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userId));
-        
+
         log.debug("사용자 조회 완료: email={}", user.getEmail());
-        
+
         if (user.getKakaoRefreshToken() == null) {
             log.error("저장된 카카오 리프레시 토큰이 없습니다: userId={}", userId);
             throw new IllegalStateException("저장된 카카오 리프레시 토큰이 없습니다: " + userId);
         }
-        
+
         log.debug("카카오 리프레시 토큰 존재 확인 완료");
         log.debug("Using Kakao Refresh Token: {}", user.getKakaoRefreshToken());
-        
-        String accessToken = refreshKakaoAccessToken(user.getKakaoRefreshToken());
+
+        TokenResponse tokenResponse = refreshKakaoAccessToken(user.getKakaoRefreshToken());
+
+        // 새로운 리프레시 토큰이 발급된 경우, 데이터베이스에 업데이트
+        if (tokenResponse.refreshToken != null) {
+            log.info("카카오 리프레시 토큰 갱신: userId={}", userId);
+            user.updateKakaoRefreshToken(tokenResponse.refreshToken);
+            // @Transactional에 의해 변경 감지로 저장됨
+        }
+
         log.info("카카오 액세스 토큰 조회 완료: userId={}", userId);
-        
-        return accessToken;
+        return tokenResponse.accessToken;
     }
 
     /**
      * 카카오 Refresh Token으로 Access Token 갱신
      */
-    private String refreshKakaoAccessToken(String kakaoRefreshToken) {
+    private TokenResponse refreshKakaoAccessToken(String kakaoRefreshToken) {
         log.info("=== 카카오 액세스 토큰 갱신 시작 ===");
         log.debug("Client ID: {}", clientId);
         log.debug("Client Secret 존재 여부: {}", clientSecret != null && !clientSecret.trim().isEmpty());
         log.debug("Refresh Token 존재 여부: {}", kakaoRefreshToken != null && !kakaoRefreshToken.trim().isEmpty());
-        
+
         try {
             log.debug("카카오 토큰 갱신 API 호출 시작");
-            
+
             TokenResponse response = webClient.post()
                     .uri("https://kauth.kakao.com/oauth/token")
                     .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
@@ -89,8 +98,8 @@ public class KakaoTokenService {
             log.debug("AccessToken 존재 여부: {}", response.accessToken != null);
             log.debug("RefreshToken 존재 여부: {}", response.refreshToken != null);
             log.debug("ExpiresIn: {}", response.expiresIn);
-            
-            return response.accessToken;
+
+            return response;
 
         } catch (Exception e) {
             log.error("카카오 액세스 토큰 갱신 실패: {}", e.getMessage(), e);

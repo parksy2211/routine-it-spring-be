@@ -41,7 +41,7 @@ public class GroupMember {
 
     private LocalDateTime updatedAt;
 
-    @Column(name = "calendar_event_id")
+    @Column(name = "calendar_event_id", length = 1024)
     private String calendarEventId; // 카카오 캘린더 이벤트 ID
 
 

@@ -18,7 +18,7 @@ import java.time.format.DateTimeFormatter;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/test/calendar")
+@RequestMapping("/api/calendar")
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "calendar.integration.enabled", havingValue = "true", matchIfMissing = true)
 public class CalendarTestController {
@@ -80,50 +80,7 @@ public class CalendarTestController {
         }
     }
 
-    /**
-     * 특정 기간의 일정 조회 (사용자 정의 기간)
-     * 
-     * GET /api/test/calendar/events/{userId}/range?calendarId={calendarId}&from={from}&to={to}&limit={limit}
-     */
-    @GetMapping("/events/{userId}/range")
-    public ResponseEntity<getEventsResponse> getEventsByRange(
-            @PathVariable Long userId,
-            @RequestParam String calendarId,
-            @RequestParam String from,
-            @RequestParam String to,
-            @RequestParam(required = false) Integer limit) {
-        
-        log.info("기간별 일정 조회 테스트 요청: userId={}, calendarId={}, from={}, to={}, limit={}", 
-                userId, calendarId, from, to, limit);
-        
-        try {
-            // 카카오 액세스 토큰 획득
-            String accessToken = kakaoTokenService.getKakaoAccessTokenByUserId(userId);
-            log.debug("액세스 토큰 획득 완료");
-            
-            // 카카오 API 호출
-            getEventsResponse response = kakaoCalendarClient.getEvents(
-                    accessToken, calendarId, from, to, limit);
-            
-            log.info("기간별 일정 조회 완료: 조회된 일정 수={}", 
-                    response.events() != null ? response.events().length : 0);
-            
-            // 조회된 일정 상세 로깅
-            if (response.events() != null) {
-                for (EventBrief event : response.events()) {
-                    log.info("일정 정보: id={}, title={}, calendarId={}", 
-                            event.id(), event.title(), event.calendarId());
-                }
-            }
-            
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            log.error("기간별 일정 조회 테스트 실패: userId={}, calendarId={}, from={}, to={}", 
-                    userId, calendarId, from, to, e);
-            return ResponseEntity.internalServerError().build();
-        }
-    }
+
 
     /**
      * 특정 일정의 상세 정보 조회 (eventId로 조회)
@@ -140,10 +97,10 @@ public class CalendarTestController {
                 userId, calendarId, eventId);
         
         try {
-            // 넓은 범위로 일정 조회 (최근 1개월)
-            LocalDateTime now = LocalDateTime.now();
-            LocalDateTime past = now.minusMonths(1);
-            LocalDateTime future = now.plusMonths(1);
+            // 넓은 범위로 일정 조회 (최근 1년)
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime past = now.minusYears(1);
+        LocalDateTime future = now.plusYears(1);
             
             DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT;
             String from = past.atZone(ZoneId.of("Asia/Seoul")).format(formatter);
@@ -171,45 +128,6 @@ public class CalendarTestController {
             
         } catch (Exception e) {
             log.error("일정 검색 테스트 실패: userId={}, eventId={}", userId, eventId, e);
-            return ResponseEntity.internalServerError().build();
-        }
-    }
-
-    /**
-     * 테스트용 간단한 일정 조회 (오늘만)
-     * 
-     * GET /api/test/calendar/events/{userId}/today?calendarId={calendarId}
-     */
-    @GetMapping("/events/{userId}/today")
-    public ResponseEntity<getEventsResponse> getTodayEvents(
-            @PathVariable Long userId,
-            @RequestParam String calendarId) {
-        
-        log.info("오늘 일정 조회 테스트 요청: userId={}, calendarId={}", userId, calendarId);
-        
-        try {
-            // 오늘 하루만 조회
-            LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
-            LocalDateTime endOfDay = startOfDay.plusDays(1).minusSeconds(1);
-            
-            DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT;
-            String from = startOfDay.atZone(ZoneId.of("Asia/Seoul")).format(formatter);
-            String to = endOfDay.atZone(ZoneId.of("Asia/Seoul")).format(formatter);
-            
-            // 카카오 액세스 토큰 획득
-            String accessToken = kakaoTokenService.getKakaoAccessTokenByUserId(userId);
-            
-            // 카카오 API 호출
-            getEventsResponse response = kakaoCalendarClient.getEvents(
-                    accessToken, calendarId, from, to, null);
-            
-            log.info("오늘 일정 조회 완료: 조회된 일정 수={}", 
-                    response.events() != null ? response.events().length : 0);
-            
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            log.error("오늘 일정 조회 테스트 실패: userId={}, calendarId={}", userId, calendarId, e);
             return ResponseEntity.internalServerError().build();
         }
     }

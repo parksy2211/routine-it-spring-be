@@ -1,6 +1,7 @@
 package com.goormi.routine.domain.calendar.client;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
@@ -13,6 +14,8 @@ import reactor.core.publisher.Mono;
 @Slf4j
 @Configuration
 public class WebClientConfig {
+    @Value("${kakao.calendar.base-url}")
+    private String kakaoCalendarBaseUrl;
 
     /**
      * 카카오 API 호출용 WebClient Bean 등록
@@ -20,6 +23,7 @@ public class WebClientConfig {
     @Bean
     public WebClient webClient() {
         return WebClient.builder()
+                .baseUrl(kakaoCalendarBaseUrl)
                 .codecs(configurer -> configurer
                         .defaultCodecs()
                         .maxInMemorySize(1024 * 1024)) // 1MB

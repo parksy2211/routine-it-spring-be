@@ -225,11 +225,6 @@ public class CalendarServiceImpl implements CalendarService {
             log.debug("캘린더 ID 조회 완료 - calendarId: '{}', userCalendarId: {}", 
                     calendarId, userCalendar.getId());
             
-            // eventId 형식 검증 (ObjectId 형식인지 확인)
-            if (!isValidObjectId(eventId)) {
-                log.warn("eventId가 올바른 ObjectId 형식이 아닙니다: '{}'", eventId);
-            }
-            
             // calendarId 형식 검증 
             if (!calendarId.startsWith("user_")) {
                 log.warn("calendarId가 예상된 형식(user_로 시작)이 아닙니다: '{}'", calendarId);

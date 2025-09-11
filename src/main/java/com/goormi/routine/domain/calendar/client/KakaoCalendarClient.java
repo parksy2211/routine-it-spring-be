@@ -26,8 +26,6 @@ public class KakaoCalendarClient {
 
     private final WebClient webClient;
 
-    @Value("${kakao.calendar.base-url:https://kapi.kakao.com/v2/api/calendar}")
-    private String baseUrl;
 
     /**
      * 서브캘린더 생성
@@ -38,7 +36,6 @@ public class KakaoCalendarClient {
      */
     public CreateSubCalendarResponse createSubCalendar(String accessToken, CreateSubCalendarRequest request) {
         log.info("=== 카카오 서브캘린더 생성 API 호출 시작 ===");
-        log.debug("Base URL: {}", baseUrl);
         log.debug("카카오 서브캘린더 생성 요청: name={}, color={}", request.name(), request.color());
         log.debug("Access Token 존재 여부: {}", accessToken != null && !accessToken.trim().isEmpty());
         
@@ -51,7 +48,7 @@ public class KakaoCalendarClient {
             }
             
             return webClient.post()
-                    .uri(baseUrl + "/create/calendar")
+                    .uri("/create/calendar")
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                     .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE + ";charset=UTF-8")
                     .body(BodyInserters.fromFormData(formData))
@@ -80,7 +77,7 @@ public class KakaoCalendarClient {
         
         try {
             webClient.delete()
-                    .uri(baseUrl + "/delete/calendar?calendar_id=" + subCalendarId)
+                    .uri( "/delete/calendar?calendar_id=" + subCalendarId)
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                     .retrieve()
                     .bodyToMono(Void.class)
@@ -106,7 +103,7 @@ public class KakaoCalendarClient {
         
         try {
             return webClient.get()
-                    .uri(baseUrl + "/calendars")
+                    .uri("/calendars")
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                     .retrieve()
                     .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
@@ -170,13 +167,12 @@ public class KakaoCalendarClient {
             formData.add("event", eventJson);
             
             log.debug("일정 생성 요청 데이터:");
-            log.debug("- calendarId: {}", request.calendarId());
             log.debug("- event JSON: {}", eventJson);
             formData.forEach((key, values) -> 
                 log.debug("- form data: {} = {}", key, values));
             
             return webClient.post()
-                    .uri(baseUrl + "/create/event")
+                    .uri( "/create/event")
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                     .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE + ";charset=UTF-8")
                     .body(BodyInserters.fromFormData(formData))
@@ -276,7 +272,7 @@ public class KakaoCalendarClient {
                 log.debug("- {}: {}", key, values));
             
             webClient.post()
-                    .uri(baseUrl + "/update/event/host")
+                    .uri("/update/event/host")
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                     .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE + ";charset=UTF-8")
                     .body(BodyInserters.fromFormData(formData))
@@ -317,7 +313,7 @@ public class KakaoCalendarClient {
                 log.debug("- {}: {}", key, values));
             
             webClient.post()  // DELETE 대신 POST 사용 (form-data 전송)
-                    .uri(baseUrl + "/delete/event")
+                    .uri("/delete/event")
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                     .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE + ";charset=UTF-8")
                     .body(BodyInserters.fromFormData(formData))
@@ -351,7 +347,7 @@ public class KakaoCalendarClient {
             return webClient.get()
                     .uri(uriBuilder -> {
                         var builder = uriBuilder
-                                .path(baseUrl + "/events")
+                                .path("/events")
                                 .queryParam("calendar_id", calendarId)
                                 .queryParam("from", from)
                                 .queryParam("to", to);
