@@ -200,6 +200,7 @@ public class GroupServiceImpl implements GroupService {
         group.updateOtherInfo(request.getCategory(), request.getImageUrl(), request.getMaxMembers());
 
         // 캘린더 연동을 위한 이벤트 발행
+        log.info("그룹 정보 변경 이벤트 발행: groupId={}, groupName={}", groupId, group.getGroupName());
         applicationEventPublisher.publishEvent(new GroupInfoUpdateEvent(group));
 
         return GroupResponse.from(group);
@@ -216,6 +217,7 @@ public class GroupServiceImpl implements GroupService {
         }
         
         // 캘린더 연동을 위한 이벤트 발행 (비활성화 전에 발행)
+        log.info("그룹 삭제 이벤트 발행: groupId={}, groupName={}", groupId, group.getGroupName());
         applicationEventPublisher.publishEvent(new GroupDeletionEvent(group));
         
         group.deactivate(); // 비활성화 후 일정기간 후 삭제?

@@ -3,10 +3,26 @@ package com.goormi.routine.domain.calendar.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 
+import java.util.Calendar;
+
 /**
  * 카카오 캘린더 API 요청/응답을 위한 DTO들
  */
 public class KakaoCalendarDto {
+
+    /**
+     * 서브캘린더 조회 요청
+     */
+    @Builder
+    public record GetCalendarsRequest(
+            String filter
+    ){}
+    public record GetCalendarsResponse(
+            Calendar[] calendars
+    ){}
+    public record Calendar(
+            String id, String name
+    ){}
 
     /**
      * 서브캘린더 생성 요청 DTO
@@ -15,56 +31,114 @@ public class KakaoCalendarDto {
     public record CreateSubCalendarRequest(
             String name,
             String color,
-            @JsonProperty("reminder") Integer reminderMinutes
+            Integer reminder,
+            @JsonProperty("reminder_all_day") Integer reminderAllDay
     ) {}
-
     /**
      * 서브캘린더 생성 응답 DTO
      */
     public record CreateSubCalendarResponse(
-            @JsonProperty("calendar_id") String subCalendarId,
-            String name,
-            String color,
-            Integer reminder
+            @JsonProperty("calendar_id") String subCalendarId
     ) {}
 
     /**
-     * 일정 생성 요청 DTO
+     * 서브캘린더 삭제 요청 DTO
+     */
+    public record DeleteSubCalendarRequest(
+            @JsonProperty("calendar_id") String subCalendarId
+    ) {}
+    /**
+     * 서브캘린더 삭제 응답 DTO
+     */
+    public record DeleteSubCalendarResponse(
+            @JsonProperty("calendar_id") String subCalendarId
+    ) {}
+
+
+    /**
+     * 일정 생성 요청 DTO (API 호출용)
      */
     @Builder
     public record CreateEventRequest(
-            @JsonProperty("sub_calendar_id") String subCalendarId,
-            String title,
-            String description,
-            @JsonProperty("start_time") String startTime,
-            @JsonProperty("end_time") String endTime,
-            @JsonProperty("recur_rule") String recurRule,
-            @JsonProperty("alarm_time") Integer alarmTime
+            @JsonProperty("calendar_id") String calendarId,
+            EventCreate event
     ) {}
+    @Builder
+    public record EventCreate(
+            String title,
+            Time time,  // 일정 시간 객체
+            String rrule,
+            String description,
+            Integer[] reminders
+            ) {}
+    @Builder
+    public record Time(
+            @JsonProperty("start_at") String startAt,
+            @JsonProperty("end_at") String endAt
+    ) {}
+
 
     /**
      * 일정 생성 응답 DTO
      */
     public record CreateEventResponse(
-            @JsonProperty("event_id") String eventId,
-            String title,
-            String description,
-            @JsonProperty("start_time") String startTime,
-            @JsonProperty("end_time") String endTime
+            @JsonProperty("event_id") String eventId
     ) {}
+
 
     /**
      * 일정 수정 요청 DTO
      */
     @Builder
     public record UpdateEventRequest(
-            String title,
-            String description,
-            @JsonProperty("start_time") String startTime,
-            @JsonProperty("end_time") String endTime,
-            @JsonProperty("recur_rule") String recurRule,
+            @JsonProperty("event_id") String eventId,
+            @JsonProperty("calendar_id") String calendarId,
             @JsonProperty("recur_update_type") String recurUpdateType,
-            @JsonProperty("alarm_time") Integer alarmTime
+            EventUpdate event
+    ) {
+        // 기본값으로 THIS_AND_FOLLOWING 설정
+        public UpdateEventRequest {
+            if (recurUpdateType == null) {
+                recurUpdateType = "THIS_AND_FOLLOWING";
+            }
+        }
+    }
+    @Builder
+    public record EventUpdate(
+            String title,
+            Time time,
+            String rrule,
+            String description
+    ) {}
+
+    /**
+     * 일정 수정 응답 DTO
+     */
+    public record UpdateEventResponse(
+            @JsonProperty("event_id") String eventId
+    ) {}
+
+    /**
+     * 일정 삭제 요청 DTO
+     */
+    @Builder
+    public record DeleteEventRequest(
+            @JsonProperty("event_id") String eventId,
+            @JsonProperty("recur_update_type") String recurUpdateType
+    ) {
+        // 기본값으로 ALL 설정 (모든 반복 일정 삭제)
+        public DeleteEventRequest {
+            if (recurUpdateType == null) {
+                recurUpdateType = "ALL";
+            }
+        }
+    }
+
+    /**
+     * 일정 삭제 응답 DTO
+     */
+    public record DeleteEventResponse(
+            @JsonProperty("event_id") String eventId
     ) {}
 
     /**

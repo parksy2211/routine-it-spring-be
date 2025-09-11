@@ -23,6 +23,7 @@ import com.goormi.routine.domain.userActivity.dto.UserActivityRequest;
 import com.goormi.routine.domain.userActivity.service.UserActivityService;
 import com.goormi.routine.domain.calendar.service.CalendarIntegrationService.GroupMemberStatusChangeEvent;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +35,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -114,8 +116,15 @@ public class GroupMemberServiceImpl implements GroupMemberService {
                 // 채팅방에 그룹 멤버 가입 알림 전송
                 chatService.notifyMemberJoin(chatRoom.getId(), userId);
             }
+            
+            // 저장 후 캘린더 연동을 위한 이벤트 발행
+            groupMemberRepository.save(groupMember);
+            log.info("자유 참여 그룹 가입 시 캘린더 이벤트 발행: groupMemberId={}, userId={}, groupId={}", 
+                    groupMember.getMemberId(), userId, group.getGroupId());
+            applicationEventPublisher.publishEvent(new GroupMemberStatusChangeEvent(groupMember));
+        } else {
+            groupMemberRepository.save(groupMember);
         }
-        groupMemberRepository.save(groupMember);
 
 
         return GroupMemberResponse.from(groupMember);
@@ -236,6 +245,8 @@ public class GroupMemberServiceImpl implements GroupMemberService {
         groupMember.changeStatus(newStatus); // JOINED, BLOCKED, LEFT
         
         // 캘린더 연동을 위한 이벤트 발행
+        log.info("그룹 멤버 상태 변경 이벤트 발행: groupMemberId={}, userId={}, 이전상태={}, 새상태={}", 
+                groupMember.getMemberId(), groupMember.getUser().getId(), oldStatus, newStatus);
         applicationEventPublisher.publishEvent(new GroupMemberStatusChangeEvent(groupMember));
         
         // 유저에게 역할 변경 알림

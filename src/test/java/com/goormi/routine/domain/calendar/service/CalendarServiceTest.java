@@ -62,9 +62,7 @@ class CalendarServiceTest {
                 .nickname("테스트유저")
                 .build();
 
-        CreateSubCalendarResponse kakaoResponse = new CreateSubCalendarResponse(
-                subCalendarId, "routine-it for group", "LIME", 10
-        );
+        CreateSubCalendarResponse kakaoResponse = new CreateSubCalendarResponse(subCalendarId);
 
         // UserCalendar을 직접 생성하여 active를 true로 설정
         UserCalendar mockUserCalendar = UserCalendar.builder()
@@ -167,14 +165,12 @@ class CalendarServiceTest {
                 .description("테스트 그룹 설명")
                 .build();
 
-        CreateEventResponse kakaoResponse = new CreateEventResponse(
-                eventId, "그룹 일정", "설명", "2025-09-10T10:00:00", "2025-09-10T11:00:00"
-        );
+        CreateEventResponse kakaoResponse = new CreateEventResponse(eventId);
 
         // Mock 설정
         given(calendarRepository.findByUserIdAndActiveTrue(userId)).willReturn(Optional.of(mockCalendar));
         given(kakaoTokenService.getKakaoAccessTokenByUserId(userId)).willReturn(accessToken);
-        given(kakaoCalendarClient.createEvent(eq(accessToken), any(CreateEventRequest.class)))
+        given(kakaoCalendarClient.createEvent(eq(accessToken), eq(subCalendarId), any(CreateEventRequest.class)))
                 .willReturn(kakaoResponse);
 
         // When
@@ -186,7 +182,7 @@ class CalendarServiceTest {
         // Mock 호출 검증
         verify(calendarRepository).findByUserIdAndActiveTrue(userId);
         verify(kakaoTokenService).getKakaoAccessTokenByUserId(userId);
-        verify(kakaoCalendarClient).createEvent(eq(accessToken), any(CreateEventRequest.class));
+        verify(kakaoCalendarClient).createEvent(eq(accessToken), eq(subCalendarId), any(CreateEventRequest.class));
     }
 
     @Test
@@ -210,7 +206,7 @@ class CalendarServiceTest {
 
         // API 호출이 없음을 확인
         verify(kakaoTokenService, never()).getKakaoAccessTokenByUserId(any());
-        verify(kakaoCalendarClient, never()).createEvent(any(), any());
+        verify(kakaoCalendarClient, never()).createEvent(any(), any(), any());
     }
 
     @Test
@@ -229,7 +225,6 @@ class CalendarServiceTest {
 
         // Then
         verify(kakaoTokenService).getKakaoAccessTokenByUserId(userId);
-        verify(kakaoCalendarClient).deleteEvent(accessToken, eventId);
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.goormi.routine.domain.calendar.service;
 
 import com.goormi.routine.domain.calendar.dto.CalendarResponse;
+import com.goormi.routine.domain.calendar.dto.KakaoCalendarDto.GetCalendarsResponse;
 import com.goormi.routine.domain.group.entity.Group;
 
 /**
@@ -43,4 +44,9 @@ public interface CalendarService {
      * 캘린더 연동 상태 확인
      */
     boolean isCalendarConnected(Long userId);
+    
+    /**
+     * 사용자의 카카오 캘린더 목록 조회 (테스트용)
+     */
+    GetCalendarsResponse getKakaoCalendars(Long userId);
 }

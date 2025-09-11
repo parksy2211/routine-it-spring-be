@@ -2,6 +2,7 @@ package com.goormi.routine.domain.calendar.controller;
 
 import com.goormi.routine.common.response.ApiResponse;
 import com.goormi.routine.domain.calendar.dto.CalendarResponse;
+import com.goormi.routine.domain.calendar.dto.KakaoCalendarDto.GetCalendarsResponse;
 import com.goormi.routine.domain.calendar.service.CalendarService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -92,5 +93,71 @@ public class CalendarController {
     ) {
         boolean connected = calendarService.isCalendarConnected(userId);
         return ResponseEntity.ok(ApiResponse.success(connected));
+    }
+
+    // === 테스트용 엔드포인트들 ===
+    
+    /**
+     * 테스트용 캘린더 연동 (userId 직접 전달)
+     */
+    @Operation(summary = "[테스트용] 캘린더 연동", description = "테스트용: userId를 직접 전달하여 캘린더를 연동합니다")
+    @PostMapping("/test/connect/{userId}")
+    public ResponseEntity<ApiResponse<CalendarResponse>> testConnectCalendar(
+            @PathVariable Long userId
+    ) {
+        log.info("=== [테스트용] 캘린더 연동 요청 받음 ===");
+        log.info("요청 userId: {}", userId);
+        
+        CalendarResponse response = calendarService.createUserCalendar(userId);
+        
+        log.info("[테스트용] 캘린더 연동 요청 처리 완료: userId={}", userId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 테스트용 캘린더 연동 해제 (userId 직접 전달)
+     */
+    @Operation(summary = "[테스트용] 캘린더 연동 해제", description = "테스트용: userId를 직접 전달하여 캘린더 연동을 해제합니다")
+    @DeleteMapping("/test/disconnect/{userId}")
+    public ResponseEntity<ApiResponse<Void>> testDisconnectCalendar(
+            @PathVariable Long userId
+    ) {
+        log.info("=== [테스트용] 캘린더 연동 해제 요청 받음 ===");
+        log.info("요청 userId: {}", userId);
+        
+        calendarService.deleteUserCalendar(userId);
+        
+        log.info("[테스트용] 캘린더 연동 해제 요청 처리 완료: userId={}", userId);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    /**
+     * 테스트용 캘린더 연동 상태 확인 (userId 직접 전달)
+     */
+    @Operation(summary = "[테스트용] 캘린더 연동 상태 확인", description = "테스트용: userId를 직접 전달하여 캘린더 연동 상태를 확인합니다")
+    @GetMapping("/test/connection-status/{userId}")
+    public ResponseEntity<ApiResponse<Boolean>> testGetConnectionStatus(
+            @PathVariable Long userId
+    ) {
+        boolean connected = calendarService.isCalendarConnected(userId);
+        return ResponseEntity.ok(ApiResponse.success(connected));
+    }
+
+    /**
+     * 테스트용 카카오 캘린더 목록 조회 (userId 직접 전달)
+     */
+    @Operation(summary = "[테스트용] 카카오 캘린더 목록 조회", description = "테스트용: userId를 직접 전달하여 카카오 캘린더 목록을 조회합니다")
+    @GetMapping("/test/kakao-calendars/{userId}")
+    public ResponseEntity<ApiResponse<GetCalendarsResponse>> testGetKakaoCalendars(
+            @PathVariable Long userId
+    ) {
+        log.info("=== [테스트용] 카카오 캘린더 목록 조회 요청 받음 ===");
+        log.info("요청 userId: {}", userId);
+        
+        GetCalendarsResponse response = calendarService.getKakaoCalendars(userId);
+        
+        log.info("[테스트용] 카카오 캘린더 목록 조회 완료: userId={}, 캘린더 수={}", 
+                userId, response.calendars().length);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

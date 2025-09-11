@@ -74,6 +74,7 @@ public class UserCalendar {
                 .calendarName("routine-it for group")
                 .color(CalendarColor.LIME)
                 .reminderMinutes(10)
+                .active(true)  // 명시적으로 active 설정
                 .build();
     }
 

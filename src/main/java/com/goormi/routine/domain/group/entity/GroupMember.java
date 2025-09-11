@@ -6,12 +6,14 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Slf4j
 public class GroupMember {
 
     @Id
@@ -81,6 +83,7 @@ public class GroupMember {
     public void updateCalendarEventId(String eventId) {
         this.calendarEventId = eventId;
         this.updatedAt = LocalDateTime.now();
+        log.debug("캘린더 이벤트 ID 업데이트 eventId: {}", eventId);
     }
 
     /**
