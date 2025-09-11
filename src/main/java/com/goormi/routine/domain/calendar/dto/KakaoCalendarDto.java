@@ -3,8 +3,6 @@ package com.goormi.routine.domain.calendar.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 
-import java.util.Calendar;
-
 /**
  * 카카오 캘린더 API 요청/응답을 위한 DTO들
  */
@@ -56,6 +54,35 @@ public class KakaoCalendarDto {
 
 
     /**
+     * 일정 조회 요청
+     * curl -v -G GET "https://kapi.kakao.com/v2/api/calendar/events" \
+     *     -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+     *     -d "calendar_id=user_63759daa38e1f752188e0cc9" \
+     *     -d "from=2022-10-26T00:00:00Z" \
+     *     -d "to=2022-10-30T00:00:00Z" \
+     *     -d "limit=2"
+     *
+     */
+    @Builder
+    public record getEventsRequest(
+            @JsonProperty("calendar_id") String calendarId,
+            String preset
+
+    ){}
+    public record getEventsResponse(
+            EventBrief[] events,
+            Boolean has_next
+    ){}
+    public record EventBrief(
+            String id,
+            String title,
+            @JsonProperty("calendar_id") String calendarId
+    ){}
+
+
+
+
+    /**
      * 일정 생성 요청 DTO (API 호출용)
      */
     @Builder
@@ -99,7 +126,7 @@ public class KakaoCalendarDto {
         // 기본값으로 THIS_AND_FOLLOWING 설정
         public UpdateEventRequest {
             if (recurUpdateType == null) {
-                recurUpdateType = "THIS_AND_FOLLOWING";
+                recurUpdateType = "ALL";
             }
         }
     }

@@ -205,8 +205,11 @@ public class KakaoCalendarClient {
      * @param request 일정 수정 요청
      */
     public void updateEvent(String accessToken, String eventId, UpdateEventRequest request) {
-        log.debug("카카오 일정 수정 요청: eventId={}, title={}", eventId, 
+        log.info("=== 카카오 일정 수정 API 호출 시작 ===");
+        log.debug("요청 파라미터: eventId={}, title={}", eventId, 
                 request.event() != null ? request.event().title() : "null");
+        log.debug("UpdateEventRequest: eventId={}, calendarId={}, recurUpdateType={}", 
+                request.eventId(), request.calendarId(), request.recurUpdateType());
         
         try {
             MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
@@ -327,6 +330,54 @@ public class KakaoCalendarClient {
         } catch (WebClientResponseException e) {
             log.error("카카오 API 호출 오류: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
             throw new RuntimeException("일정 삭제에 실패했습니다: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 일정 조회
+     * 
+     * @param accessToken 카카오 액세스 토큰
+     * @param calendarId 조회할 캘린더 ID
+     * @param from 조회 시작 시간 (ISO 8601 형식)
+     * @param to 조회 종료 시간 (ISO 8601 형식)
+     * @param limit 조회할 일정 수 (선택사항)
+     * @return 일정 목록
+     */
+    public getEventsResponse getEvents(String accessToken, String calendarId, String from, String to, Integer limit) {
+        log.info("=== 카카오 일정 조회 API 호출 시작 ===");
+        log.debug("조회 파라미터: calendarId={}, from={}, to={}, limit={}", calendarId, from, to, limit);
+        
+        try {
+            return webClient.get()
+                    .uri(uriBuilder -> {
+                        var builder = uriBuilder
+                                .path(baseUrl + "/events")
+                                .queryParam("calendar_id", calendarId)
+                                .queryParam("from", from)
+                                .queryParam("to", to);
+                        
+                        if (limit != null) {
+                            builder.queryParam("limit", limit);
+                        }
+                        
+                        return builder.build();
+                    })
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                    .retrieve()
+                    .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
+                            response -> response.bodyToMono(String.class)
+                                    .doOnNext(body -> log.error("카카오 API 오류 응답: status={}, body={}", 
+                                            response.statusCode(), body))
+                                    .then(response.createException()))
+                    .bodyToMono(getEventsResponse.class)
+                    .doOnSuccess(response -> log.info("일정 조회 성공: 조회된 일정 수={}", 
+                            response.events() != null ? response.events().length : 0))
+                    .doOnError(error -> log.error("일정 조회 실패: calendarId={}", calendarId, error))
+                    .block();
+                    
+        } catch (WebClientResponseException e) {
+            log.error("카카오 API 호출 오류: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw new RuntimeException("일정 조회에 실패했습니다: " + e.getMessage(), e);
         }
     }
 }

@@ -262,11 +262,24 @@ public class CalendarServiceImpl implements CalendarService {
                 log.info("그룹 일정 수정 완료: userId={}, eventId={}", userId, eventId);
                 
             } catch (RuntimeException kakaoApiException) {
+                log.error("카카오 API 오류 발생: eventId={}, calendarId={}, error={}", 
+                        eventId, calendarId, kakaoApiException.getMessage());
+                
                 // 카카오 API에서 이벤트나 캘린더를 찾을 수 없는 경우
                 if (kakaoApiException.getMessage().contains("Invalid calendar_id or event_id") ||
                     kakaoApiException.getMessage().contains("not found") ||
                     kakaoApiException.getMessage().contains("400")) {
                     
+                    log.error("이벤트를 찾을 수 없음: eventId={}, calendarId={}, 상세오류={}", 
+                            eventId, calendarId, kakaoApiException.getMessage());
+                    
+                    // 일정 수정 실패 시 새 일정 생성하지 않고 오류 전파
+                    throw new KakaoApiException(
+                            "해당 이벤트를 찾을 수 없습니다. eventId: " + eventId + ", calendarId: " + calendarId, 
+                            kakaoApiException, 404, "EVENT_NOT_FOUND");
+                    
+                    // 기존 폴백 로직 주석 처리 (일정 중복 생성 방지)
+                    /*
                     log.warn("기존 이벤트를 찾을 수 없어 새 이벤트를 생성합니다. eventId: {}, error: {}", 
                             eventId, kakaoApiException.getMessage());
                     
@@ -278,6 +291,7 @@ public class CalendarServiceImpl implements CalendarService {
                     
                     log.info("새 이벤트 생성 및 업데이트 완료: oldEventId={}, newEventId={}", 
                             eventId, newEventId);
+                    */
                 } else {
                     throw kakaoApiException; // 다른 오류는 그대로 전파
                 }
