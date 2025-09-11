@@ -101,12 +101,14 @@ public class UserActivityController {
     @GetMapping("/attendance/total")
     public ResponseEntity<Integer> getTotalAttendanceDays(
             @AuthenticationPrincipal Long userId,
+            @RequestParam(required = false) Long targetUserId,
             @RequestParam(value = "startDate", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(value = "endDate", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
     ) {
-        int total = userActivityService.getTotalAttendanceDays(userId, startDate, endDate);
+        Long id = targetUserId != null ? targetUserId : userId;
+        int total = userActivityService.getTotalAttendanceDays(id, startDate, endDate);
         return ResponseEntity.ok(total);
     }
 }
