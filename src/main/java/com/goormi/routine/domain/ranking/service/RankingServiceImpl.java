@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.goormi.routine.domain.group.entity.Group;
 import com.goormi.routine.domain.group.entity.GroupMember;
 import com.goormi.routine.domain.group.repository.GroupMemberRepository;
+import com.goormi.routine.domain.group.repository.GroupRepository;
 import com.goormi.routine.domain.ranking.dto.GlobalGroupRankingResponse;
 import com.goormi.routine.domain.ranking.dto.GroupTop3RankingResponse;
 import com.goormi.routine.domain.ranking.dto.PersonalRankingResponse;
@@ -43,6 +44,7 @@ public class RankingServiceImpl implements RankingService {
 
 	private final UserRepository userRepository;
 	private final RankingRepository rankingRepository;
+	private final GroupRepository groupRepository;
 	private final GroupMemberRepository groupMemberRepository;
 	private final RankingRedisRepository rankingRedisRepository;
 	private final UserActivityRepository userActivityRepository;
@@ -137,6 +139,9 @@ public class RankingServiceImpl implements RankingService {
 			throw new IllegalArgumentException("그룹 ID는 필수입니다.");
 		}
 
+		Group group = groupRepository.findById(groupId)
+			.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 그룹입니다."));
+
 		List<Ranking> top3Rankings = rankingRepository.findTop3UsersByGroupId(groupId);
 
 		if (top3Rankings.isEmpty()) {
@@ -149,7 +154,6 @@ public class RankingServiceImpl implements RankingService {
 				.build();
 		}
 
-		Group group = top3Rankings.get(0).getGroup();
 		double groupWeightMultiplier = getGroupWeightMultiplier(group);
 
 		List<GroupTop3RankingResponse.UserRankingItem> userRankingItems =
@@ -191,7 +195,7 @@ public class RankingServiceImpl implements RankingService {
 
 		return GroupTop3RankingResponse.builder()
 			.groupId(groupId)
-			.groupName(group != null ? group.getGroupName() : "삭제된 그룹")
+			.groupName(group.getGroupName())
 			.groupType(group != null ? group.getGroupType().name() : null)
 			.groupWeightMultiplier(groupWeightMultiplier)
 			.monthYear(monthYear)
