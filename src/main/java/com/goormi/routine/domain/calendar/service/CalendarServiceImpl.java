@@ -237,7 +237,7 @@ public class CalendarServiceImpl implements CalendarService {
                     GroupMemberStatus.JOINED);
             
             boolean hasEventPermission = userGroupMembers.stream()
-                    .anyMatch(member -> eventId.equals(member.getCalendarEventId()));
+                    .anyMatch(member -> member.getCalendarEventId() != null && eventId.startsWith(member.getCalendarEventId()));
             
             if (!hasEventPermission) {
                 log.error("사용자 {}가 eventId {}에 대한 권한이 없습니다. 해당 이벤트가 사용자의 그룹 멤버 목록에 없습니다.", userId, eventId);
