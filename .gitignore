@@ -128,3 +128,6 @@ Desktop.ini
 
 # scripts
 scripts/
+
+# docker
+docker-compose.override.yml
