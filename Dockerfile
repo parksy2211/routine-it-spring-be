@@ -26,7 +26,7 @@ WORKDIR /app
 COPY --from=build /app/build/libs/routine-0.0.1-SNAPSHOT.jar app.jar
 
 # Expose port
-EXPOSE 8080 5005
+EXPOSE 8080
 
 # Run application
-ENTRYPOINT ["java", "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
