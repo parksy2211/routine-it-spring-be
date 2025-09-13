@@ -70,7 +70,7 @@ public class GroupMemberController {
             @ApiResponse(responseCode = "200", description = "내 그룹 멤버 정보 조회 성공"),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     })
-    @GetMapping("members/me")
+    @GetMapping("/members/me")
     public ResponseEntity<GroupMemberResponse> getGroupMemberMyInfo(@AuthenticationPrincipal Long userId,
                                                                     @PathVariable Long groupId) {
         GroupMemberResponse groupMemberInfo = groupMemberService.getGroupMemberInfo(groupId, userId);
