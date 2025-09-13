@@ -48,7 +48,8 @@ public class SecurityConfig {
                     "/api/auth/check-nickname",
                     "/api/auth/refresh",
                     "/ws/**",
-                    "/api/admin/**", "/api/personal-routines/**"
+                    "/api/admin/**",
+                        "/groups","/api/rankings/personal","api/chat/rooms/%7BroomId%7D/messages"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
