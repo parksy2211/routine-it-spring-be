@@ -153,7 +153,7 @@ public class GroupMemberController {
                                               @PathVariable Long groupId,
                                               @RequestParam(required = true) boolean isAlarm) {
 
-        groupMemberService.updateIsAlarm(userId, groupId, isAlarm);
+        groupMemberService.updateIsAlarm(groupId, userId, isAlarm);
         return ResponseEntity.ok().build();
     }
 
