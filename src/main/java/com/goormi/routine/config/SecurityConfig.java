@@ -57,6 +57,9 @@ public class SecurityConfig {
                 )
                 .successHandler(oAuth2SuccessHandler)
             )
+            .exceptionHandling(exception -> exception
+                .authenticationEntryPoint(customAuthenticationEntryPoint)
+            )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         
         return http.build();
