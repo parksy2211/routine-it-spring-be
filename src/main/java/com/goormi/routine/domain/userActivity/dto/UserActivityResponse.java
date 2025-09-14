@@ -7,7 +7,8 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 @Getter
 @Builder
@@ -17,8 +18,8 @@ public class UserActivityResponse {
     private ActivityType activityType;
     private LocalDate activityDate;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private ZonedDateTime createdAt;
+    private ZonedDateTime updatedAt;
 
     @Schema(description = "개인 루틴 ID (Group 활동일 경우 null)")
     private Integer personalRoutineId;
@@ -40,8 +41,8 @@ public class UserActivityResponse {
                 .userId(userActivity.getUser().getId())
                 .activityType(userActivity.getActivityType())
                 .activityDate(userActivity.getActivityDate())
-                .createdAt(userActivity.getCreatedAt())
-                .updatedAt(userActivity.getUpdatedAt())
+                .createdAt(userActivity.getCreatedAt().atZone(ZoneId.of("Asia/Seoul")))
+                .updatedAt(userActivity.getUpdatedAt().atZone(ZoneId.of("Asia/Seoul")))
                 .personalRoutineId(userActivity.getPersonalRoutine().getRoutineId())
                 .personalRoutineName(userActivity.getPersonalRoutine().getRoutineName())
                 .isPublic(userActivity.getIsPublic())
@@ -54,8 +55,8 @@ public class UserActivityResponse {
                 .userId(userActivity.getUser().getId())
                 .activityType(userActivity.getActivityType())
                 .activityDate(userActivity.getActivityDate())
-                .createdAt(userActivity.getCreatedAt())
-                .updatedAt(userActivity.getUpdatedAt())
+                .createdAt(userActivity.getCreatedAt().atZone(ZoneId.of("Asia/Seoul")))
+                .updatedAt(userActivity.getUpdatedAt().atZone(ZoneId.of("Asia/Seoul")))
                 .groupId(userActivity.getGroupMember().getGroup().getGroupId())
                 .groupName(userActivity.getGroupMember().getGroup().getGroupName())
                 .imageUrl(userActivity.getImageUrl())

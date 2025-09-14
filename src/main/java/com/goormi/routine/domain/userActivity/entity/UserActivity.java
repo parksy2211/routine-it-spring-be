@@ -7,8 +7,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 
 @Entity
 @Getter
@@ -30,8 +30,8 @@ public class UserActivity {
     private LocalDate activityDate;
 
     @Column(nullable = false, updatable = false)
-    private ZonedDateTime createdAt;
-    private ZonedDateTime updatedAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "routine_id")
@@ -46,7 +46,7 @@ public class UserActivity {
 
     @PrePersist
     public void prePersist() {
-        this.createdAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
+        this.createdAt = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
     }
 
     public static UserActivity createActivity (User user,PersonalRoutine personalRoutine) {
@@ -81,12 +81,8 @@ public class UserActivity {
         if (activityType == ActivityType.NOT_COMPLETED) {
             this.activityDate = null;
         }
-        this.updatedAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
+        this.updatedAt = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
     }
-
-
-
-
 
 }
 
