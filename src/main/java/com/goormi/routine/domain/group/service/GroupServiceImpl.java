@@ -58,6 +58,7 @@ public class GroupServiceImpl implements GroupService {
                 .category(request.getCategory())
                 .groupImageUrl(request.getImageUrl())
                 .maxMembers(request.getMaxMembers())
+                .isAlarm(request.isAlarm())
                 .build();
 
         group.addLeader(leader);

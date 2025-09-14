@@ -31,6 +31,12 @@ public class PersonalRoutine {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "category", length = 50, nullable = false)
+    private String category;   //카테고리 추가
+
+    @Column(name = "goal", length = 255)
+    private String goal;       //목표 추가
+
     @Column(name = "start_time", nullable = false)
     private LocalTime startTime;
 

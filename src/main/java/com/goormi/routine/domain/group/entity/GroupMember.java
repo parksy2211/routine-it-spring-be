@@ -41,6 +41,8 @@ public class GroupMember {
 
     private LocalDateTime updatedAt;
 
+    private boolean isAlarm;
+
     @Column(name = "calendar_event_id", length = 1024)
     private String calendarEventId; // 카카오 캘린더 이벤트 ID
 
@@ -51,6 +53,7 @@ public class GroupMember {
         this.user = user;
         this.role = role;
         this.status = status;
+        this.isAlarm = group.isAlarm();
     }
 
     public static GroupMember createGroupMember (Group group, User user, GroupMemberRole role, GroupMemberStatus status) {
@@ -74,6 +77,11 @@ public class GroupMember {
 
     public void changeStatus(GroupMemberStatus status) {
         this.status = status;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void changeIsAlarm(boolean isAlarm) {
+        this.isAlarm = isAlarm;
         this.updatedAt = LocalDateTime.now();
     }
 
