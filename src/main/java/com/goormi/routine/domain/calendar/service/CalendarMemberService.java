@@ -35,9 +35,13 @@ public class CalendarMemberService {
             
             // 캘린더 연동 여부 확인
             boolean isConnected = calendarService.isCalendarConnected(userId);
-            log.debug("캘린더 연동 상태 확인 결과: userId={}, isConnected={}", userId, isConnected);
+            if (isConnected) {
+                groupMember.getUser().connectCalendar();
+                log.debug("캘린더 연동 상태 확인 결과: userId={}, isConnected={}", userId, isConnected);
+            }
             
             if (!isConnected) {
+                groupMember.getUser().disconnectCalendar();
                 log.info("캘린더가 연동되지 않은 사용자입니다. 캘린더 연동 후 그룹 일정을 생성해주세요: userId={}", userId);
                 return;
             }

@@ -29,8 +29,9 @@ import java.time.ZonedDateTime;
 import java.time.DayOfWeek;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 
 /**
  * 캘린더 서비스 구현체
@@ -77,37 +78,26 @@ public class CalendarServiceImpl implements CalendarService {
             CreateSubCalendarRequest request = CreateSubCalendarRequest.builder()
                     .name("routine-it for group")
                     .color("LIME")
-                    .reminder(5)
-                    .reminderAllDay(5)
+                    .reminder(10)
                     .build();
             
-            CreateSubCalendarResponse kakaoResponse = kakaoCalendarClient.createSubCalendar(accessToken, request);
+            CreateSubCalendarResponse subCalendar = kakaoCalendarClient.createSubCalendar(accessToken, request);
             
             // UserCalendar 엔티티 생성 및 저장
-            UserCalendar userCalendar = UserCalendar.createUserCalendar(user, kakaoResponse.subCalendarId());
-            log.debug("생성된 UserCalendar 정보: userId={}, subCalendarId={}, active={}", 
-                    userCalendar.getUser().getId(), userCalendar.getSubCalendarId(), userCalendar.isActive());
-            
+            UserCalendar userCalendar = UserCalendar.createUserCalendar(user, subCalendar.subCalendarId());
             UserCalendar savedCalendar = calendarRepository.save(userCalendar);
-            log.debug("저장된 UserCalendar 정보: id={}, userId={}, subCalendarId={}, active={}", 
-                    savedCalendar.getId(), savedCalendar.getUser().getId(), 
+            log.debug("저장된 UserCalendar 정보: id={}, userId={}, subCalendarId={}, active={}",
+                    savedCalendar.getId(), savedCalendar.getUser().getId(),
                     savedCalendar.getSubCalendarId(), savedCalendar.isActive());
             
-            // 저장 후 즉시 확인 - 여러 방법으로 조회
+            // 저장 후 즉시 확인
             boolean isConnectedAfterSave = calendarRepository.existsByUserIdAndActiveTrue(userId);
-            Optional<UserCalendar> foundCalendar = calendarRepository.findByUserId(userId);
-            Optional<UserCalendar> foundActiveCalendar = calendarRepository.findByUserIdAndActiveTrue(userId);
-            
             log.debug("저장 후 연동 상태 확인: userId={}, isConnected={}", userId, isConnectedAfterSave);
-            log.debug("findByUserId 결과: exists={}, active={}", 
-                    foundCalendar.isPresent(), 
-                    foundCalendar.map(UserCalendar::isActive).orElse(null));
-            log.debug("findByUserIdAndActiveTrue 결과: exists={}", foundActiveCalendar.isPresent());
             
             // User 엔티티의 캘린더 연동 상태 업데이트 (변경 감지 활용)
             user.connectCalendar();
             
-            log.info("사용자 캘린더 생성 완료: userId={}, subCalendarId={}", userId, kakaoResponse.subCalendarId());
+            log.info("사용자 캘린더 생성 완료: userId={}, subCalendarId={}", userId, subCalendar.subCalendarId());
             
             return CalendarResponse.from(savedCalendar);
             
@@ -213,7 +203,7 @@ public class CalendarServiceImpl implements CalendarService {
             
             // 사용자의 캘린더 ID 조회
             UserCalendar userCalendar = calendarRepository.findByUserIdAndActiveTrue(userId)
-                    .orElseThrow(() -> new RuntimeException("캘린더가 연동되어 있지 않습니다: " + userId));
+                    .orElseThrow(() -> new CalendarNotFoundException("캘린더가 연동되어 있지 않습니다: " + userId));
             String calendarId = userCalendar.getSubCalendarId();
             
             // calendarId 유효성 검사
@@ -232,12 +222,14 @@ public class CalendarServiceImpl implements CalendarService {
             
             // 해당 사용자가 실제로 이 eventId를 가진 그룹 멤버인지 확인
             // (권한 검증을 위해 해당 eventId가 사용자의 GroupMember에 저장되어 있는지 확인)
-            List<GroupMember> userGroupMembers = groupMemberRepository.findAllByUserAndStatus(
-                    userRepository.findById(userId).orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다")), 
-                    GroupMemberStatus.JOINED);
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
+            List<GroupMember> userGroupMembers = groupMemberRepository
+                    .findAllByUserAndStatus(user, GroupMemberStatus.JOINED);
             
             boolean hasEventPermission = userGroupMembers.stream()
-                    .anyMatch(member -> member.getCalendarEventId() != null && eventId.startsWith(member.getCalendarEventId()));
+                    .anyMatch(member ->
+                            member.getCalendarEventId() != null && eventId.startsWith(member.getCalendarEventId()));
             
             if (!hasEventPermission) {
                 log.error("사용자 {}가 eventId {}에 대한 권한이 없습니다. 해당 이벤트가 사용자의 그룹 멤버 목록에 없습니다.", userId, eventId);
@@ -272,21 +264,6 @@ public class CalendarServiceImpl implements CalendarService {
                     throw new KakaoApiException(
                             "해당 이벤트를 찾을 수 없습니다. eventId: " + eventId + ", calendarId: " + calendarId, 
                             kakaoApiException, 404, "EVENT_NOT_FOUND");
-                    
-                    // 기존 폴백 로직 주석 처리 (일정 중복 생성 방지)
-                    /*
-                    log.warn("기존 이벤트를 찾을 수 없어 새 이벤트를 생성합니다. eventId: {}, error: {}", 
-                            eventId, kakaoApiException.getMessage());
-                    
-                    // 기존 이벤트가 없으므로 새로 생성하고 GroupMember 업데이트
-                    String newEventId = createGroupScheduleInternal(userId, group, calendarId);
-                    
-                    // 기존 eventId를 가진 GroupMember들을 새 eventId로 업데이트
-                    updateGroupMembersWithNewEventId(eventId, newEventId);
-                    
-                    log.info("새 이벤트 생성 및 업데이트 완료: oldEventId={}, newEventId={}", 
-                            eventId, newEventId);
-                    */
                 } else {
                     throw kakaoApiException; // 다른 오류는 그대로 전파
                 }
@@ -409,9 +386,18 @@ public class CalendarServiceImpl implements CalendarService {
      */
     @Override
     public boolean isCalendarConnected(Long userId) {
-        boolean result = calendarRepository.existsByUserIdAndActiveTrue(userId);
-        log.debug("캘린더 연동 상태 확인: userId={}, result={}", userId, result);
-        return result;
+        // userCalendar에 연동이 되었는지 확인
+        UserCalendar userCalendar = calendarRepository.findByUserIdAndActiveTrue(userId)
+                .orElseThrow(()-> new CalendarNotFoundException("캘린더를 찾을 수 없습니다."));
+
+        String token = kakaoTokenService.getKakaoAccessTokenByUserId(userId);
+        GetCalendarsResponse response = kakaoCalendarClient.getCalendars(token);
+        boolean isCalendarMatched = Arrays.stream(response.calendars())
+                .anyMatch(calendar ->
+                        Objects.equals(calendar.id(), userCalendar.getSubCalendarId()));
+
+        log.debug("캘린더 연동 상태 확인: userId={}, result={}", userId);
+        return isCalendarMatched;
     }
 
     /**
@@ -529,9 +515,9 @@ public class CalendarServiceImpl implements CalendarService {
      * 시간 포매팅 헬퍼 메서드 - ISO 8601 형식으로 변환
      */
     private String formatAlarmTime(LocalTime time) {
-        // 다음 주 월요일부터 시작하도록 설정 (반복 일정의 시작점)
-        LocalDate nextMonday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
-        LocalDateTime dateTime = LocalDateTime.of(nextMonday, time);
+        // 다음 주 일요일부터 시작하도록 설정 (반복 일정의 시작점)
+        LocalDate startDate = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.SUNDAY));
+        LocalDateTime dateTime = LocalDateTime.of(startDate, time);
         
         // 한국 시간대로 ISO 8601 형식 생성
         ZonedDateTime zonedDateTime = dateTime.atZone(ZoneId.of("Asia/Seoul"));
@@ -615,6 +601,26 @@ public class CalendarServiceImpl implements CalendarService {
         } catch (Exception e) {
             log.error("카카오 캘린더 목록 조회 실패: userId={}", userId, e);
             throw new KakaoApiException("카카오 캘린더 목록 조회에 실패했습니다", e, 500, "CALENDAR_LIST_FAILED");
+        }
+    }
+
+    public GetEventsResponse getEvents(Long userId) {
+        try {
+            String accessToken = kakaoTokenService.getKakaoAccessTokenByUserId(userId);
+            log.debug("액세스 토큰 획득 완료");
+            UserCalendar userCalendar = calendarRepository.findByUserId(userId)
+                    .orElseThrow(() -> new CalendarNotFoundException("캘린더를 찾을 수 없습니다: " + userId));
+
+
+            GetEventsRequest request = GetEventsRequest.builder()
+                    .calendarId(userCalendar.getSubCalendarId())
+                    .preset("THIS_WEEK")
+                    .build();
+
+            GetEventsResponse response = kakaoCalendarClient.getEvents(accessToken, request);
+            return response;
+        }  catch (Exception e) {
+            throw new KakaoApiException("카카오 일정 조회에 실패했습니다.", e, 500, "GET_EVENTS_FAILED");
         }
     }
 }

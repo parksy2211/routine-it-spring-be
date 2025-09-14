@@ -23,7 +23,7 @@ import java.util.List;
 public class CalendarIntegrationService {
 
     private final CalendarService calendarService;
-    private final CalendarMemberService calendarMemberService; // 새로운 서비스 주입
+    private final CalendarMemberService calendarMemberService;
 
     @PostConstruct
     public void postConstruct() {
@@ -32,7 +32,6 @@ public class CalendarIntegrationService {
 
     /**
      * 그룹 멤버 상태 변경 시 캘린더 일정 처리
-     * BEFORE_COMMIT으로 변경하여 트랜잭션 내에서 실행
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleGroupMemberStatusChange(GroupMemberStatusChangeEvent event) {

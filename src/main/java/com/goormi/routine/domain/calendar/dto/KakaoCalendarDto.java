@@ -64,12 +64,12 @@ public class KakaoCalendarDto {
      *
      */
     @Builder
-    public record getEventsRequest(
+    public record GetEventsRequest(
             @JsonProperty("calendar_id") String calendarId,
             String preset
 
     ){}
-    public record getEventsResponse(
+    public record GetEventsResponse(
             EventBrief[] events,
             Boolean has_next
     ){}

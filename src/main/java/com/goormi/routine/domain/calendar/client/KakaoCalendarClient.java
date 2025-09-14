@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.goormi.routine.domain.calendar.dto.KakaoCalendarDto.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -331,46 +330,34 @@ public class KakaoCalendarClient {
 
     /**
      * 일정 조회
-     * 
-     * @param accessToken 카카오 액세스 토큰
-     * @param calendarId 조회할 캘린더 ID
-     * @param from 조회 시작 시간 (ISO 8601 형식)
-     * @param to 조회 종료 시간 (ISO 8601 형식)
-     * @param limit 조회할 일정 수 (선택사항)
      * @return 일정 목록
      */
-    public getEventsResponse getEvents(String accessToken, String calendarId, String from, String to, Integer limit) {
+    public GetEventsResponse getEvents(String accessToken, GetEventsRequest request) {
         log.info("=== 카카오 일정 조회 API 호출 시작 ===");
-        log.debug("조회 파라미터: calendarId={}, from={}, to={}, limit={}", calendarId, from, to, limit);
-        
+        log.debug("조회 파라미터: {}", request);
+
         try {
             return webClient.get()
                     .uri(uriBuilder -> {
-                        var builder = uriBuilder
-                                .path("/events")
-                                .queryParam("calendar_id", calendarId)
-                                .queryParam("from", from)
-                                .queryParam("to", to);
-                        
-                        if (limit != null) {
-                            builder.queryParam("limit", limit);
-                        }
-                        
-                        return builder.build();
+                        uriBuilder.path("/events")
+                                .queryParam("calendar_id", request.calendarId())
+                                .queryParam("preset",  request.preset());
+                        return uriBuilder.build();
                     })
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                     .retrieve()
                     .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
                             response -> response.bodyToMono(String.class)
-                                    .doOnNext(body -> log.error("카카오 API 오류 응답: status={}, body={}", 
+                                    .doOnNext(body ->
+                                            log.error("카카오 API 오류 응답: status={}, body={}",
                                             response.statusCode(), body))
                                     .then(response.createException()))
-                    .bodyToMono(getEventsResponse.class)
-                    .doOnSuccess(response -> log.info("일정 조회 성공: 조회된 일정 수={}", 
+                    .bodyToMono(GetEventsResponse.class)
+                    .doOnSuccess(response -> log.info("일정 조회 성공: 조회된 일정 수={}",
                             response.events() != null ? response.events().length : 0))
-                    .doOnError(error -> log.error("일정 조회 실패: calendarId={}", calendarId, error))
+                    .doOnError(error -> log.error("일정 조회 실패: calendarId={}", request.calendarId(), error))
                     .block();
-                    
+
         } catch (WebClientResponseException e) {
             log.error("카카오 API 호출 오류: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
             throw new RuntimeException("일정 조회에 실패했습니다: " + e.getMessage(), e);
