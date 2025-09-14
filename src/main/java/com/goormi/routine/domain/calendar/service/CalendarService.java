@@ -4,10 +4,6 @@ import com.goormi.routine.domain.calendar.dto.CalendarResponse;
 import com.goormi.routine.domain.calendar.dto.KakaoCalendarDto.GetCalendarsResponse;
 import com.goormi.routine.domain.group.entity.Group;
 
-/**
- * 캘린더 서비스 인터페이스
- * 김영한 스타일: 서비스 계층은 인터페이스와 구현체로 분리
- */
 public interface CalendarService {
 
     /**
