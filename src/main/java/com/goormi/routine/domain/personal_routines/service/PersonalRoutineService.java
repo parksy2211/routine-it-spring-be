@@ -31,6 +31,8 @@ public class PersonalRoutineService {
                 .userId(req.getUserId())
                 .routineName(req.getRoutineName())
                 .description(req.getDescription())
+                .category(req.getCategory())
+                .goal(req.getGoal())
                 .startTime(req.getStartTime())
                 .repeatDays(req.getRepeatDays())
                 .startDate(req.getStartDate())
@@ -62,6 +64,8 @@ public class PersonalRoutineService {
 
         if (req.getRoutineName() != null) entity.setRoutineName(req.getRoutineName());
         if (req.getDescription() != null) entity.setDescription(req.getDescription());
+        if (req.getCategory() != null) entity.setCategory(req.getCategory());
+        if (req.getGoal() != null) entity.setGoal(req.getGoal());
         if (req.getStartTime() != null) entity.setStartTime(req.getStartTime());
         if (req.getRepeatDays() != null) entity.setRepeatDays(req.getRepeatDays());
         if (req.getStartDate() != null) entity.setStartDate(req.getStartDate());
@@ -108,6 +112,8 @@ public class PersonalRoutineService {
                 .userId(e.getUserId())
                 .routineName(e.getRoutineName())
                 .description(e.getDescription())
+                .category(e.getCategory())
+                .goal(e.getGoal())
                 .startTime(e.getStartTime())
                 .repeatDays(e.getRepeatDays())
                 .startDate(e.getStartDate())
