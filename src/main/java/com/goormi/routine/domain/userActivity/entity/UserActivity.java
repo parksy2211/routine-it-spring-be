@@ -47,6 +47,7 @@ public class UserActivity {
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+        this.updatedAt = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
     }
 
     public static UserActivity createActivity (User user,PersonalRoutine personalRoutine) {
