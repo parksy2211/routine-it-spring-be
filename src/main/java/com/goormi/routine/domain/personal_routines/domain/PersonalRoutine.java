@@ -69,8 +69,18 @@ public class PersonalRoutine {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "calendar_event_id", length = 1024)
+    private String calendarEventId;
+
     // 도메인 편의 메서드
     public void softDelete() { this.isDeleted = true; }
     public void toggleAlarm() { this.isAlarmOn = !this.isAlarmOn; }
     public void togglePublic() { this.isPublic = !this.isPublic; }
+
+    public void updateCalendarEventId(String calendarEventId) {
+        this.calendarEventId = calendarEventId;
+    }
+    public void clearCalendarEventId() {
+        this.calendarEventId = null;
+    }
 }
