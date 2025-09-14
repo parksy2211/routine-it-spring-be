@@ -32,6 +32,7 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 캘린더 서비스 구현체
@@ -236,33 +237,43 @@ public class CalendarServiceImpl implements CalendarService {
                 throw new RuntimeException("해당 이벤트에 대한 수정 권한이 없습니다. eventId: " + eventId);
             }
             log.debug("이벤트 권한 확인 완료: userId={}, eventId={}", userId, eventId);
-            
-            UpdateEventRequest request = buildUpdateEventRequest(group, eventId, calendarId);
-            log.debug("일정 수정 요청 생성 완료: eventId={}, calendarId={}", eventId, calendarId);
+
+            GetEventsResponse events = getEvents(userId);
+            String actualEventId = eventId;
+            if (events != null){
+                actualEventId = Arrays.stream(events.events())
+                        .map(EventBrief::id)
+                        .filter(id -> id !=null && id.startsWith(eventId))
+                        .findFirst().orElse(null);
+            }
+
+
+            UpdateEventRequest request = buildUpdateEventRequest(group, actualEventId, calendarId);
+            log.debug("일정 수정 요청 생성 완료: actualEventId={}, calendarId={}", actualEventId, calendarId);
             
             // 카카오 API 호출 전 최종 검증 로그
-            log.info("카카오 API 호출 시작 - eventId: '{}', calendarId: '{}', userId: {}", 
-                    eventId, calendarId, userId);
+            log.info("카카오 API 호출 시작 - actualEventId: '{}', calendarId: '{}', userId: {}",
+                    actualEventId, calendarId, userId);
             
             try {
-                kakaoCalendarClient.updateEvent(accessToken, eventId, request);
-                log.info("그룹 일정 수정 완료: userId={}, eventId={}", userId, eventId);
+                kakaoCalendarClient.updateEvent(accessToken, actualEventId, request);
+                log.info("그룹 일정 수정 완료: userId={}, eventId={}", actualEventId, eventId);
                 
             } catch (RuntimeException kakaoApiException) {
-                log.error("카카오 API 오류 발생: eventId={}, calendarId={}, error={}", 
-                        eventId, calendarId, kakaoApiException.getMessage());
+                log.error("카카오 API 오류 발생: actualEventId={}, calendarId={}, error={}",
+                        actualEventId, calendarId, kakaoApiException.getMessage());
                 
                 // 카카오 API에서 이벤트나 캘린더를 찾을 수 없는 경우
                 if (kakaoApiException.getMessage().contains("Invalid calendar_id or event_id") ||
                     kakaoApiException.getMessage().contains("not found") ||
                     kakaoApiException.getMessage().contains("400")) {
                     
-                    log.error("이벤트를 찾을 수 없음: eventId={}, calendarId={}, 상세오류={}", 
-                            eventId, calendarId, kakaoApiException.getMessage());
+                    log.error("이벤트를 찾을 수 없음: actualEventId={}, calendarId={}, 상세오류={}",
+                            actualEventId, calendarId, kakaoApiException.getMessage());
                     
                     // 일정 수정 실패 시 새 일정 생성하지 않고 오류 전파
                     throw new KakaoApiException(
-                            "해당 이벤트를 찾을 수 없습니다. eventId: " + eventId + ", calendarId: " + calendarId, 
+                            "해당 이벤트를 찾을 수 없습니다. actualEventId: " + actualEventId + ", calendarId: " + calendarId,
                             kakaoApiException, 404, "EVENT_NOT_FOUND");
                 } else {
                     throw kakaoApiException; // 다른 오류는 그대로 전파
@@ -285,63 +296,6 @@ public class CalendarServiceImpl implements CalendarService {
             throw new KakaoApiException("그룹 일정 수정에 실패했습니다", e, 500, "EVENT_UPDATE_FAILED");
         }
     }
-    
-    /**
-     * ObjectId 형식 검증 헬퍼 메서드
-     */
-    private boolean isValidObjectId(String id) {
-        return id != null && id.matches("^[0-9a-fA-F]{24}$");
-    }
-    
-    /**
-     * 내부용 그룹 일정 생성 메서드 (calendarId 직접 전달)
-     */
-    private String createGroupScheduleInternal(Long userId, Group group, String calendarId) {
-        log.debug("내부 그룹 일정 생성 시작: userId={}, groupName={}, calendarId={}", 
-                userId, group.getGroupName(), calendarId);
-        
-        try {
-            String accessToken = kakaoTokenService.getKakaoAccessTokenByUserId(userId);
-            CreateEventRequest request = buildEventRequest(calendarId, group);
-            
-            CreateEventResponse response = kakaoCalendarClient.createEvent(accessToken, calendarId, request);
-            String newEventId = response.eventId();
-            
-            log.info("내부 그룹 일정 생성 완료: newEventId={}", newEventId);
-            return newEventId;
-            
-        } catch (Exception e) {
-            log.error("내부 그룹 일정 생성 실패: userId={}, groupName={}", userId, group.getGroupName(), e);
-            throw new KakaoApiException("새 일정 생성에 실패했습니다", e, 500, "EVENT_CREATE_FAILED");
-        }
-    }
-    
-    /**
-     * 기존 eventId를 가진 GroupMember들을 새 eventId로 업데이트
-     */
-    private void updateGroupMembersWithNewEventId(String oldEventId, String newEventId) {
-        log.debug("GroupMember eventId 업데이트 시작: {} -> {}", oldEventId, newEventId);
-        
-        try {
-            List<GroupMember> membersToUpdate = groupMemberRepository.findAll().stream()
-                    .filter(member -> oldEventId.equals(member.getCalendarEventId()))
-                    .toList();
-            
-            for (GroupMember member : membersToUpdate) {
-                member.updateCalendarEventId(newEventId);
-                groupMemberRepository.save(member);
-                log.debug("GroupMember 업데이트: memberId={}, oldEventId={}, newEventId={}", 
-                        member.getMemberId(), oldEventId, newEventId);
-            }
-            
-            log.info("GroupMember eventId 업데이트 완료: {} 개 업데이트됨", membersToUpdate.size());
-            
-        } catch (Exception e) {
-            log.error("GroupMember eventId 업데이트 실패: oldEventId={}, newEventId={}", 
-                    oldEventId, newEventId, e);
-            throw new RuntimeException("GroupMember 업데이트에 실패했습니다", e);
-        }
-    }
 
     /**
      * 그룹 일정 삭제
@@ -354,24 +308,87 @@ public class CalendarServiceImpl implements CalendarService {
         try {
             // 카카오 액세스 토큰 획득
             String accessToken = kakaoTokenService.getKakaoAccessTokenByUserId(userId);
+
+            GetEventsResponse events = getEvents(userId);
+            String actualEventId = eventId;
+            if (events != null){
+                actualEventId = Arrays.stream(events.events())
+                        .map(EventBrief::id)
+                        .filter(id -> id !=null && id.startsWith(eventId))
+                        .findFirst().orElse(null);
+            }
             
             // 삭제 요청 DTO 생성 (모든 반복 일정 삭제)
             DeleteEventRequest request = DeleteEventRequest.builder()
-                    .eventId(eventId)
+                    .eventId(actualEventId)
                     .recurUpdateType("ALL")
                     .build();
             
             kakaoCalendarClient.deleteEvent(accessToken, request);
-            log.info("그룹 일정 삭제 완료: eventId={}", eventId);
+            log.info("그룹 일정 삭제 완료: actualEventId={}", actualEventId);
             
         } catch (Exception e) {
-            log.error("그룹 일정 삭제 실패: eventId={}", eventId, e);
+            log.error("그룹 일정 삭제 실패: actualEventId={}", eventId, e);
             throw new KakaoApiException("그룹 일정 삭제에 실패했습니다", e, 500, "EVENT_DELETE_FAILED");
+        }
+    }
+    /**
+     * 사용자의 카카오 캘린더 목록 조회
+     */
+    @Override
+    public GetCalendarsResponse getKakaoCalendars(Long userId) {
+        log.info("카카오 캘린더 목록 조회 시작: userId={}", userId);
+
+        try {
+            // 카카오 액세스 토큰 획득
+            String accessToken = kakaoTokenService.getKakaoAccessTokenByUserId(userId);
+            log.debug("액세스 토큰 획득 완료");
+
+            // 카카오 API 호출
+            GetCalendarsResponse response = kakaoCalendarClient.getCalendars(accessToken);
+
+            log.info("카카오 캘린더 목록 조회 완료: userId={}, 캘린더 수={}",
+                    userId, response.calendars() != null ? response.calendars().length : 0);
+
+            if (response.calendars() != null) {
+                for (Calendar calendar : response.calendars()) {
+                    log.debug("캘린더 정보: id={}, name={}", calendar.id(), calendar.name());
+                }
+            }
+
+            return response;
+
+        } catch (Exception e) {
+            log.error("카카오 캘린더 목록 조회 실패: userId={}", userId, e);
+            throw new KakaoApiException("카카오 캘린더 목록 조회에 실패했습니다", e, 500, "CALENDAR_LIST_FAILED");
         }
     }
 
     /**
-     * 사용자 캘린더 조회
+     * 서브 캘린더 내의 이벤트 조회
+     */
+    public GetEventsResponse getEvents(Long userId) {
+        try {
+            String accessToken = kakaoTokenService.getKakaoAccessTokenByUserId(userId);
+            log.debug("액세스 토큰 획득 완료");
+            UserCalendar userCalendar = calendarRepository.findByUserId(userId)
+                    .orElseThrow(() -> new CalendarNotFoundException("캘린더를 찾을 수 없습니다: " + userId));
+
+
+            GetEventsRequest request = GetEventsRequest.builder()
+                    .calendarId(userCalendar.getSubCalendarId())
+                    .preset("THIS_WEEK")
+                    .build();
+
+            GetEventsResponse response = kakaoCalendarClient.getEvents(accessToken, request);
+            return response;
+        }  catch (Exception e) {
+            throw new KakaoApiException("카카오 일정 조회에 실패했습니다.", e, 500, "GET_EVENTS_FAILED");
+        }
+    }
+
+    /**
+     * 사용자 캘린더(엔티티) 조회
      */
     @Override
     public CalendarResponse getUserCalendar(Long userId) {
@@ -588,59 +605,5 @@ public class CalendarServiceImpl implements CalendarService {
         log.debug("생성된 RRULE: {} (untilDate: {})", result, untilDate);
         return result;
     }
-    
-    /**
-     * 사용자의 카카오 캘린더 목록 조회
-     */
-    @Override
-    public GetCalendarsResponse getKakaoCalendars(Long userId) {
-        log.info("카카오 캘린더 목록 조회 시작: userId={}", userId);
-        
-        try {
-            // 카카오 액세스 토큰 획득
-            String accessToken = kakaoTokenService.getKakaoAccessTokenByUserId(userId);
-            log.debug("액세스 토큰 획득 완료");
-            
-            // 카카오 API 호출
-            GetCalendarsResponse response = kakaoCalendarClient.getCalendars(accessToken);
-            
-            log.info("카카오 캘린더 목록 조회 완료: userId={}, 캘린더 수={}", 
-                    userId, response.calendars() != null ? response.calendars().length : 0);
-            
-            if (response.calendars() != null) {
-                for (Calendar calendar : response.calendars()) {
-                    log.debug("캘린더 정보: id={}, name={}", calendar.id(), calendar.name());
-                }
-            }
-            
-            return response;
-            
-        } catch (Exception e) {
-            log.error("카카오 캘린더 목록 조회 실패: userId={}", userId, e);
-            throw new KakaoApiException("카카오 캘린더 목록 조회에 실패했습니다", e, 500, "CALENDAR_LIST_FAILED");
-        }
-    }
 
-    /**
-     * 서브 캘린더 내의 이벤트 조회
-     */
-    public GetEventsResponse getEvents(Long userId) {
-        try {
-            String accessToken = kakaoTokenService.getKakaoAccessTokenByUserId(userId);
-            log.debug("액세스 토큰 획득 완료");
-            UserCalendar userCalendar = calendarRepository.findByUserId(userId)
-                    .orElseThrow(() -> new CalendarNotFoundException("캘린더를 찾을 수 없습니다: " + userId));
-
-
-            GetEventsRequest request = GetEventsRequest.builder()
-                    .calendarId(userCalendar.getSubCalendarId())
-                    .preset("THIS_WEEK")
-                    .build();
-
-            GetEventsResponse response = kakaoCalendarClient.getEvents(accessToken, request);
-            return response;
-        }  catch (Exception e) {
-            throw new KakaoApiException("카카오 일정 조회에 실패했습니다.", e, 500, "GET_EVENTS_FAILED");
-        }
-    }
 }
