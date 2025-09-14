@@ -66,7 +66,8 @@ public class KakaoCalendarDto {
     @Builder
     public record GetEventsRequest(
             @JsonProperty("calendar_id") String calendarId,
-            String preset
+            String from,
+            String to
 
     ){}
     public record GetEventsResponse(

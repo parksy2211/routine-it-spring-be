@@ -20,19 +20,13 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.DayOfWeek;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * 캘린더 서비스 구현체
@@ -240,11 +234,12 @@ public class CalendarServiceImpl implements CalendarService {
 
             GetEventsResponse events = getEvents(userId);
             String actualEventId = eventId;
-            if (events != null){
+            if (events != null && events.events() != null){
                 actualEventId = Arrays.stream(events.events())
                         .map(EventBrief::id)
                         .filter(id -> id !=null && id.startsWith(eventId))
-                        .findFirst().orElse(null);
+                        .findFirst()
+                        .orElse(eventId); // null 대신 기본 eventId를 사용하도록 수정
             }
 
 
@@ -311,11 +306,12 @@ public class CalendarServiceImpl implements CalendarService {
 
             GetEventsResponse events = getEvents(userId);
             String actualEventId = eventId;
-            if (events != null){
+            if (events != null && events.events() != null){
                 actualEventId = Arrays.stream(events.events())
                         .map(EventBrief::id)
                         .filter(id -> id !=null && id.startsWith(eventId))
-                        .findFirst().orElse(null);
+                        .findFirst()
+                        .orElse(eventId); // null 대신 기본 eventId를 사용하도록 수정
             }
             
             // 삭제 요청 DTO 생성 (모든 반복 일정 삭제)
@@ -374,10 +370,17 @@ public class CalendarServiceImpl implements CalendarService {
             UserCalendar userCalendar = calendarRepository.findByUserId(userId)
                     .orElseThrow(() -> new CalendarNotFoundException("캘린더를 찾을 수 없습니다: " + userId));
 
+            // 카카오 API는 UTC 기준의 RFC3339 형식을 요구합니다.
+            DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT;
+
+            // 현재 시각과 8일 후 시각을 UTC 기준으로 포맷팅합니다.
+            String from = formatter.format(Instant.now());
+            String to = formatter.format(Instant.now().plus(8, ChronoUnit.DAYS));
 
             GetEventsRequest request = GetEventsRequest.builder()
                     .calendarId(userCalendar.getSubCalendarId())
-                    .preset("THIS_WEEK")
+                    .from(from)
+                    .to(to)
                     .build();
 
             GetEventsResponse response = kakaoCalendarClient.getEvents(accessToken, request);
