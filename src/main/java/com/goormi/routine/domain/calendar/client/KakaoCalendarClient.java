@@ -341,8 +341,8 @@ public class KakaoCalendarClient {
                     .uri(uriBuilder -> {
                         uriBuilder.path("/events")
                                 .queryParam("calendar_id", request.calendarId())
-                                .queryParam("preset",  request.from())
-                                .queryParam("preset",  request.to());
+                                .queryParam("from",  request.from())
+                                .queryParam("to",  request.to());
                         return uriBuilder.build();
                     })
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
