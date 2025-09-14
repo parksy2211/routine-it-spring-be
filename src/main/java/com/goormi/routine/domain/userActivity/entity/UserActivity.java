@@ -7,7 +7,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 @Entity
 @Getter
@@ -29,8 +30,8 @@ public class UserActivity {
     private LocalDate activityDate;
 
     @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private ZonedDateTime createdAt;
+    private ZonedDateTime updatedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "routine_id")
@@ -43,13 +44,17 @@ public class UserActivity {
     private String imageUrl;
     private Boolean isPublic;
 
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
+    }
+
     public static UserActivity createActivity (User user,PersonalRoutine personalRoutine) {
         return UserActivity.builder()
                 .user(user)
                 .personalRoutine(personalRoutine)
                 .activityType(ActivityType.PERSONAL_ROUTINE_COMPLETE)
-                .activityDate(LocalDate.now())
-                .createdAt(LocalDateTime.now())
+                .activityDate(LocalDate.now(ZoneId.of("Asia/Seoul")))
                 .isPublic(false)
                 .build();
     }
@@ -59,8 +64,7 @@ public class UserActivity {
                 .groupMember(groupMember)
                 .imageUrl(imageUrl)
                 .activityType(ActivityType.GROUP_AUTH_COMPLETE)
-                .activityDate(LocalDate.now())
-                .createdAt(LocalDateTime.now())
+                .activityDate(LocalDate.now(ZoneId.of("Asia/Seoul")))
                 .isPublic(false)
                 .build();
     }
@@ -71,13 +75,13 @@ public class UserActivity {
         if (isPublic != null) this.isPublic = isPublic;
 
         if (this.activityDate == null) {
-            this.activityDate = LocalDate.now();
+            this.activityDate = LocalDate.now(ZoneId.of("Asia/Seoul"));
         }
 
         if (activityType == ActivityType.NOT_COMPLETED) {
             this.activityDate = null;
         }
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
     }
 
 
@@ -85,3 +89,4 @@ public class UserActivity {
 
 
 }
+
