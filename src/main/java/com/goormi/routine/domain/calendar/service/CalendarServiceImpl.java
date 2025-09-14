@@ -386,18 +386,35 @@ public class CalendarServiceImpl implements CalendarService {
      */
     @Override
     public boolean isCalendarConnected(Long userId) {
-        // userCalendar에 연동이 되었는지 확인
-        UserCalendar userCalendar = calendarRepository.findByUserIdAndActiveTrue(userId)
-                .orElseThrow(()-> new CalendarNotFoundException("캘린더를 찾을 수 없습니다."));
+        // DB에서 활성화된 사용자 캘린더 정보 조회
+        UserCalendar userCalendar = calendarRepository.findByUserIdAndActiveTrue(userId).orElse(null);
+        if (userCalendar == null) {
+            log.info("캘린더가 연동되어 있지 않습니다. (DB에 정보 없음): userId={}", userId);
+            return false; // DB에 없으면 당연히 연동 안된 상태
+        }
 
-        String token = kakaoTokenService.getKakaoAccessTokenByUserId(userId);
-        GetCalendarsResponse response = kakaoCalendarClient.getCalendars(token);
-        boolean isCalendarMatched = Arrays.stream(response.calendars())
-                .anyMatch(calendar ->
-                        Objects.equals(calendar.id(), userCalendar.getSubCalendarId()));
+        try {
+            // 카카오 API를 호출하여 실제 캘린더 목록 조회
+            String token = kakaoTokenService.getKakaoAccessTokenByUserId(userId);
+            GetCalendarsResponse response = kakaoCalendarClient.getCalendars(token);
 
-        log.debug("캘린더 연동 상태 확인: userId={}, result={}", userId);
-        return isCalendarMatched;
+            // DB의 subCalendarId와 실제 카카오 캘린더 목록을 비교
+            boolean isCalendarMatched = Arrays.stream(response.calendars())
+                    .anyMatch(calendar ->
+                            Objects.equals(calendar.id(), userCalendar.getSubCalendarId()));
+
+            if (!isCalendarMatched) {
+                log.warn("DB에는 캘린더 정보가 있으나, 실제 카카오 서버에는 해당 서브캘린더가 없습니다. subCalendarId={}", userCalendar.getSubCalendarId());
+            }
+
+            log.debug("캘린더 연동 상태 확인 완료: userId={}, isConnected={}", userId, isCalendarMatched);
+            return isCalendarMatched;
+
+        } catch (Exception e) {
+            log.error("카카오 캘린더 연동 상태 확인 중 오류 발생: userId={}", userId, e);
+            // API 호출 실패 등 예외 발생 시, 안전하게 '연동되지 않음'으로 처리
+            return false;
+        }
     }
 
     /**
@@ -573,7 +590,7 @@ public class CalendarServiceImpl implements CalendarService {
     }
     
     /**
-     * 사용자의 카카오 캘린더 목록 조회 (테스트용)
+     * 사용자의 카카오 캘린더 목록 조회
      */
     @Override
     public GetCalendarsResponse getKakaoCalendars(Long userId) {
@@ -604,6 +621,9 @@ public class CalendarServiceImpl implements CalendarService {
         }
     }
 
+    /**
+     * 서브 캘린더 내의 이벤트 조회
+     */
     public GetEventsResponse getEvents(Long userId) {
         try {
             String accessToken = kakaoTokenService.getKakaoAccessTokenByUserId(userId);
