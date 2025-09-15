@@ -55,15 +55,44 @@ public class CalendarServiceImpl implements CalendarService {
         // 사용자 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userId));
+        UserCalendar userCalendar = calendarRepository.findByUserId(userId).orElse(null);
 
-        // 이미 활성화된 캘린더가 있는지 확인
-        if (calendarRepository.existsByUserIdAndActiveTrue(userId)) {
-            log.info("이미 활성화된 캘린더가 존재합니다. 생성을 건너뜁니다: userId={}", userId);
-            // 이미 존재하는 캘린더 정보를 반환하거나, null을 반환하여 처리를 종료할 수 있습니다.
-            // 여기서는 null을 반환하여, 새로운 생성이 없었음을 알립니다.
-            return null;
+        // 1. DB에 캘린더 정보가 이미 있는 경우
+        if (userCalendar != null) {
+            log.debug("DB에서 사용자 캘린더 발견: userCalendarId={}", userCalendar.getId());
+            try {
+                // 카카오 API를 통해 실제 캘린더 목록 조회
+                GetCalendarsResponse kakaoCalendars = getKakaoCalendars(userId);
+                boolean kakaoCalendarExists = Arrays.stream(kakaoCalendars.calendars())
+                        .anyMatch(c -> c.id().equals(userCalendar.getSubCalendarId()));
+
+                // 카카오 서버에도 캘린더가 존재하는 경우
+                if (kakaoCalendarExists) {
+                    log.info("카카오 서버에서 기존 캘린더 확인됨. 연동 상태를 확인하고 동기화합니다: subCalendarId={}", userCalendar.getSubCalendarId());
+                    // DB 상태를 최신화
+                    if (!userCalendar.isActive()) {
+                        userCalendar.activate();
+                    }
+                    if (!user.isCalendarConnected()) {
+                        user.connectCalendar();
+                    }
+                    log.info("기존 캘린더가 이미 연동되어 있습니다. 생성을 건너뜁니다: userId={}", userId);
+                    return CalendarResponse.from(userCalendar);
+                }
+                // 카카오 서버에 캘린더가 없는 경우 (DB 정보가 오래된 경우)
+                else {
+                    log.warn("DB에는 캘린더 정보가 있으나 카카오 서버에 없습니다. DB 정보를 삭제하고 새로 생성합니다: subCalendarId={}", userCalendar.getSubCalendarId());
+                    calendarRepository.delete(userCalendar);
+                }
+            } catch (Exception e) {
+                log.error("카카오 캘린더 확인 중 오류 발생. 캘린더를 새로 생성합니다.", e);
+                // 기존 캘린더 정보 삭제 후 재생성 시도
+                calendarRepository.delete(userCalendar);
+            }
         }
 
+        // 2. 새로 캘린더를 생성해야 하는 경우 (DB에 없거나, 카카오에 없어서 삭제된 경우)
+        log.info("새로운 카카오 서브캘린더 생성을 시작합니다: userId={}", userId);
         try {
             // 카카오 액세스 토큰 획득
             String accessToken = kakaoTokenService.getKakaoAccessTokenByUserId(userId);
@@ -73,27 +102,23 @@ public class CalendarServiceImpl implements CalendarService {
                     .color("LIME")
                     .reminder(10)
                     .build();
-            
+
             CreateSubCalendarResponse subCalendar = kakaoCalendarClient.createSubCalendar(accessToken, request);
-            
+
             // UserCalendar 엔티티 생성 및 저장
-            UserCalendar userCalendar = UserCalendar.createUserCalendar(user, subCalendar.subCalendarId());
-            UserCalendar savedCalendar = calendarRepository.save(userCalendar);
+            UserCalendar newUserCalendar = UserCalendar.createUserCalendar(user, subCalendar.subCalendarId());
+            UserCalendar savedCalendar = calendarRepository.save(newUserCalendar);
             log.debug("저장된 UserCalendar 정보: id={}, userId={}, subCalendarId={}, active={}",
                     savedCalendar.getId(), savedCalendar.getUser().getId(),
                     savedCalendar.getSubCalendarId(), savedCalendar.isActive());
-            
-            // 저장 후 즉시 확인
-            boolean isConnectedAfterSave = calendarRepository.existsByUserIdAndActiveTrue(userId);
-            log.debug("저장 후 연동 상태 확인: userId={}, isConnected={}", userId, isConnectedAfterSave);
-            
-            // User 엔티티의 캘린더 연동 상태 업데이트 (변경 감지 활용)
+
+            // User 엔티티의 캘린더 연동 상태 업데이트
             user.connectCalendar();
-            
+
             log.info("사용자 캘린더 생성 완료: userId={}, subCalendarId={}", userId, subCalendar.subCalendarId());
-            
+
             return CalendarResponse.from(savedCalendar);
-            
+
         } catch (Exception e) {
             log.error("캘린더 생성 실패: userId={}", userId, e);
             throw new KakaoApiException("캘린더 생성에 실패했습니다", e, 500, "CALENDAR_CREATE_FAILED");
