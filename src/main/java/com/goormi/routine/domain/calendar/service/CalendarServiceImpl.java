@@ -375,7 +375,7 @@ public class CalendarServiceImpl implements CalendarService {
 
             // 현재 시각과 8일 후 시각을 UTC 기준으로 포맷팅합니다.
             String from = formatter.format(Instant.now().plus(1,  ChronoUnit.DAYS));
-            String to = formatter.format(Instant.now().plus(8, ChronoUnit.DAYS));
+            String to = formatter.format(Instant.now().plus(10, ChronoUnit.DAYS));
 
             GetEventsRequest request = GetEventsRequest.builder()
                     .calendarId(userCalendar.getSubCalendarId())
