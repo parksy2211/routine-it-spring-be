@@ -22,10 +22,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalAdjusters;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * 캘린더 서비스 구현체
@@ -258,16 +258,19 @@ public class CalendarServiceImpl implements CalendarService {
 
             GetEventsResponse events = getEvents(userId);
             String actualEventId = eventId;
+            String startAt = null;
             if (events != null && events.events() != null){
-                actualEventId = Arrays.stream(events.events())
-                        .map(EventBrief::id)
-                        .filter(id -> id !=null && id.startsWith(eventId))
-                        .findFirst()
-                        .orElse(eventId); // null 대신 기본 eventId를 사용하도록 수정
+                Optional<EventBrief> matchedEventOpt = Arrays.stream(events.events())
+                        .filter(e -> e.id() != null && e.id().startsWith(eventId))
+                        .findFirst();
+
+                actualEventId = matchedEventOpt.map(EventBrief::id).orElse(eventId);
+                startAt = matchedEventOpt.map(e -> e.time().startAt()).orElse(null);
+
             }
 
 
-            UpdateEventRequest request = buildUpdateEventRequest(group, actualEventId, calendarId);
+            UpdateEventRequest request = buildUpdateEventRequest(group, actualEventId, calendarId, startAt);
             log.debug("일정 수정 요청 생성 완료: actualEventId={}, calendarId={}", actualEventId, calendarId);
             
             // 카카오 API 호출 전 최종 검증 로그
@@ -398,8 +401,8 @@ public class CalendarServiceImpl implements CalendarService {
             DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT;
 
             // 현재 시각과 8일 후 시각을 UTC 기준으로 포맷팅합니다.
-            String from = formatter.format(Instant.now().plus(1,  ChronoUnit.DAYS));
-            String to = formatter.format(Instant.now().plus(10, ChronoUnit.DAYS));
+            String from = formatter.format(Instant.now());
+            String to = formatter.format(Instant.now().plus(7, ChronoUnit.DAYS));
 
             GetEventsRequest request = GetEventsRequest.builder()
                     .calendarId(userCalendar.getSubCalendarId())
@@ -526,50 +529,67 @@ public class CalendarServiceImpl implements CalendarService {
     /**
      * 그룹 정보를 바탕으로 일정 수정 요청 빌드
      */
-    private UpdateEventRequest buildUpdateEventRequest(Group group, String eventId, String calendarId) {
-        log.debug("UpdateEventRequest 빌드 시작: groupName={}, eventId={}, calendarId={}", 
+    private UpdateEventRequest buildUpdateEventRequest(Group group, String eventId, String calendarId, String startDate) {
+        log.debug("UpdateEventRequest 빌드 시작: groupName={}, eventId={}, calendarId={}",
                 group.getGroupName(), eventId, calendarId);
-        
-        String startTime = formatAlarmTime(group.getAlarmTime());
-        String endTime = formatAlarmTime(group.getAlarmTime().plusMinutes(30));
+
+        Time time = calculateEventTime(startDate, group.getAlarmTime());
         String recurRule = buildRecurRule(group.getAuthDays());
-        
+
         log.debug("시간 정보 생성:");
-        log.debug("- startTime: {}", startTime);
-        log.debug("- endTime: {}", endTime);
+        log.debug("- startTime: {}", time.startAt());
+        log.debug("- endTime: {}", time.endAt());
         log.debug("- recurRule: {}", recurRule);
-        
-        Time time = Time.builder()
-                .startAt(startTime)
-                .endAt(endTime)
-                .build();
-        
+
         EventUpdate eventUpdate = EventUpdate.builder()
                 .title(group.getGroupName())
                 .description(group.getDescription())
                 .time(time)
                 .rrule(recurRule)
                 .build();
-        
+
         log.debug("EventUpdate 생성 완료:");
         log.debug("- title: {}", eventUpdate.title());
         log.debug("- description: {}", eventUpdate.description());
         log.debug("- rrule: {}", eventUpdate.rrule());
-        log.debug("- time: startAt={}, endAt={}", 
+        log.debug("- time: startAt={}, endAt={}",
                 eventUpdate.time() != null ? eventUpdate.time().startAt() : "null",
                 eventUpdate.time() != null ? eventUpdate.time().endAt() : "null");
-        
+
         UpdateEventRequest request = UpdateEventRequest.builder()
                 .event(eventUpdate)
                 .eventId(eventId)
                 .calendarId(calendarId)
                 .recurUpdateType("THIS_AND_FOLLOWING")
                 .build();
-        
-        log.debug("UpdateEventRequest 생성 완료: eventId={}, calendarId={}, recurUpdateType={}", 
+
+        log.debug("UpdateEventRequest 생성 완료: eventId={}, calendarId={}, recurUpdateType={}",
                 request.eventId(), request.calendarId(), request.recurUpdateType());
-        
+
         return request;
+    }
+
+    @Override
+    public Time calculateEventTime(String startDate, LocalTime alarmTime) {
+        String startTime;
+        String endTime;
+
+        if (startDate != null) {
+            ZonedDateTime baseTimeForUpdate = ZonedDateTime.parse(startDate);
+            LocalDate date = baseTimeForUpdate.toLocalDate();
+            ZoneId zone = baseTimeForUpdate.getZone();
+            ZonedDateTime newStartDateTime = ZonedDateTime.of(date, alarmTime, zone);
+            startTime = newStartDateTime.format(DateTimeFormatter.ISO_INSTANT);
+            endTime = newStartDateTime.plusMinutes(30).format(DateTimeFormatter.ISO_INSTANT);
+        } else {
+            startTime = formatAlarmTime(alarmTime);
+            endTime = formatAlarmTime(alarmTime.plusMinutes(30));
+        }
+
+        return Time.builder()
+                .startAt(startTime)
+                .endAt(endTime)
+                .build();
     }
 
     /**
@@ -577,8 +597,8 @@ public class CalendarServiceImpl implements CalendarService {
      */
     @Override
     public String formatAlarmTime(LocalTime time) {
-        // 다음 주 일요일부터 시작하도록 설정 (반복 일정의 시작점)
-        LocalDate startDate = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.SUNDAY));
+        // 내일 시작하도록 설정 (반복 일정의 시작점)
+        LocalDate startDate = LocalDate.now().plusDays(1);
         LocalDateTime dateTime = LocalDateTime.of(startDate, time);
         
         // 한국 시간대로 ISO 8601 형식 생성

@@ -77,6 +77,7 @@ public class KakaoCalendarDto {
     public record EventBrief(
             String id,
             String title,
+            Time time,
             @JsonProperty("calendar_id") String calendarId
     ){}
 

@@ -14,6 +14,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Arrays;
+import java.util.Optional;
 
 import static com.goormi.routine.domain.calendar.dto.KakaoCalendarDto.*;
 
@@ -86,15 +87,18 @@ public class CalendarPersonalServiceImpl implements CalendarPersonalService {
 
             GetEventsResponse events = getPersonalEvents(userId);
             String actualEventId = eventId;
+            String startAt = null;
             if (events != null && events.events() != null){
-                actualEventId = Arrays.stream(events.events())
-                        .map(EventBrief::id)
-                        .filter(id -> id !=null && id.startsWith(eventId))
-                        .findFirst()
-                        .orElse(eventId); // null 대신 기본 eventId를 사용하도록 수정
+                Optional<EventBrief> matchedEventOpt = Arrays.stream(events.events())
+                        .filter(e -> e.id() != null && e.id().startsWith(eventId))
+                        .findFirst();
+
+                actualEventId = matchedEventOpt.map(EventBrief::id).orElse(eventId);
+                startAt = matchedEventOpt.map(e -> e.time().startAt()).orElse(null);
+
             }
             String calendarId = "primary";
-            UpdateEventRequest request = buildUpdateEventRequest(personalRoutine, actualEventId, calendarId);
+            UpdateEventRequest request = buildUpdateEventRequest(personalRoutine, actualEventId, calendarId, startAt);
             log.debug("일정 수정 요청 생성 완료: actualEventId={}, calendarId={}", actualEventId, calendarId);
 
             // 카카오 API 호출 전 최종 검증 로그
@@ -274,23 +278,17 @@ public class CalendarPersonalServiceImpl implements CalendarPersonalService {
     /**
      * 개인 정보를 바탕으로 일정 수정 요청 빌드
      */
-    private UpdateEventRequest buildUpdateEventRequest(PersonalRoutine personalRoutine, String eventId, String calendarId) {
+    private UpdateEventRequest buildUpdateEventRequest(PersonalRoutine personalRoutine, String eventId, String calendarId, String startDate) {
         log.debug("UpdateEventRequest 빌드 시작: groupName={}, eventId={}, calendarId={}",
                 personalRoutine.getRoutineName(), eventId, calendarId);
 
-        String startTime = calendarService.formatAlarmTime(personalRoutine.getStartTime());
-        String endTime = calendarService.formatAlarmTime(personalRoutine.getStartTime().plusMinutes(30));
+        Time time = calendarService.calculateEventTime(startDate, personalRoutine.getStartTime());
         String recurRule = calendarService.buildRecurRule(personalRoutine.getRepeatDays());
 
         log.debug("시간 정보 생성:");
-        log.debug("- startTime: {}", startTime);
-        log.debug("- endTime: {}", endTime);
+        log.debug("- startTime: {}", time.startAt());
+        log.debug("- endTime: {}", time.endAt());
         log.debug("- recurRule: {}", recurRule);
-
-        Time time = Time.builder()
-                .startAt(startTime)
-                .endAt(endTime)
-                .build();
 
         EventUpdate eventUpdate = EventUpdate.builder()
                 .title(personalRoutine.getRoutineName())
