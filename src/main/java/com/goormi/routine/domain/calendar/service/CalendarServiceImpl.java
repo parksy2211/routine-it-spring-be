@@ -50,22 +50,20 @@ public class CalendarServiceImpl implements CalendarService {
     @Override
     @Transactional
     public CalendarResponse createUserCalendar(Long userId) {
-        log.info("사용자 캘린더 생성 시작: userId={}", userId);
-        
+        log.info("사용자 캘린더 생성/확인 시작: userId={}", userId);
+
         // 사용자 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userId));
-        
-        // 이미 캘린더가 있는지 확인
-        boolean existsByUser = calendarRepository.existsByUser(user);
-        boolean existsByUserId = calendarRepository.existsByUserIdAndActiveTrue(userId);
-        log.debug("캘린더 중복 확인: userId={}, existsByUser={}, existsByUserId={}", 
-                userId, existsByUser, existsByUserId);
-        
-        if (existsByUser) {
-            throw new CalendarAlreadyConnectedException("이미 캘린더가 연동되어 있습니다: " + userId);
+
+        // 이미 활성화된 캘린더가 있는지 확인
+        if (calendarRepository.existsByUserIdAndActiveTrue(userId)) {
+            log.info("이미 활성화된 캘린더가 존재합니다. 생성을 건너뜁니다: userId={}", userId);
+            // 이미 존재하는 캘린더 정보를 반환하거나, null을 반환하여 처리를 종료할 수 있습니다.
+            // 여기서는 null을 반환하여, 새로운 생성이 없었음을 알립니다.
+            return null;
         }
-        
+
         try {
             // 카카오 액세스 토큰 획득
             String accessToken = kakaoTokenService.getKakaoAccessTokenByUserId(userId);

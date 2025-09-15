@@ -1,5 +1,6 @@
 package com.goormi.routine.domain.auth.service;
 
+import com.goormi.routine.domain.calendar.service.CalendarSyncService;
 import com.goormi.routine.domain.user.entity.User;
 import com.goormi.routine.domain.user.repository.UserRepository;
 import jakarta.servlet.http.Cookie;
@@ -29,7 +30,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private final JwtTokenProvider jwtTokenProvider;
     private final TokenService tokenService;
     private final OAuth2AuthorizedClientService authorizedClientService;
-    
+    private final CalendarSyncService calendarSyncService; // 의존성 추가
+
     @Value("${app.oauth2.redirect-uri:http://localhost:3000}")
     private String redirectUri;
     
@@ -57,6 +59,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         User user = userRepository.findByKakaoId(kakaoId)
                 .orElseThrow(() -> new IllegalStateException("사용자를 찾을 수 없습니다."));
 
+        // 비동기 캘린더 동기화 호출
+        calendarSyncService.syncUserCalendar(user.getId());
+
         // 카카오 리프레시 토큰 저장
         if (authentication instanceof OAuth2AuthenticationToken) {
             OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
@@ -67,7 +72,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
             if (authorizedClient != null && authorizedClient.getRefreshToken() != null) {
                 String kakaoRefreshToken = authorizedClient.getRefreshToken().getTokenValue();
-                log.debug("획득한 카카오 리프레시 토큰: {}", kakaoRefreshToken); // Added debug log
+                log.debug("획득한 카카오 리프레시 토큰: {}", kakaoRefreshToken);
                 user.updateKakaoRefreshToken(kakaoRefreshToken);
                 log.info("카카오 리프레시 토큰 저장 완료: userId={}", user.getId());
             } else {
