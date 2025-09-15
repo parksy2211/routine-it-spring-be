@@ -294,34 +294,27 @@ public class KakaoCalendarClient {
 
     /**
      * 일정 삭제
-     * 
+     *
      * @param accessToken 카카오 액세스 토큰
-     * @param request 일정 삭제 요청
+     * @param request     일정 삭제 요청
      */
     public void deleteEvent(String accessToken, DeleteEventRequest request) {
-        log.debug("카카오 일정 삭제 요청: eventId={}, recurUpdateType={}", 
+        log.debug("카카오 일정 삭제 요청: eventId={}, recurUpdateType={}",
                 request.eventId(), request.recurUpdateType());
-        
+
         try {
-            MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-            formData.add("event_id", request.eventId());
-            formData.add("recur_update_type", request.recurUpdateType());
-            
-            log.debug("삭제 요청 Form Data:");
-            formData.forEach((key, values) -> 
-                log.debug("- {}: {}", key, values));
-            
-            webClient.post()  // DELETE 대신 POST 사용 (form-data 전송)
-                    .uri("/delete/event")
+            webClient.delete()
+                    .uri(uriBuilder -> uriBuilder.path("/delete/event")
+                            .queryParam("event_id", request.eventId())
+                            .queryParam("recur_update_type", request.recurUpdateType())
+                            .build())
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE + ";charset=UTF-8")
-                    .body(BodyInserters.fromFormData(formData))
                     .retrieve()
                     .bodyToMono(Void.class)
                     .doOnSuccess(response -> log.info("일정 삭제 성공: eventId={}", request.eventId()))
                     .doOnError(error -> log.error("일정 삭제 실패: eventId={}", request.eventId(), error))
                     .block();
-                    
+
         } catch (WebClientResponseException e) {
             log.error("카카오 API 호출 오류: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
             throw new RuntimeException("일정 삭제에 실패했습니다: " + e.getMessage(), e);

@@ -2,7 +2,6 @@ package com.goormi.routine.domain.calendar.service;
 
 import com.goormi.routine.domain.calendar.client.KakaoCalendarClient;
 import com.goormi.routine.domain.calendar.exception.KakaoApiException;
-import com.goormi.routine.domain.calendar.repository.CalendarRepository;
 import com.goormi.routine.domain.personal_routines.domain.PersonalRoutine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +27,6 @@ import static com.goormi.routine.domain.calendar.dto.KakaoCalendarDto.*;
 @Transactional(readOnly = true)
 public class CalendarPersonalServiceImpl implements CalendarPersonalService {
 
-    private final CalendarRepository calendarRepository;
     private final KakaoCalendarClient kakaoCalendarClient;
     private final KakaoTokenService kakaoTokenService;
 
@@ -39,13 +37,13 @@ public class CalendarPersonalServiceImpl implements CalendarPersonalService {
     @Override
     @Transactional
     public String createPersonalSchedule(Long userId, PersonalRoutine personalRoutine) {
-        log.info("그룹 일정 생성 시작: userId={}, routineId={}", userId, personalRoutine.getRoutineId());
+        log.info("개인 일정 생성 시작: userId={}, routineId={}", userId, personalRoutine.getRoutineId());
 
         try {
             // 카카오 액세스 토큰 획득
             String accessToken = kakaoTokenService.getKakaoAccessTokenByUserId(userId);
 
-            // 그룹 정보를 바탕으로 일정 생성
+            // 개인루틴 정보를 바탕으로 일정 생성
             CreateEventRequest request = buildEventRequest("primary", personalRoutine);
             CreateEventResponse response = kakaoCalendarClient.createEvent(accessToken, "primary", request);
 
@@ -104,7 +102,7 @@ public class CalendarPersonalServiceImpl implements CalendarPersonalService {
 
             try {
                 kakaoCalendarClient.updateEvent(accessToken, actualEventId, request);
-                log.info("그룹 일정 수정 완료: userId={}, eventId={}", actualEventId, eventId);
+                log.info("개인 일정 수정 완료: userId={}, eventId={}", actualEventId, eventId);
 
             } catch (RuntimeException kakaoApiException) {
                 log.error("카카오 API 오류 발생: actualEventId={}, calendarId={}, error={}",
@@ -173,11 +171,11 @@ public class CalendarPersonalServiceImpl implements CalendarPersonalService {
                     .build();
 
             kakaoCalendarClient.deleteEvent(accessToken, request);
-            log.info("그룹 일정 삭제 완료: actualEventId={}", actualEventId);
+            log.info("개인 일정 삭제 완료: actualEventId={}", actualEventId);
 
         } catch (Exception e) {
-            log.error("그룹 일정 삭제 실패: actualEventId={}", eventId, e);
-            throw new KakaoApiException("그룹 일정 삭제에 실패했습니다", e, 500, "EVENT_DELETE_FAILED");
+            log.error("개인 일정 삭제 실패: eventId={}", eventId, e);
+            throw new KakaoApiException("개인 일정 삭제에 실패했습니다", e, 500, "EVENT_DELETE_FAILED");
         }
     }
 
@@ -214,8 +212,8 @@ public class CalendarPersonalServiceImpl implements CalendarPersonalService {
      * 개인 정보를 바탕으로 일정 생성 요청 빌드
      */
     private CreateEventRequest buildEventRequest(String subCalendarId, PersonalRoutine personalRoutine) {
-        log.debug("그룹 정보 확인:");
-        log.debug("- groupName: {}", personalRoutine.getRoutineName());
+        log.debug("개인루틴 정보 확인:");
+        log.debug("- routineName: {}", personalRoutine.getRoutineName());
         log.debug("- description: {}", personalRoutine.getDescription());
         log.debug("- alarmTime: {}", personalRoutine.getStartTime());
         log.debug("- authDays: {}", personalRoutine.getRepeatDays());
