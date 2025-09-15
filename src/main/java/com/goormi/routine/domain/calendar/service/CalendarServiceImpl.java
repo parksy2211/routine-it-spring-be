@@ -83,11 +83,13 @@ public class CalendarServiceImpl implements CalendarService {
                 else {
                     log.warn("DB에는 캘린더 정보가 있으나 카카오 서버에 없습니다. DB 정보를 삭제하고 새로 생성합니다: subCalendarId={}", userCalendar.getSubCalendarId());
                     calendarRepository.delete(userCalendar);
+                    calendarRepository.flush();
                 }
             } catch (Exception e) {
                 log.error("카카오 캘린더 확인 중 오류 발생. 캘린더를 새로 생성합니다.", e);
                 // 기존 캘린더 정보 삭제 후 재생성 시도
                 calendarRepository.delete(userCalendar);
+                calendarRepository.flush();
             }
         }
 

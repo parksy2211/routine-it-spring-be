@@ -79,16 +79,8 @@ public class UserCalendar {
     }
 
   
-    public void updateCalendarSettings(String calendarName, CalendarColor color, Integer reminderMinutes) {
-        if (calendarName != null && !calendarName.trim().isEmpty()) {
-            this.calendarName = calendarName;
-        }
-        if (color != null) {
-            this.color = color;
-        }
-        if (reminderMinutes != null && reminderMinutes >= 0) {
-            this.reminderMinutes = reminderMinutes;
-        }
+    public void updateCalendarId(String newCalendarId) {
+        this.subCalendarId = newCalendarId;
     }
 
   
