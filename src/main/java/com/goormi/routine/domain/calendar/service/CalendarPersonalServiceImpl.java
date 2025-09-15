@@ -29,6 +29,7 @@ public class CalendarPersonalServiceImpl implements CalendarPersonalService {
 
     private final KakaoCalendarClient kakaoCalendarClient;
     private final KakaoTokenService kakaoTokenService;
+    private final CalendarService calendarService;
 
     /**
      * 개인 일정 생성
@@ -218,9 +219,9 @@ public class CalendarPersonalServiceImpl implements CalendarPersonalService {
         log.debug("- alarmTime: {}", personalRoutine.getStartTime());
         log.debug("- authDays: {}", personalRoutine.getRepeatDays());
 
-        String startTime = formatAlarmTime(personalRoutine.getStartTime());
-        String endTime = formatAlarmTime(personalRoutine.getStartTime().plusMinutes(30)); // 30분 일정으로 설정
-        String recurRule = buildRecurRule(personalRoutine.getRepeatDays());
+        String startTime = calendarService.formatAlarmTime(personalRoutine.getStartTime());
+        String endTime = calendarService.formatAlarmTime(personalRoutine.getStartTime().plusMinutes(30)); // 30분 일정으로 설정
+        String recurRule = calendarService.buildRecurRule(personalRoutine.getRepeatDays());
 
         log.debug("생성된 값들:");
         log.debug("- startTime: {}", startTime);
@@ -277,9 +278,9 @@ public class CalendarPersonalServiceImpl implements CalendarPersonalService {
         log.debug("UpdateEventRequest 빌드 시작: groupName={}, eventId={}, calendarId={}",
                 personalRoutine.getRoutineName(), eventId, calendarId);
 
-        String startTime = formatAlarmTime(personalRoutine.getStartTime());
-        String endTime = formatAlarmTime(personalRoutine.getStartTime().plusMinutes(30));
-        String recurRule = buildRecurRule(personalRoutine.getRepeatDays());
+        String startTime = calendarService.formatAlarmTime(personalRoutine.getStartTime());
+        String endTime = calendarService.formatAlarmTime(personalRoutine.getStartTime().plusMinutes(30));
+        String recurRule = calendarService.buildRecurRule(personalRoutine.getRepeatDays());
 
         log.debug("시간 정보 생성:");
         log.debug("- startTime: {}", startTime);
@@ -317,67 +318,6 @@ public class CalendarPersonalServiceImpl implements CalendarPersonalService {
                 request.eventId(), request.calendarId(), request.recurUpdateType());
 
         return request;
-    }
-
-    /**
-     * 시간 포매팅 헬퍼 메서드 - ISO 8601 형식으로 변환
-     */
-    private String formatAlarmTime(LocalTime time) {
-        // 다음 주 일요일부터 시작하도록 설정 (반복 일정의 시작점)
-        LocalDate startDate = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.SUNDAY));
-        LocalDateTime dateTime = LocalDateTime.of(startDate, time);
-
-        // 한국 시간대로 ISO 8601 형식 생성
-        ZonedDateTime zonedDateTime = dateTime.atZone(ZoneId.of("Asia/Seoul"));
-        String formattedTime = zonedDateTime.format(DateTimeFormatter.ISO_INSTANT);
-
-        log.debug("시간 포매팅: LocalTime={} -> ZonedDateTime={} -> ISO={}",
-                time, zonedDateTime, formattedTime);
-
-        return formattedTime;
-    }
-
-    /**
-     * 반복 규칙 생성 헬퍼 메서드
-     * authDays 형식: "0101010" (일월화수목금토)
-     * 오늘부터 3개월까지 반복 제한
-     */
-    private String buildRecurRule(String authDays) {
-        log.debug("RRULE 생성 시작: authDays={}", authDays);
-
-        // 카카오 캘린더 API 반복 규칙에 맞게 변환
-        StringBuilder rule = new StringBuilder("FREQ=WEEKLY;BYDAY=");
-        String[] days = {"SU", "MO", "TU", "WE", "TH", "FR", "SA"};
-
-        boolean hasAnyDay = false;
-        for (int i = 0; i < authDays.length() && i < 7; i++) {
-            if (authDays.charAt(i) == '1') {
-                if (hasAnyDay) {
-                    rule.append(",");
-                }
-                rule.append(days[i]);
-                hasAnyDay = true;
-                log.debug("요일 추가: {} (index={})", days[i], i);
-            }
-        }
-
-        // 만약 어떤 요일도 선택되지 않았다면 기본값 설정 (매일)
-        if (!hasAnyDay) {
-            rule.append("SU,MO,TU,WE,TH,FR,SA");
-            log.debug("기본값 설정: 모든 요일");
-        }
-
-        // 오늘부터 3개월 후까지 반복 제한 (UNTIL 형식)
-        LocalDateTime endDate = LocalDateTime.now().plusMonths(3);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'");
-        String untilDate = endDate.atZone(ZoneId.of("Asia/Seoul"))
-                .withZoneSameInstant(ZoneOffset.UTC)
-                .format(formatter);
-        rule.append(";UNTIL=").append(untilDate);
-
-        String result = rule.toString();
-        log.debug("생성된 RRULE: {} (untilDate: {})", result, untilDate);
-        return result;
     }
 
 }

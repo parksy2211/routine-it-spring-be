@@ -4,7 +4,6 @@ import com.goormi.routine.domain.calendar.client.KakaoCalendarClient;
 import com.goormi.routine.domain.calendar.dto.CalendarResponse;
 import com.goormi.routine.domain.calendar.dto.KakaoCalendarDto.*;
 import com.goormi.routine.domain.calendar.entity.UserCalendar;
-import com.goormi.routine.domain.calendar.exception.CalendarAlreadyConnectedException;
 import com.goormi.routine.domain.calendar.exception.CalendarNotFoundException;
 import com.goormi.routine.domain.calendar.exception.KakaoApiException;
 import com.goormi.routine.domain.calendar.repository.CalendarRepository;
@@ -576,7 +575,8 @@ public class CalendarServiceImpl implements CalendarService {
     /**
      * 시간 포매팅 헬퍼 메서드 - ISO 8601 형식으로 변환
      */
-    private String formatAlarmTime(LocalTime time) {
+    @Override
+    public String formatAlarmTime(LocalTime time) {
         // 다음 주 일요일부터 시작하도록 설정 (반복 일정의 시작점)
         LocalDate startDate = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.SUNDAY));
         LocalDateTime dateTime = LocalDateTime.of(startDate, time);
@@ -596,7 +596,8 @@ public class CalendarServiceImpl implements CalendarService {
      * authDays 형식: "0101010" (일월화수목금토)
      * 오늘부터 3개월까지 반복 제한
      */
-    private String buildRecurRule(String authDays) {
+    @Override
+    public String buildRecurRule(String authDays) {
         log.debug("RRULE 생성 시작: authDays={}", authDays);
         
         // 카카오 캘린더 API 반복 규칙에 맞게 변환
