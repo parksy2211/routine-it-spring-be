@@ -66,7 +66,7 @@ public class User {
     //카카오 캘린더 연동 관련 필드
     @Column(name = "calendar_connected")
     @Builder.Default
-    private boolean calendarConnected = false;
+    private Boolean calendarConnected = false;
 
     public void createProfile(String nickname, String profileImageUrl) {
         if (nickname != null) {

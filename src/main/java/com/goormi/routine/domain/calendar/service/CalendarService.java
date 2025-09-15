@@ -12,7 +12,7 @@ public interface CalendarService {
     /**
      * 사용자 캘린더 생성 (회원가입 시 호출)
      */
-    CalendarResponse createUserCalendar(Long userId);
+    CalendarResponse createUserCalendar(Long userId, String accessToken);
 
     /**
      * 사용자 캘린더 삭제 (회원탈퇴 시 호출)

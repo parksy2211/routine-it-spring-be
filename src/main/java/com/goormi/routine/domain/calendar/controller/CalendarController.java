@@ -46,10 +46,11 @@ public class CalendarController {
         log.info("=== 캘린더 연동 요청 받음 ===");
         log.info("요청 userId: {}", userId);
         
-        CalendarResponse response = calendarService.createUserCalendar(userId);
+//        CalendarResponse response = calendarService.createUserCalendar(userId);
         
         log.info("캘린더 연동 요청 처리 완료: userId={}", userId);
-        return ResponseEntity.ok(ApiResponse.success(response));
+//        return ResponseEntity.ok(ApiResponse.success());
+        return ResponseEntity.notFound().build();
     }
 
     /**
@@ -108,10 +109,11 @@ public class CalendarController {
         log.info("=== [테스트용] 캘린더 연동 요청 받음 ===");
         log.info("요청 userId: {}", userId);
         
-        CalendarResponse response = calendarService.createUserCalendar(userId);
+//        CalendarResponse response = calendarService.createUserCalendar(userId);
         
         log.info("[테스트용] 캘린더 연동 요청 처리 완료: userId={}", userId);
-        return ResponseEntity.ok(ApiResponse.success(response));
+//        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.notFound().build();
     }
 
     /**

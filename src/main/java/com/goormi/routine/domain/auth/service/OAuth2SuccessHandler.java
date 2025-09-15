@@ -59,10 +59,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         User user = userRepository.findByKakaoId(kakaoId)
                 .orElseThrow(() -> new IllegalStateException("사용자를 찾을 수 없습니다."));
 
-        // 비동기 캘린더 동기화 호출
-        calendarSyncService.syncUserCalendar(user.getId());
-
-        // 카카오 리프레시 토큰 저장
+        // 카카오 리프레시 토큰 저장 및 캘린더 동기화
         if (authentication instanceof OAuth2AuthenticationToken) {
             OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
             OAuth2AuthorizedClient authorizedClient = authorizedClientService.loadAuthorizedClient(
@@ -70,13 +67,20 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                     oauthToken.getName()
             );
 
-            if (authorizedClient != null && authorizedClient.getRefreshToken() != null) {
-                String kakaoRefreshToken = authorizedClient.getRefreshToken().getTokenValue();
-                log.debug("획득한 카카오 리프레시 토큰: {}", kakaoRefreshToken);
-                user.updateKakaoRefreshToken(kakaoRefreshToken);
-                log.info("카카오 리프레시 토큰 저장 완료: userId={}", user.getId());
-            } else {
-                log.warn("카카오 리프레시 토큰을 찾을 수 없습니다. 'offline_access' 스코프를 요청했는지 확인하세요.");
+            if (authorizedClient != null) {
+                String accessToken = authorizedClient.getAccessToken().getTokenValue();
+
+                // 비동기 캘린더 동기화 호출
+                calendarSyncService.syncUserCalendar(user.getId(), accessToken);
+
+                if (authorizedClient.getRefreshToken() != null) {
+                    String kakaoRefreshToken = authorizedClient.getRefreshToken().getTokenValue();
+                    log.debug("획득한 카카오 리프레시 토큰: {}", kakaoRefreshToken);
+                    user.updateKakaoRefreshToken(kakaoRefreshToken);
+                    log.info("카카오 리프레시 토큰 저장 완료: userId={}", user.getId());
+                } else {
+                    log.warn("카카오 리프레시 토큰을 찾을 수 없습니다. 'offline_access' 스코프를 요청했는지 확인하세요.");
+                }
             }
         }
         

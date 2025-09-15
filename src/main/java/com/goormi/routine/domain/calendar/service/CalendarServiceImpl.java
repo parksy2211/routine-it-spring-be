@@ -48,7 +48,7 @@ public class CalendarServiceImpl implements CalendarService {
      */
     @Override
     @Transactional
-    public CalendarResponse createUserCalendar(Long userId) {
+    public CalendarResponse createUserCalendar(Long userId, String accessToken) {
         log.info("사용자 캘린더 생성/확인 시작: userId={}", userId);
 
         // 사용자 조회
@@ -60,8 +60,8 @@ public class CalendarServiceImpl implements CalendarService {
         if (userCalendar != null) {
             log.debug("DB에서 사용자 캘린더 발견: userCalendarId={}", userCalendar.getId());
             try {
-                // 카카오 API를 통해 실제 캘린더 목록 조회
-                GetCalendarsResponse kakaoCalendars = getKakaoCalendars(userId);
+                // 카카오 API를 통해 실제 캘린더 목록 조회 (전달받은 토큰 사용)
+                GetCalendarsResponse kakaoCalendars = kakaoCalendarClient.getCalendars(accessToken);
                 boolean kakaoCalendarExists = Arrays.stream(kakaoCalendars.calendars())
                         .anyMatch(c -> c.id().equals(userCalendar.getSubCalendarId()));
 
@@ -72,7 +72,7 @@ public class CalendarServiceImpl implements CalendarService {
                     if (!userCalendar.isActive()) {
                         userCalendar.activate();
                     }
-                    if (!user.isCalendarConnected()) {
+                    if (!user.getCalendarConnected()) {
                         user.connectCalendar();
                     }
                     log.info("기존 캘린더가 이미 연동되어 있습니다. 생성을 건너뜁니다: userId={}", userId);
@@ -95,8 +95,6 @@ public class CalendarServiceImpl implements CalendarService {
         // 2. 새로 캘린더를 생성해야 하는 경우 (DB에 없거나, 카카오에 없어서 삭제된 경우)
         log.info("새로운 카카오 서브캘린더 생성을 시작합니다: userId={}", userId);
         try {
-            // 카카오 액세스 토큰 획득
-            String accessToken = kakaoTokenService.getKakaoAccessTokenByUserId(userId);
             // 카카오 서브캘린더 생성
             CreateSubCalendarRequest request = CreateSubCalendarRequest.builder()
                     .name("routine-it for group")

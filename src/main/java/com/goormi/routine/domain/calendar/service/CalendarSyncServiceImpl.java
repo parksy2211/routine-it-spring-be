@@ -14,11 +14,11 @@ public class CalendarSyncServiceImpl implements CalendarSyncService {
 
     @Async
     @Override
-    public void syncUserCalendar(Long userId) {
+    public void syncUserCalendar(Long userId, String accessToken) {
         log.info("Start calendar sync for user: {}", userId);
         try {
             // 멱등성이 보장된 createUserCalendar 호출
-            calendarService.createUserCalendar(userId);
+            calendarService.createUserCalendar(userId, accessToken);
             log.info("Finished calendar sync for user: {}", userId);
         } catch (Exception e) {
             log.error("An unexpected error occurred during calendar sync for user {}", userId, e);
