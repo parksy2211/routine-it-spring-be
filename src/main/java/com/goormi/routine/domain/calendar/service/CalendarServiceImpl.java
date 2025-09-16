@@ -398,9 +398,9 @@ public class CalendarServiceImpl implements CalendarService {
             // 카카오 API는 UTC 기준의 RFC3339 형식을 요구합니다.
             DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT;
 
-            // 현재 시각과 8일 후 시각을 UTC 기준으로 포맷팅합니다.
+            // 현재 시각과 10일 후 시각을 UTC 기준으로 포맷팅합니다.
             String from = formatter.format(Instant.now());
-            String to = formatter.format(Instant.now().plus(7, ChronoUnit.DAYS));
+            String to = formatter.format(Instant.now().plus(10, ChronoUnit.DAYS));
 
             GetEventsRequest request = GetEventsRequest.builder()
                     .calendarId(userCalendar.getSubCalendarId())
@@ -573,10 +573,13 @@ public class CalendarServiceImpl implements CalendarService {
         String endTime;
 
         if (startDate != null) {
-            ZonedDateTime baseTimeForUpdate = ZonedDateTime.parse(startDate);
-            LocalDate date = baseTimeForUpdate.toLocalDate();
-            ZoneId zone = baseTimeForUpdate.getZone();
-            ZonedDateTime newStartDateTime = ZonedDateTime.of(date, alarmTime, zone);
+            // 시간대 명시
+            Instant instant = Instant.parse(startDate);
+            ZonedDateTime seoulTime = instant.atZone(ZoneId.of("Asia/Seoul"));
+
+            LocalDate seoulDate = seoulTime.toLocalDate();
+            ZonedDateTime newStartDateTime = ZonedDateTime.of(seoulDate, alarmTime, ZoneId.of("Asia/Seoul"));
+
             startTime = newStartDateTime.format(DateTimeFormatter.ISO_INSTANT);
             endTime = newStartDateTime.plusMinutes(30).format(DateTimeFormatter.ISO_INSTANT);
         } else {
