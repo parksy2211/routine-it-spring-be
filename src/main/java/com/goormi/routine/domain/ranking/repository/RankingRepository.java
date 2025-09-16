@@ -32,6 +32,7 @@ public interface RankingRepository extends JpaRepository<Ranking, Long> {
 		"FROM Ranking r JOIN r.group g " +
 		"WHERE r.monthYear = :monthYear " +
 		"AND r.groupId IS NOT NULL " +
+		"AND g.isActive = true " +
 		"AND (:category IS NULL OR g.category = :category) " +
 		"AND (:groupType IS NULL OR g.groupType = :groupType) " +
 		"GROUP BY r.groupId, g.groupName, g.category, g.groupType " +
