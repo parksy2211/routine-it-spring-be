@@ -230,6 +230,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
                 .userId(message.getUserId())
                 .senderNickname(message.getSenderNickname())
                 .message(message.getMessage())
+                .imageUrl(message.getImageUrl())
                 .messageType(message.getMessageType())
                 .sentAt(message.getCreatedAt())
                 .build();
