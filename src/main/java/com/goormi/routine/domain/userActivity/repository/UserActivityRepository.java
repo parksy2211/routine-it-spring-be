@@ -36,4 +36,9 @@ public interface UserActivityRepository extends JpaRepository<UserActivity, Long
 
     List<UserActivity> findByUserIdAndActivityTypeInAndActivityDateBetween(
             Long userId, List<ActivityType> activityTypes, LocalDate startDate, LocalDate endDate);
+
+    List<UserActivity> findByUserIdAndActivityDateBetween(Long userId, LocalDate startDate, LocalDate endDate);
+
+    Object countByUserIdAndActivityTypeAndActivityDateBetween(Long userId, ActivityType activityType, LocalDate startDate, LocalDate endDate);
+
 }
