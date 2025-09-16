@@ -100,7 +100,7 @@ public class RankingServiceImpl implements RankingService {
 
 			GroupScoreData scoreData = calculateGroupScore(groupId, monthYear);
 
-			if (scoreData.getGroup() != null) {
+			if (scoreData.getGroup() != null && scoreData.getGroup().isActive()) {
 				Group group = scoreData.getGroup();
 
 				int memberCount = groupMemberRepository.countMembersByGroupId(groupId);
