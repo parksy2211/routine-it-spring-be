@@ -25,6 +25,7 @@ import com.goormi.routine.domain.userActivity.entity.ActivityType;
 import com.goormi.routine.domain.userActivity.entity.UserActivity;
 import com.goormi.routine.domain.userActivity.repository.UserActivityRepository;
 import com.goormi.routine.domain.personal_routines.domain.PersonalRoutine;
+import com.goormi.routine.domain.userActivity.service.UserActivityService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,7 @@ public class ReviewServiceImpl implements ReviewService{
 
 	private final UserRepository userRepository;
 	private final RankingService rankingService;
+	private final UserActivityService userActivityService;
 	private final NotificationService notificationService;
 	private final GroupMemberRepository groupMemberRepository;
 	private final ReviewRedisRepository reviewRedisRepository;
@@ -137,6 +139,26 @@ public class ReviewServiceImpl implements ReviewService{
 	}
 
 	private MonthlyReviewResponse calculateMonthlyReview(Long userId, String monthYear) {
+		LocalDate startDate = LocalDate.parse(monthYear + "-01");
+		LocalDate endDate = startDate.plusMonths(1).minusDays(1);
+
+		List<UserActivity> monthlyActivities = userActivityRepository
+			.findByUserIdAndActivityDateBetween(userId, startDate, endDate);
+
+		int personalRoutineCount = (int) userActivityRepository
+			.countByUserIdAndActivityTypeAndActivityDateBetween(
+				userId, ActivityType.PERSONAL_ROUTINE_COMPLETE, startDate, endDate);
+
+		int groupAuthCount = (int) userActivityRepository
+			.countByUserIdAndActivityTypeAndActivityDateBetween(
+				userId, ActivityType.GROUP_AUTH_COMPLETE, startDate, endDate);
+
+		int dailyChecklistCount = (int) userActivityRepository
+			.countByUserIdAndActivityTypeAndActivityDateBetween(
+				userId, ActivityType.DAILY_CHECKLIST, startDate, endDate);
+
+		int totalAuthCount = personalRoutineCount + groupAuthCount + dailyChecklistCount;
+
 		try {
 			User user = userRepository.findById(userId)
 				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userId));
@@ -184,6 +206,10 @@ public class ReviewServiceImpl implements ReviewService{
 				.totalScore((int)currentScore)
 				.participatingGroups(currentGroups)
 				.personalRoutineAchievementRate(personalRoutineAchievementRate)
+				.totalAuthCount(totalAuthCount)
+				.personalRoutineCount(personalRoutineCount)
+				.groupAuthCount(groupAuthCount)
+				.dailyChecklistCount(dailyChecklistCount)
 				.achievements(achievements)
 				.scoreDifference(scoreDifference)
 				.groupDifference(groupDifference)
@@ -349,22 +375,21 @@ public class ReviewServiceImpl implements ReviewService{
 		}
 		message.append("\n");
 
-		message.append("• 총 인증: ").append(review.getTotalAuthCount()).append("회\n");
-		message.append("• 연속 출석: ").append(review.getConsecutiveDays()).append("일\n\n");
+		message.append("• 총 인증: ").append(review.getTotalAuthCount() != null ? review.getTotalAuthCount() : 0).append("회\n");
 
 		message.append("📊 활동별 상세 현황\n");
-		if (review.getPersonalRoutineCount() != null && review.getPersonalRoutineCount() > 0) {
-			message.append("🎯 개인 루틴: ").append(review.getPersonalRoutineCount()).append("회");
+		if ((review.getPersonalRoutineCount() != null ? review.getPersonalRoutineCount() : 0) > 0) {
+			message.append("🎯 개인 루틴: ").append(review.getPersonalRoutineCount() != null ? review.getPersonalRoutineCount() : 0).append("회");
 			if (review.getPersonalRoutineAchievementRate() != null) {
 				message.append(" (달성률 ").append(review.getPersonalRoutineAchievementRate()).append("%)");
 			}
 			message.append("\n");
 		}
-		if (review.getGroupAuthCount() != null && review.getGroupAuthCount() > 0) {
-			message.append("👥 그룹 인증: ").append(review.getGroupAuthCount()).append("회\n");
+		if ((review.getGroupAuthCount() != null ? review.getGroupAuthCount() : 0) > 0) {
+			message.append("👥 그룹 인증: ").append(review.getGroupAuthCount() != null ? review.getGroupAuthCount() : 0).append("회\n");
 		}
-		if (review.getDailyChecklistCount() != null && review.getDailyChecklistCount() > 0) {
-			message.append("✅ 출석 체크: ").append(review.getDailyChecklistCount()).append("회\n");
+		if ((review.getDailyChecklistCount() != null ? review.getDailyChecklistCount() : 0) > 0) {
+			message.append("✅ 출석 체크: ").append(review.getDailyChecklistCount() != null ? review.getDailyChecklistCount() : 0).append("회\n");
 		}
 		message.append("• 참여 그룹: ").append(review.getParticipatingGroups()).append("개\n\n");
 

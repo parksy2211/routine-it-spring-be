@@ -41,7 +41,10 @@ public class User {
     private String profileMessage;
 
     @Column(name = "refresh_token", columnDefinition = "TEXT")
-    private String refreshToken;
+    private String refreshToken; // JWT RefreshToken (Redis 대신 DB 백업용)
+    
+    @Column(name = "kakao_refresh_token", columnDefinition = "TEXT")
+    private String kakaoRefreshToken; // 카카오 API용 RefreshToken
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -59,6 +62,11 @@ public class User {
     @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    //카카오 캘린더 연동 관련 필드
+    @Column(name = "calendar_connected")
+    @Builder.Default
+    private Boolean calendarConnected = false;
 
     public void createProfile(String nickname, String profileImageUrl) {
         if (nickname != null) {
@@ -83,6 +91,25 @@ public class User {
     
     public void updateRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
+    }
+    
+    public void updateKakaoRefreshToken(String kakaoRefreshToken) {
+        this.kakaoRefreshToken = kakaoRefreshToken;
+    }
+
+    public void connectCalendar() {
+        this.calendarConnected = true;
+    }
+    public void disconnectCalendar() {
+        this.calendarConnected = false;
+    }
+    /**
+     * 기존 로직에 캘린더 연동 해제 추가
+     */
+    public void deactivateAccount() {
+        this.active = false;
+        this.calendarConnected = false;
+        this.refreshToken = null;
     }
     
     public static User createKakaoUser(String kakaoId, String email, String nickname, String profileImageUrl) {

@@ -7,11 +7,14 @@ import com.goormi.routine.domain.personal_routines.dto.PersonalRoutineUpdateRequ
 import com.goormi.routine.domain.personal_routines.repository.PersonalRoutineRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+
+import static com.goormi.routine.domain.calendar.service.CalendarPersonalIntegrationService.*;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +22,7 @@ import java.util.List;
 public class PersonalRoutineService {
 
     private final PersonalRoutineRepository repository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     public PersonalRoutineResponse create(PersonalRoutineRequest req) {
         validateDateRange(req.getStartDate(), req.getEndDate());
@@ -42,7 +46,12 @@ public class PersonalRoutineService {
                 .isDeleted(false)
                 .build();
 
-        return toResponse(repository.save(entity));
+        PersonalRoutine savedEntity = repository.save(entity);
+        
+        // 개인 루틴 생성 이벤트 발행
+        applicationEventPublisher.publishEvent(new PersonalRoutineCreatedEvent(savedEntity));
+        
+        return toResponse(savedEntity);
     }
 
     @Transactional(readOnly = true)
@@ -77,12 +86,19 @@ public class PersonalRoutineService {
             validateDateRange(entity.getStartDate(), entity.getEndDate());
         }
 
+        // 개인 루틴 수정 이벤트 발행
+        applicationEventPublisher.publishEvent(new PersonalRoutineUpdatedEvent(entity));
+
         return toResponse(entity); // flush on commit
     }
 
     public void softDelete(Integer routineId) {
         PersonalRoutine entity = repository.findByRoutineIdAndIsDeletedFalse(routineId)
                 .orElseThrow(() -> new EntityNotFoundException("루틴을 찾을 수 없습니다."));
+        
+        // 개인 루틴 삭제 이벤트 발행 (소프트 삭제 전에 발행)
+        applicationEventPublisher.publishEvent(new PersonalRoutineDeletedEvent(entity));
+        
         entity.softDelete();
     }
 
