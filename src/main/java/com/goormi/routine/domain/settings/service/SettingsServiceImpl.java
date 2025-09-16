@@ -21,7 +21,6 @@ public class SettingsServiceImpl implements SettingsService {
 	private final UserSettingsRepository userSettingsRepository;
 
 	@Override
-	@Transactional(readOnly = true)
 	public SettingsResponse getSettings(Long userId) {
 		validateUserExists(userId);
 		UserSettings settings = getOrCreateSettings(userId);
