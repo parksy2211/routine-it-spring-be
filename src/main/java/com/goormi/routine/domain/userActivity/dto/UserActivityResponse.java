@@ -63,4 +63,16 @@ public class UserActivityResponse {
                 .isPublic(userActivity.getIsPublic())
                 .build();
     }
+
+    public static UserActivityResponse from(UserActivity userActivity) {
+        return UserActivityResponse.builder()
+                .userActivityId(userActivity.getId())
+                .userId(userActivity.getUser().getId())
+                .activityType(userActivity.getActivityType())
+                .activityDate(userActivity.getActivityDate())
+                .createdAt(userActivity.getCreatedAt().atZone(ZoneId.of("Asia/Seoul")).withZoneSameInstant(ZoneId.of("UTC")))
+                .updatedAt(userActivity.getUpdatedAt().atZone(ZoneId.of("Asia/Seoul")).withZoneSameInstant(ZoneId.of("UTC")))
+                .isPublic(userActivity.getIsPublic())
+                .build();
+    }
 }

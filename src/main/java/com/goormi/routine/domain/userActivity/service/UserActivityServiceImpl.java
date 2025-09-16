@@ -130,6 +130,8 @@ public class UserActivityServiceImpl implements UserActivityService{
             return UserActivityResponse.fromPersonalActivity(activity);
         } else if (activity.getGroupMember() != null) {
             return UserActivityResponse.fromGroupActivity(activity);
+        } else if (activity.getActivityType() != null) {
+            return UserActivityResponse.from(activity);
         }
         // This case should not happen with consistent data
         throw new IllegalArgumentException
