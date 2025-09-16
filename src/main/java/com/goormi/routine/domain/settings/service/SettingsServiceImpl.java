@@ -25,9 +25,6 @@ public class SettingsServiceImpl implements SettingsService {
 	public SettingsResponse getSettings(Long userId) {
 		validateUserExists(userId);
 		UserSettings settings = getOrCreateSettings(userId);
-        if (settings.getIsDarkMode() == null) {
-            settings.setIsDarkMode(false);
-        }
 		return toResponse(settings);
 	}
 
