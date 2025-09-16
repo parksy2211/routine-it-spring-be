@@ -53,6 +53,7 @@ public class ChatServiceImpl implements ChatService {
                 .senderNickname(user.getNickname())
                 .message(messageDto.getMessage())
                 .messageType(messageDto.getMessageType())
+                .imageUrl(messageDto.getImageUrl())
                 .build();
         
         ChatMessage savedMessage = chatMessageRepository.save(message);
