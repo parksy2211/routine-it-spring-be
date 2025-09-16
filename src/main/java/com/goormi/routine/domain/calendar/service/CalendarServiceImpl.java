@@ -96,8 +96,10 @@ public class CalendarServiceImpl implements CalendarService {
         log.info("새로운 카카오 서브캘린더 생성을 시작합니다: userId={}", userId);
         try {
             // 카카오 서브캘린더 생성
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyMMdd_HHmmss");
+            String name = "routine-it for group_" + LocalDateTime.now().format(formatter);
             CreateSubCalendarRequest request = CreateSubCalendarRequest.builder()
-                    .name("routine-it for group")
+                    .name(name)
                     .color("LIME")
                     .reminder(10)
                     .build();
