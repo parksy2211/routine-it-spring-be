@@ -20,4 +20,5 @@ public class ChatMessageDto {
     private String imageUrl;
     private MessageType messageType;
     private LocalDateTime sentAt;
+    private Boolean isApproved;
 }

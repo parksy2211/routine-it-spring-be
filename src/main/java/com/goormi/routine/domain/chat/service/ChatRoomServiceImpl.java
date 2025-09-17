@@ -233,6 +233,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
                 .imageUrl(message.getImageUrl())
                 .messageType(message.getMessageType())
                 .sentAt(message.getCreatedAt())
+                .isApproved(message.getIsApproved() != null && message.getIsApproved())
                 .build();
     }
 }
