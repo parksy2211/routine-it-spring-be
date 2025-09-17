@@ -19,6 +19,7 @@ public class LeaderAnswerRequest {
     private Long groupId;
     private Long leaderId;
     private Long targetMemberId;
+    private Long chatMsgId;
 
     @Schema(description = "업데이트 할 그룹 멤버 상태")
     private GroupMemberStatus status;
