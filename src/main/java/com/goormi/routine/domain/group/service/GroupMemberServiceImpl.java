@@ -1,5 +1,7 @@
 package com.goormi.routine.domain.group.service;
 
+import com.goormi.routine.domain.chat.entity.ChatMessage;
+import com.goormi.routine.domain.chat.repository.ChatMessageRepository;
 import com.goormi.routine.domain.group.dto.request.GroupJoinRequest;
 import com.goormi.routine.domain.group.dto.request.LeaderAnswerRequest;
 import com.goormi.routine.domain.group.dto.response.GroupMemberResponse;
@@ -47,6 +49,7 @@ public class GroupMemberServiceImpl implements GroupMemberService {
     private final NotificationService notificationService;
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMemberRepository chatMemberRepository;
+    private final ChatMessageRepository chatMessageRepository;
     private final ChatService chatService;
 
     private final UserActivityService userActivityService;
@@ -326,14 +329,19 @@ public class GroupMemberServiceImpl implements GroupMemberService {
                 .imageUrl(leaderAnswerRequest.getImageUrl())
                 .build();
 
+        ChatMessage chatMessage = chatMessageRepository.findById(leaderAnswerRequest.getChatMsgId())
+                .orElseThrow(()-> new IllegalArgumentException("chatMsg not found"));
+
         if (leaderAnswerRequest.isApproved()) {
             userActivityService.create(groupMember.getUser().getId(), activityRequest);
             notificationService.createNotification(NotificationType.GROUP_TODAY_AUTH_COMPLETED,
                     group.getLeader().getId(), groupMember.getUser().getId(), group.getGroupId());
+            chatMessage.approveMessage();
         }
         else {
             notificationService.createNotification(NotificationType.GROUP_TODAY_AUTH_REJECTED,
                     group.getLeader().getId(), groupMember.getUser().getId(), group.getGroupId());
+            chatMessage.rejectMessage();
         }
     }
 

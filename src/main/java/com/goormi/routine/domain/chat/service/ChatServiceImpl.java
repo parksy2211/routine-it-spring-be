@@ -66,6 +66,7 @@ public class ChatServiceImpl implements ChatService {
         if (savedMessage.isAuthMessage()){
             notificationService.createNotification(
                     NotificationType.GROUP_TODAY_AUTH_REQUEST, userId, group.getLeader().getId(), group.getGroupId());
+            savedMessage.rejectMessage();
         }
         chatMemberRepository.updateLastReadMessage(messageDto.getRoomId(), user.getId(), savedMessage.getId());
         
@@ -209,6 +210,7 @@ public class ChatServiceImpl implements ChatService {
                 .imageUrl(message.getImageUrl())
                 .messageType(message.getMessageType())
                 .sentAt(message.getCreatedAt())
+                .isApproved(message.getIsApproved() != null && message.getIsApproved())
                 .build();
     }
 }
