@@ -600,8 +600,8 @@ public class CalendarServiceImpl implements CalendarService {
      */
     @Override
     public String formatAlarmTime(LocalTime time) {
-        // 내일 시작하도록 설정 (반복 일정의 시작점)
-        LocalDate startDate = LocalDate.now().plusDays(1);
+        // 오늘 시작하도록 설정 (반복 일정의 시작점)
+        LocalDate startDate = LocalDate.now();
         LocalDateTime dateTime = LocalDateTime.of(startDate, time);
         
         // 한국 시간대로 ISO 8601 형식 생성
