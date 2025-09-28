@@ -107,7 +107,7 @@ public class UserActivityServiceImpl implements UserActivityService{
                 .orElseThrow(() -> new IllegalArgumentException("Target user not found"));
 
         List<UserActivity> activities = userActivityRepository
-                .findByUserIdAndActivityTypeOrderByCreatedAtDesc(targetUserId, ActivityType.GROUP_AUTH_COMPLETE);
+                .findByUserIdAndImageUrlIsNotNullAndActivityTypeOrderByCreatedAtDesc(targetUserId, ActivityType.GROUP_AUTH_COMPLETE);
 
         boolean isOwner = targetUserId.equals(currentUserId);
 
