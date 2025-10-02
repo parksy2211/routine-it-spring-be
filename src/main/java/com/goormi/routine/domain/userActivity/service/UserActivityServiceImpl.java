@@ -53,7 +53,7 @@ public class UserActivityServiceImpl implements UserActivityService{
             GroupMember groupMember = groupMemberRepository.findByGroupAndUser(group, user)
                     .orElseThrow(() -> new IllegalArgumentException("GroupMember not found"));
 
-            userActivity = UserActivity.createActivity(user, groupMember, request.getImageUrl());
+            userActivity = UserActivity.createActivity(user, groupMember, request.getImageUrl(), request.getIsPublic());
 
         }
         else if (request.getActivityType() == ActivityType.PERSONAL_ROUTINE_COMPLETE) {
@@ -61,7 +61,7 @@ public class UserActivityServiceImpl implements UserActivityService{
 
             PersonalRoutine personalRoutine = personalRoutineRepository.findById(request.getPersonalRoutineId())
                     .orElseThrow(() -> new IllegalArgumentException("Personal Routine not found"));
-            userActivity = UserActivity.createActivity(user, personalRoutine);
+            userActivity = UserActivity.createActivity(user, personalRoutine, request.getIsPublic());
         }
         else if (request.getActivityType() == ActivityType.DAILY_CHECKLIST) {
             userActivity = UserActivity.builder()
@@ -113,7 +113,7 @@ public class UserActivityServiceImpl implements UserActivityService{
                 .orElseThrow(() -> new IllegalArgumentException("Target user not found"));
 
         List<UserActivity> activities = userActivityRepository
-                .findByUserIdAndActivityTypeOrderByCreatedAtDesc(targetUserId, ActivityType.GROUP_AUTH_COMPLETE);
+                .findByUserIdAndImageUrlIsNotNullAndActivityTypeOrderByCreatedAtDesc(targetUserId, ActivityType.GROUP_AUTH_COMPLETE);
 
         boolean isOwner = targetUserId.equals(currentUserId);
 

@@ -61,6 +61,7 @@ public class GroupServiceTest {
                 .groupDescription("test description")
                 .groupType(GroupType.FREE)
                 .maxMembers(3)
+                .isAlarm(true)
                 .build();
 
         GroupResponse response = groupService.createGroup(leader.getId(), request);
@@ -77,6 +78,7 @@ public class GroupServiceTest {
         assertThat(savedGroup).isNotNull();
         assertThat(savedGroup.getGroupName()).isEqualTo("test");
         assertThat(savedGroup.getGroupType()).isEqualTo(GroupType.FREE);
+        assertThat(savedGroup.getIsAlarm()).isEqualTo(true);
         assertThat(savedGroup.getLeader().getNickname()).isEqualTo(user.get().getNickname());
     }
 
