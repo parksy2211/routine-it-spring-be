@@ -180,7 +180,7 @@ class UserActivityServiceTest {
     @DisplayName("개인 루틴 활동 생성 후 업데이트 성공")
     void update_personal_routine_activity_success() {
         // given
-        UserActivity activity = UserActivity.createActivity(user, savedRoutine);
+        UserActivity activity = UserActivity.createActivity(user, savedRoutine, true);
         userActivityRepository.save(activity);
 
         UserActivityRequest updateRequest = UserActivityRequest.builder()
@@ -205,7 +205,7 @@ class UserActivityServiceTest {
     @DisplayName("사용자 피드 조회")
     void getImagesFromUserActivity_success() {
         //given
-        UserActivity activity = UserActivity.createActivity(user, savedGroupMember, "1");
+        UserActivity activity = UserActivity.createActivity(user, savedGroupMember, "1", false);
         userActivityRepository.save(activity);
 
         UserActivity build1 = UserActivity.builder()

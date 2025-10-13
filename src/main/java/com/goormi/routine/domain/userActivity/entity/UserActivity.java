@@ -50,23 +50,23 @@ public class UserActivity {
         this.updatedAt = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
     }
 
-    public static UserActivity createActivity (User user,PersonalRoutine personalRoutine) {
+    public static UserActivity createActivity (User user,PersonalRoutine personalRoutine, Boolean isPublic) {
         return UserActivity.builder()
                 .user(user)
                 .personalRoutine(personalRoutine)
                 .activityType(ActivityType.PERSONAL_ROUTINE_COMPLETE)
                 .activityDate(LocalDate.now(ZoneId.of("Asia/Seoul")))
-                .isPublic(false)
+                .isPublic(isPublic)
                 .build();
     }
-    public static UserActivity createActivity (User user, GroupMember groupMember, String imageUrl) {
+    public static UserActivity createActivity (User user, GroupMember groupMember, String imageUrl, Boolean isPublic) {
         return UserActivity.builder()
                 .user(user)
                 .groupMember(groupMember)
                 .imageUrl(imageUrl)
                 .activityType(ActivityType.GROUP_AUTH_COMPLETE)
                 .activityDate(LocalDate.now(ZoneId.of("Asia/Seoul")))
-                .isPublic(false)
+                .isPublic(isPublic)
                 .build();
     }
 

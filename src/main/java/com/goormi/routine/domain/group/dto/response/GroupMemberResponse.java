@@ -21,7 +21,7 @@ public class GroupMemberResponse {
     private GroupMemberRole role;
     @Schema(description = "메세지는 인증, 미인증 둘 중 하나를 반환합니다.")
     private String message;
-    private boolean isAlarm;
+    private Boolean isAlarm;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -34,7 +34,7 @@ public class GroupMemberResponse {
                 .memberName(groupMember.getUser().getNickname())
                 .status(groupMember.getStatus())
                 .role(groupMember.getRole())
-                .isAlarm(groupMember.isAlarm())
+                .isAlarm(groupMember.getIsAlarm())
                 .createdAt(groupMember.getCreatedAt())
                 .updatedAt(groupMember.getUpdatedAt())
                 .build();
@@ -48,7 +48,7 @@ public class GroupMemberResponse {
                 .status(groupMember.getStatus())
                 .role(groupMember.getRole())
                 .message(isAuthToday == true ? "인증" : "미인증")
-                .isAlarm(groupMember.isAlarm())
+                .isAlarm(groupMember.getIsAlarm())
                 .createdAt(groupMember.getCreatedAt())
                 .updatedAt(groupMember.getUpdatedAt())
                 .build();
