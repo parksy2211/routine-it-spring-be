@@ -58,7 +58,7 @@ public class GroupServiceImpl implements GroupService {
                 .category(request.getCategory())
                 .groupImageUrl(request.getImageUrl())
                 .maxMembers(request.getMaxMembers())
-                .isAlarm(request.isAlarm())
+                .isAlarm(request.getIsAlarm())
                 .build();
 
         group.addLeader(leader);
@@ -199,6 +199,7 @@ public class GroupServiceImpl implements GroupService {
         group.updateBasicInfo(request.getGroupName(), request.getGroupDescription(), request.getGroupType());
         group.updateTimeInfo(request.getAlarmTime(), request.getAuthDays());
         group.updateOtherInfo(request.getCategory(), request.getImageUrl(), request.getMaxMembers());
+        if(request.getIsAlarm() != null) group.updateIsAlarm(request.getIsAlarm());
 
         // 캘린더 연동을 위한 이벤트 발행
         log.info("그룹 정보 변경 이벤트 발행: groupId={}, groupName={}", groupId, group.getGroupName());

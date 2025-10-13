@@ -332,7 +332,7 @@ public class GroupMemberServiceImpl implements GroupMemberService {
         ChatMessage chatMessage = chatMessageRepository.findById(leaderAnswerRequest.getChatMsgId())
                 .orElseThrow(()-> new IllegalArgumentException("chatMsg not found"));
 
-        if (leaderAnswerRequest.isApproved()) {
+        if (leaderAnswerRequest.getIsApproved()) {
             userActivityService.create(groupMember.getUser().getId(), activityRequest);
             notificationService.createNotification(NotificationType.GROUP_TODAY_AUTH_COMPLETED,
                     group.getLeader().getId(), groupMember.getUser().getId(), group.getGroupId());
@@ -371,7 +371,7 @@ public class GroupMemberServiceImpl implements GroupMemberService {
         User user = userRepository.findById(userId).orElseThrow(()->new IllegalArgumentException("User not found"));
         GroupMember groupMember = groupMemberRepository.findByGroupAndUser(group, user).orElseThrow(()->new IllegalArgumentException("Member not found"));
 
-        if (isAlarm == groupMember.isAlarm()) {
+        if (isAlarm == groupMember.getIsAlarm()) {
             return;
         }
         groupMember.changeIsAlarm(isAlarm);

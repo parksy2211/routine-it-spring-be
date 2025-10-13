@@ -25,7 +25,6 @@ import com.goormi.routine.domain.userActivity.entity.ActivityType;
 import com.goormi.routine.domain.userActivity.entity.UserActivity;
 import com.goormi.routine.domain.userActivity.repository.UserActivityRepository;
 import com.goormi.routine.domain.personal_routines.domain.PersonalRoutine;
-import com.goormi.routine.domain.userActivity.service.UserActivityService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +36,6 @@ public class ReviewServiceImpl implements ReviewService{
 
 	private final UserRepository userRepository;
 	private final RankingService rankingService;
-	private final UserActivityService userActivityService;
 	private final NotificationService notificationService;
 	private final GroupMemberRepository groupMemberRepository;
 	private final ReviewRedisRepository reviewRedisRepository;
@@ -142,20 +140,23 @@ public class ReviewServiceImpl implements ReviewService{
 		LocalDate startDate = LocalDate.parse(monthYear + "-01");
 		LocalDate endDate = startDate.plusMonths(1).minusDays(1);
 
-		List<UserActivity> monthlyActivities = userActivityRepository
-			.findByUserIdAndActivityDateBetween(userId, startDate, endDate);
+		// List<UserActivity> monthlyActivities = userActivityRepository
+		// 	.findByUserIdAndActivityDateBetween(userId, startDate, endDate);
 
-		int personalRoutineCount = (int) userActivityRepository
+		long personalRoutineCountLong = userActivityRepository
 			.countByUserIdAndActivityTypeAndActivityDateBetween(
 				userId, ActivityType.PERSONAL_ROUTINE_COMPLETE, startDate, endDate);
+		int personalRoutineCount = (int)Math.min(personalRoutineCountLong, Integer.MAX_VALUE);
 
-		int groupAuthCount = (int) userActivityRepository
+		long groupAuthCountLong = userActivityRepository
 			.countByUserIdAndActivityTypeAndActivityDateBetween(
 				userId, ActivityType.GROUP_AUTH_COMPLETE, startDate, endDate);
+		int groupAuthCount = (int)Math.min(groupAuthCountLong, Integer.MAX_VALUE);
 
-		int dailyChecklistCount = (int) userActivityRepository
+		long dailyChecklistCountLong = userActivityRepository
 			.countByUserIdAndActivityTypeAndActivityDateBetween(
 				userId, ActivityType.DAILY_CHECKLIST, startDate, endDate);
+		int dailyChecklistCount = (int)Math.min(dailyChecklistCountLong, Integer.MAX_VALUE);
 
 		int totalAuthCount = personalRoutineCount + groupAuthCount + dailyChecklistCount;
 
@@ -206,10 +207,10 @@ public class ReviewServiceImpl implements ReviewService{
 				.totalScore((int)currentScore)
 				.participatingGroups(currentGroups)
 				.personalRoutineAchievementRate(personalRoutineAchievementRate)
-				.totalAuthCount(totalAuthCount)
-				.personalRoutineCount(personalRoutineCount)
-				.groupAuthCount(groupAuthCount)
-				.dailyChecklistCount(dailyChecklistCount)
+				.totalAuthCount(Math.max(totalAuthCount, 0))
+				.personalRoutineCount(Math.max(personalRoutineCount, 0))
+				.groupAuthCount(Math.max(groupAuthCount, 0))
+				.dailyChecklistCount(Math.max(dailyChecklistCount, 0))
 				.achievements(achievements)
 				.scoreDifference(scoreDifference)
 				.groupDifference(groupDifference)
@@ -378,19 +379,18 @@ public class ReviewServiceImpl implements ReviewService{
 		message.append("• 총 인증: ").append(review.getTotalAuthCount() != null ? review.getTotalAuthCount() : 0).append("회\n");
 
 		message.append("📊 활동별 상세 현황\n");
-		if ((review.getPersonalRoutineCount() != null ? review.getPersonalRoutineCount() : 0) > 0) {
-			message.append("🎯 개인 루틴: ").append(review.getPersonalRoutineCount() != null ? review.getPersonalRoutineCount() : 0).append("회");
-			if (review.getPersonalRoutineAchievementRate() != null) {
-				message.append(" (달성률 ").append(review.getPersonalRoutineAchievementRate()).append("%)");
-			}
-			message.append("\n");
+		int personalCount = review.getPersonalRoutineCount() != null ? review.getPersonalRoutineCount() : 0;
+		message.append("🎯 개인 루틴: ").append(personalCount).append("회");
+		if (personalCount > 0 && review.getPersonalRoutineAchievementRate() != null) {
+			message.append(" (달성률 ").append(review.getPersonalRoutineAchievementRate()).append("%)");
 		}
-		if ((review.getGroupAuthCount() != null ? review.getGroupAuthCount() : 0) > 0) {
-			message.append("👥 그룹 인증: ").append(review.getGroupAuthCount() != null ? review.getGroupAuthCount() : 0).append("회\n");
-		}
-		if ((review.getDailyChecklistCount() != null ? review.getDailyChecklistCount() : 0) > 0) {
-			message.append("✅ 출석 체크: ").append(review.getDailyChecklistCount() != null ? review.getDailyChecklistCount() : 0).append("회\n");
-		}
+		message.append("\n");
+
+		int groupCount = review.getGroupAuthCount() != null ? review.getGroupAuthCount() : 0;
+		message.append("👥 그룹 인증: ").append(groupCount).append("회\n");
+
+		int checklistCount = review.getDailyChecklistCount() != null ? review.getDailyChecklistCount() : 0;
+		message.append("✅ 출석 체크: ").append(checklistCount).append("회\n");
 		message.append("• 참여 그룹: ").append(review.getParticipatingGroups()).append("개\n\n");
 
 		if (review.getPersonalRoutineAchievementRate() != null) {
