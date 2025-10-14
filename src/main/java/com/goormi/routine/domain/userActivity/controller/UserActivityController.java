@@ -136,5 +136,4 @@ public class UserActivityController {
                 userActivityService.getMonthlyAttendanceDashboard(userId, targetUserId, year, month);
         return ResponseEntity.ok(resp);
     }
-
 }
