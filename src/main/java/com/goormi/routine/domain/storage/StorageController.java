@@ -1,16 +1,17 @@
-// src/main/java/com/goormi/routine/storage/StorageController.java
+// src/main/java/com/goormi/routine/domain/storage/StorageController.java
 package com.goormi.routine.domain.storage;
 
+import com.goormi.routine.domain.storage.model.Visibility;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -33,6 +34,7 @@ import java.util.UUID;
 public class StorageController {
 
     private final S3Presigner presigner;
+    private final StorageFileService storageFileService; // ★ 추가: DB 메타/권한용
 
     @Value("${routineit.s3.profile-bucket}")
     private String bucket;
@@ -98,13 +100,19 @@ public class StorageController {
             @Parameter(description = "사용자 ID", required = true) @RequestParam Long userId,
             @Parameter(description = "파일명 (확장자 필수)", required = true) @RequestParam String filename,
             @Parameter(description = "MIME 타입", example = "image/jpeg")
-            @RequestParam(defaultValue = "image/jpeg") String contentType) {
-
+            @RequestParam(defaultValue = "image/jpeg") String contentType,
+            @Parameter(description = "공개 범위", example = "PRIVATE")
+            @RequestParam(defaultValue = "PRIVATE") Visibility visibility // ★ 추가
+    ) {
         String ext = safeExt(filename);
         if (!EXTS.contains(ext)) {
             return ResponseEntity.badRequest().body(Map.of("error","ext must be jpg/jpeg/png/webp/heic/heif"));
         }
         String key = "users/%d/profile/%s.%s".formatted(userId, UUID.randomUUID(), ext);
+
+        // ★ DB pending 저장 (항상 S3는 private, 노출여부는 DB에서 관리)
+        storageFileService.createPending(userId, "profile", key, visibility, contentType);
+
         return makePutUrl(key, contentType);
     }
 
@@ -120,8 +128,10 @@ public class StorageController {
             @Parameter(description = "MIME 타입", example = "image/jpeg")
             @RequestParam(defaultValue = "image/jpeg") String contentType,
             @Parameter(description = "파일명", example = "photo.jpg")
-            @RequestParam(defaultValue = "photo.jpg") String filename) {
-
+            @RequestParam(defaultValue = "photo.jpg") String filename,
+            @Parameter(description = "공개 범위", example = "PRIVATE")
+            @RequestParam(defaultValue = "PRIVATE") Visibility visibility // ★ 추가
+    ) {
         String ext = safeExt(filename);
         if (!EXTS.contains(ext)) {
             return ResponseEntity.badRequest().body(Map.of("error","ext must be jpg/jpeg/png/webp/heic/heif"));
@@ -129,6 +139,10 @@ public class StorageController {
         LocalDate d = LocalDate.now();
         String key = "proof-shots/%d/%d/%d/%02d/%02d/%s.%s"
                 .formatted(groupId, userId, d.getYear(), d.getMonthValue(), d.getDayOfMonth(), UUID.randomUUID(), ext);
+
+        // ★ DB pending 저장
+        storageFileService.createPending(userId, "proof-shot", key, visibility, contentType);
+
         return makePutUrl(key, contentType);
     }
 
@@ -144,8 +158,10 @@ public class StorageController {
             @Parameter(description = "MIME 타입", example = "image/jpeg")
             @RequestParam(defaultValue = "image/jpeg") String contentType,
             @Parameter(description = "파일명", example = "photo.jpg")
-            @RequestParam(defaultValue = "photo.jpg") String filename) {
-
+            @RequestParam(defaultValue = "photo.jpg") String filename,
+            @Parameter(description = "공개 범위", example = "PRIVATE")
+            @RequestParam(defaultValue = "PRIVATE") Visibility visibility // ★ 추가
+    ) {
         String ext = safeExt(filename);
         if (!EXTS.contains(ext)) {
             return ResponseEntity.badRequest().body(Map.of("error","ext must be jpg/jpeg/png/webp/heic/heif"));
@@ -153,10 +169,14 @@ public class StorageController {
         LocalDate d = LocalDate.now();
         String key = "group-rooms/%d/%d/%d/%02d/%02d/%s.%s"
                 .formatted(roomId, userId, d.getYear(), d.getMonthValue(), d.getDayOfMonth(), UUID.randomUUID(), ext);
+
+        // ★ DB pending 저장
+        storageFileService.createPending(userId, "group-room", key, visibility, contentType);
+
         return makePutUrl(key, contentType);
     }
 
-    // ---------- (공통) 일시 조회용 GET 프리사인 ----------
+    // ---------- 일시 조회용 GET 프리사인 ----------
     @Operation(
             summary = "파일 접근 presign 발급",
             description = "S3에 업로드된 객체 키를 받아 임시 접근용 presigned GET URL을 반환합니다.",
@@ -176,9 +196,13 @@ public class StorageController {
             @Parameter(description = "S3 객체 키", required = true, example = "users/1/profile/uuid.jpg")
             @RequestParam String key,
             @Parameter(description = "다운로드 여부 (download|inline)", example = "inline")
-            @RequestParam(required = false) String as) {
-
+            @RequestParam(required = false) String as,
+            @AuthenticationPrincipal(expression = "id") Long currentUserId // ★ PRIVATE이면 소유자만 허용
+    ) {
         boolean download = "download".equalsIgnoreCase(as);
+
+        // ★ PUBLIC/PRIVATE 권한 체크 (DELETED, PRIVATE 소유자 확인 등)
+        storageFileService.getAndCheckViewPermission(currentUserId, key);
 
         GetObjectRequest gor = GetObjectRequest.builder()
                 .bucket(bucket)
