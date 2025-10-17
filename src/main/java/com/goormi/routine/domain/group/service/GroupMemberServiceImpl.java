@@ -1,5 +1,6 @@
 package com.goormi.routine.domain.group.service;
 
+import com.goormi.routine.domain.calendar.service.CalendarIntegrationService;
 import com.goormi.routine.domain.chat.entity.ChatMessage;
 import com.goormi.routine.domain.chat.repository.ChatMessageRepository;
 import com.goormi.routine.domain.group.dto.request.GroupJoinRequest;
@@ -36,6 +37,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static com.goormi.routine.domain.calendar.service.CalendarIntegrationService.*;
 
 @Slf4j
 @Service
@@ -375,6 +378,7 @@ public class GroupMemberServiceImpl implements GroupMemberService {
             return;
         }
         groupMember.changeIsAlarm(isAlarm);
+        applicationEventPublisher.publishEvent(new GroupMemberAlarmChangeEvent(groupMember));
     }
 
     // -- Delete

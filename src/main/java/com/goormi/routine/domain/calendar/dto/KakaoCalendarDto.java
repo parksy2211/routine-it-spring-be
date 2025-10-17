@@ -137,7 +137,8 @@ public class KakaoCalendarDto {
             String title,
             Time time,
             String rrule,
-            String description
+            String description,
+            Integer[] reminders
     ) {}
 
     /**

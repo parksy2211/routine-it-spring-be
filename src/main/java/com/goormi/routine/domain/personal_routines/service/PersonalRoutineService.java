@@ -106,6 +106,7 @@ public class PersonalRoutineService {
         PersonalRoutine entity = repository.findByRoutineIdAndIsDeletedFalse(routineId)
                 .orElseThrow(() -> new EntityNotFoundException("루틴을 찾을 수 없습니다."));
         entity.toggleAlarm();
+        applicationEventPublisher.publishEvent(new PersonalRoutineUpdatedEvent(entity));
         return toResponse(entity);
     }
 

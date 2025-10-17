@@ -269,8 +269,12 @@ public class CalendarServiceImpl implements CalendarService {
 
             }
 
-
-            UpdateEventRequest request = buildUpdateEventRequest(group, actualEventId, calendarId, startAt);
+            GroupMember groupMember = groupMemberRepository.findByGroupAndUser(group, user).orElse(null);
+            Integer[] reminders = new Integer[]{5,5};
+            if (groupMember != null && !groupMember.getIsAlarm()) {
+                reminders = new Integer[]{null, null};
+            }
+            UpdateEventRequest request = buildUpdateEventRequest(group, actualEventId, calendarId, startAt, reminders);
             log.debug("일정 수정 요청 생성 완료: actualEventId={}, calendarId={}", actualEventId, calendarId);
             
             // 카카오 API 호출 전 최종 검증 로그
@@ -502,6 +506,9 @@ public class CalendarServiceImpl implements CalendarService {
         log.debug("- recurRule: {}", recurRule);
         log.debug("- authDays: {}", group.getAuthDays());
         Integer[] reminders = new Integer[]{5,5};
+        if (!group.getIsAlarm()){
+            reminders = new Integer[]{null, null};
+        }
         EventCreate eventCreate = EventCreate.builder()
                 .title(group.getGroupName())
                 .description(group.getDescription())
@@ -529,7 +536,7 @@ public class CalendarServiceImpl implements CalendarService {
     /**
      * 그룹 정보를 바탕으로 일정 수정 요청 빌드
      */
-    private UpdateEventRequest buildUpdateEventRequest(Group group, String eventId, String calendarId, String startDate) {
+    private UpdateEventRequest buildUpdateEventRequest(Group group, String eventId, String calendarId, String startDate, Integer[] reminders) {
         log.debug("UpdateEventRequest 빌드 시작: groupName={}, eventId={}, calendarId={}",
                 group.getGroupName(), eventId, calendarId);
 
@@ -546,6 +553,7 @@ public class CalendarServiceImpl implements CalendarService {
                 .description(group.getDescription())
                 .time(time)
                 .rrule(recurRule)
+                .reminders(reminders)
                 .build();
 
         log.debug("EventUpdate 생성 완료:");
@@ -600,8 +608,8 @@ public class CalendarServiceImpl implements CalendarService {
      */
     @Override
     public String formatAlarmTime(LocalTime time) {
-        // 내일 시작하도록 설정 (반복 일정의 시작점)
-        LocalDate startDate = LocalDate.now().plusDays(1);
+        // 오늘 시작하도록 설정 (반복 일정의 시작점)
+        LocalDate startDate = LocalDate.now();
         LocalDateTime dateTime = LocalDateTime.of(startDate, time);
         
         // 한국 시간대로 ISO 8601 형식 생성
