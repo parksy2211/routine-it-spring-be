@@ -251,6 +251,9 @@ public class CalendarPersonalServiceImpl implements CalendarPersonalService {
         log.debug("- recurRule: {}", recurRule);
         log.debug("- authDays: {}", personalRoutine.getRepeatDays());
         Integer[] reminders = new Integer[]{5,5};
+        if (!personalRoutine.getIsAlarmOn()){
+            reminders = new Integer[]{null, null};
+        }
         EventCreate eventCreate = EventCreate.builder()
                 .title(personalRoutine.getRoutineName())
                 .description(personalRoutine.getDescription())
@@ -290,11 +293,17 @@ public class CalendarPersonalServiceImpl implements CalendarPersonalService {
         log.debug("- endTime: {}", time.endAt());
         log.debug("- recurRule: {}", recurRule);
 
+        Integer[] reminders = new Integer[]{5,5};
+        if (!personalRoutine.getIsAlarmOn()){
+            reminders = new Integer[]{null, null};
+        }
+
         EventUpdate eventUpdate = EventUpdate.builder()
                 .title(personalRoutine.getRoutineName())
                 .description(personalRoutine.getDescription())
                 .time(time)
                 .rrule(recurRule)
+                .reminders(reminders)
                 .build();
 
         log.debug("EventUpdate 생성 완료:");

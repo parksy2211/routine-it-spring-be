@@ -51,6 +51,28 @@ public class CalendarIntegrationService {
         log.info("그룹 멤버 상태 변경 이벤트 처리 완료: userId={}, groupId={}",
                 groupMember.getUser().getId(), groupMember.getGroup().getGroupId());
     }
+    /**
+     * 그룹 멤버 알람 변경 시 캘린더 일정 처리
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleGroupMemberAlarmChange(GroupMemberAlarmChangeEvent event) {
+        GroupMember groupMember = event.getGroupMember();
+        Long userId = groupMember.getUser().getId();
+        Group group = groupMember.getGroup();
+
+        if (!calendarService.isCalendarConnected(userId)) {
+            log.warn("캘린더 연동 안됨");
+            return;
+        }
+
+        try {
+            String eventId = groupMember.getCalendarEventId();
+            calendarService.updateGroupSchedule(userId, group, eventId);
+            log.info("그룹 멤버 알람 설정 변경으로 캘린더 일정 업데이트 완료: userId={}, eventId={}", userId, eventId);
+        } catch (Exception e) {
+            log.error("그룹 멤버 알람 설정 변경 업데이트 실패: groupMemberId={}, userId={}", groupMember.getMemberId(), userId, e);
+        }
+    }
 
     /**
      * 그룹 정보 변경 시 일정 업데이트
@@ -122,6 +144,15 @@ public class CalendarIntegrationService {
         private final GroupMember groupMember;
 
         public GroupMemberStatusChangeEvent(GroupMember groupMember) {
+            this.groupMember = groupMember;
+        }
+
+        public GroupMember getGroupMember() { return groupMember; }
+    }
+    public static class GroupMemberAlarmChangeEvent {
+        private final GroupMember groupMember;
+
+        public GroupMemberAlarmChangeEvent(GroupMember groupMember) {
             this.groupMember = groupMember;
         }
 
