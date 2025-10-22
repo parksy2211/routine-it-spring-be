@@ -7,6 +7,8 @@ import com.goormi.routine.domain.ranking.dto.PersonalRankingResponse;
 import com.goormi.routine.domain.ranking.dto.RankingResetResponse;
 import com.goormi.routine.domain.ranking.service.RankingService;
 import com.goormi.routine.common.response.ApiResponse;
+import com.goormi.routine.domain.user.entity.User;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -44,13 +46,13 @@ public class RankingController {
 		@RequestParam(defaultValue = "0") Integer page,
 		@Parameter(description = "페이지 크기")
 		@RequestParam(defaultValue = "10") Integer size,
-		@CurrentUser Long userId) {
+		@CurrentUser User user) {
 		if (monthYear == null || monthYear.trim().isEmpty()) {
 			monthYear = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
 		}
 
 		Pageable pageable = PageRequest.of(page, size);
-		Page<PersonalRankingResponse> rankings = rankingService.getPersonalRankings(monthYear, pageable, userId);
+		Page<PersonalRankingResponse> rankings = rankingService.getPersonalRankings(monthYear, pageable, user.getId());
 
 		return ApiResponse.success("개인 랭킹 조회가 완료되었습니다.", rankings);
 	}
@@ -131,8 +133,8 @@ public class RankingController {
 			"모든 그룹에서의 활동 점수를 합산한 결과를 제공합니다."
 	)
 	@GetMapping("/me/total-score")
-	public ApiResponse<Long> getMyTotalScore(@CurrentUser Long userId) {
-		long totalScore = rankingService.getTotalScoreByUser(userId);
+	public ApiResponse<Long> getMyTotalScore(@CurrentUser User user) {
+		long totalScore = rankingService.getTotalScoreByUser(user.getId());
 		return ApiResponse.success("총 점수 조회가 완료되었습니다.", totalScore);
 	}
 

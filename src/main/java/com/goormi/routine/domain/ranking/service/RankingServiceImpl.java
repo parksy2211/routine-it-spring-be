@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -239,8 +240,21 @@ public class RankingServiceImpl implements RankingService {
 			log.info("그룹 점수 업데이트: 사용자 ID = {}, 그룹 ID = {}, 기본 점수 = {}, 총 점수 = {}",
 				userId, groupId, finalScore, ranking.getScore());
 		} else {
-			initializeRanking(userId, groupId);
-			updateGroupScore(userId, groupId, finalScore);
+			String currentMonthYear = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
+			Long rankingId = Math.abs(UUID.randomUUID().getMostSignificantBits());
+
+			Ranking newRanking = Ranking.builder()
+				.rankingId(rankingId)
+				.userId(userId)
+				.groupId(groupId)
+				.score(finalScore)
+				.monthYear(currentMonthYear)
+				.updatedAt(LocalDateTime.now())
+				.build();
+
+			rankingRepository.save(newRanking);
+			log.info("새로운 랭킹 생성: 사용자 ID = {}, 그룹 ID = {}, 초기 점수 = {}, 월 = {}",
+				userId, groupId, finalScore, currentMonthYear);
 		}
 	}
 
@@ -255,16 +269,26 @@ public class RankingServiceImpl implements RankingService {
 			return;
 		}
 
-		for (Ranking ranking : allRankings) {
-			ranking.setScore(0);
-			ranking.setMonthYear(currentMonth);
-			ranking.setUpdatedAt(LocalDateTime.now());
-		}
-
-		rankingRepository.saveAll(allRankings);
+		int updatedRows = rankingRepository.resetMonthlyRankings(currentMonth);
 		rankingRedisRepository.saveLastResetMonth(currentMonth);
+		recalculateAllGroupScores(currentMonth);
 
-		log.info("월별 랭킹 리셋 완료: 총 {} 개의 랭킹이 리셋되었습니다", allRankings.size());
+		log.info("Updated rows: {}", updatedRows);
+		log.info("월별 랭킹 리셋 완료 ({}로 갱신)", currentMonth);
+
+	}
+
+	@Transactional
+	private void recalculateAllGroupScores(String monthYear) {
+		List<Group> allGroups = groupRepository.findAll();
+
+		for (Group group : allGroups) {
+			List<GroupMember> members = groupMemberRepository.findAllByGroupId(group.getGroupId());
+			for (GroupMember member : members) {
+				int authCount = calculateGroupAuthCount(member.getUser().getId(), group.getGroupId(), monthYear);
+				updateRankingScore(member.getUser().getId(), group.getGroupId(), authCount);
+			}
+		}
 
 	}
 
@@ -290,7 +314,7 @@ public class RankingServiceImpl implements RankingService {
 		Optional<Ranking> existingRanking = rankingRepository.findByUserIdAndGroupId(userId, groupId);
 
 		if (existingRanking.isEmpty()) {
-			Long rankingId = System.currentTimeMillis();
+			Long rankingId = Math.abs(UUID.randomUUID().getMostSignificantBits());
 
 			Ranking newRanking = Ranking.builder()
 				.rankingId(rankingId)
@@ -301,9 +325,14 @@ public class RankingServiceImpl implements RankingService {
 				.updatedAt(LocalDateTime.now())
 				.build();
 
-			rankingRepository.save(newRanking);
-			log.info("새로운 랭킹 초기화: 사용자 ID = {}, 그룹 ID = {}, 월 = {}",
-				userId, groupId, currentMonthYear);
+			try {
+				rankingRepository.save(newRanking);
+				log.info("새로운 랭킹 초기화: 사용자 ID = {}, 그룹 ID = {}, 월 = {}",
+					userId, groupId, currentMonthYear);
+			} catch (Exception e) {
+				log.error("랭킹 초기화 실패: 사용자 ID = {}, 그룹 ID = {}", userId, groupId, e);
+				throw new RuntimeException("랭킹 초기화에 실패했습니다.", e);
+			}
 		}
 	}
 
@@ -364,13 +393,13 @@ public class RankingServiceImpl implements RankingService {
 						.groupId(group.getGroupId())
 						.groupName(group.getGroupName())
 						.authCount(authCount)
-						.groupType(group.getGroupType().name())
+						.groupType(group.getGroupType() != null ? group.getGroupType().name() : "")
 						.build();
 				})
 				.collect(Collectors.toList());
 		} catch (Exception e) {
-			log.warn("그룹별 상세 정보 조회 실패: 사용자 ID = {}", userId, e);
-			return Collections.emptyList();
+			log.warn("그룹별 상세 정보 조회 실패: 사용자 ID = {}, 오류 = {}", userId, e.getMessage());
+			return new ArrayList<>();
 		}
 	}
 
