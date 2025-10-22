@@ -250,10 +250,12 @@ public class CalendarPersonalServiceImpl implements CalendarPersonalService {
         log.debug("- endTime: {}", endTime);
         log.debug("- recurRule: {}", recurRule);
         log.debug("- authDays: {}", personalRoutine.getRepeatDays());
+
         Integer[] reminders = new Integer[]{5,5};
         if (!personalRoutine.getIsAlarmOn()){
-            reminders = new Integer[]{null, null};
+            reminders = null;
         }
+
         EventCreate eventCreate = EventCreate.builder()
                 .title(personalRoutine.getRoutineName())
                 .description(personalRoutine.getDescription())
@@ -295,7 +297,7 @@ public class CalendarPersonalServiceImpl implements CalendarPersonalService {
 
         Integer[] reminders = new Integer[]{5,5};
         if (!personalRoutine.getIsAlarmOn()){
-            reminders = new Integer[]{null, null};
+            reminders = null;
         }
 
         EventUpdate eventUpdate = EventUpdate.builder()
