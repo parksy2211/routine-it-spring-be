@@ -95,24 +95,19 @@ public class StorageController {
                     @ApiResponse(responseCode = "400", description = "허용되지 않은 확장자/타입")
             }
     )
+    // 1) 프로필 presign
     @PostMapping("/profile/presign")
     public ResponseEntity<Map<String, String>> presignProfilePut(
-            @Parameter(description = "사용자 ID", required = true) @RequestParam Long userId,
-            @Parameter(description = "파일명 (확장자 필수)", required = true) @RequestParam String filename,
-            @Parameter(description = "MIME 타입", example = "image/jpeg")
+            @AuthenticationPrincipal(expression = "id") Long currentUserId,
+            @RequestParam String filename,
             @RequestParam(defaultValue = "image/jpeg") String contentType,
-            @Parameter(description = "공개 범위", example = "PRIVATE")
-            @RequestParam(defaultValue = "PRIVATE") Visibility visibility // ★ 추가
+            @RequestParam(defaultValue = "PRIVATE") Visibility visibility
     ) {
         String ext = safeExt(filename);
-        if (!EXTS.contains(ext)) {
-            return ResponseEntity.badRequest().body(Map.of("error","ext must be jpg/jpeg/png/webp/heic/heif"));
-        }
-        String key = "users/%d/profile/%s.%s".formatted(userId, UUID.randomUUID(), ext);
+        if (!EXTS.contains(ext)) return ResponseEntity.badRequest().body(Map.of("error","ext must be jpg/jpeg/png/webp/heic/heif"));
 
-        // ★ DB pending 저장 (항상 S3는 private, 노출여부는 DB에서 관리)
-        storageFileService.createPending(userId, "profile", key, visibility, contentType);
-
+        String key = "users/%d/profile/%s.%s".formatted(currentUserId, UUID.randomUUID(), ext);
+        storageFileService.createPending(currentUserId, "profile", key, visibility, contentType);
         return makePutUrl(key, contentType);
     }
 
@@ -123,26 +118,21 @@ public class StorageController {
     )
     @PostMapping("/proof-shot/presign")
     public ResponseEntity<Map<String, String>> presignProofShotPut(
-            @Parameter(description = "그룹 ID", required = true) @RequestParam Long groupId,
-            @Parameter(description = "사용자 ID", required = true) @RequestParam Long userId,
-            @Parameter(description = "MIME 타입", example = "image/jpeg")
+            @AuthenticationPrincipal(expression = "id") Long currentUserId,
+            @RequestParam Long groupId,
             @RequestParam(defaultValue = "image/jpeg") String contentType,
-            @Parameter(description = "파일명", example = "photo.jpg")
             @RequestParam(defaultValue = "photo.jpg") String filename,
-            @Parameter(description = "공개 범위", example = "PRIVATE")
-            @RequestParam(defaultValue = "PRIVATE") Visibility visibility // ★ 추가
+            @RequestParam(defaultValue = "PRIVATE") Visibility visibility
     ) {
         String ext = safeExt(filename);
-        if (!EXTS.contains(ext)) {
-            return ResponseEntity.badRequest().body(Map.of("error","ext must be jpg/jpeg/png/webp/heic/heif"));
-        }
+        if (!EXTS.contains(ext)) return ResponseEntity.badRequest().body(Map.of("error","ext must be jpg/jpeg/png/webp/heic/heif"));
+
+        // (권장) storageFileService.checkGroupMember(currentUserId, groupId);
         LocalDate d = LocalDate.now();
         String key = "proof-shots/%d/%d/%d/%02d/%02d/%s.%s"
-                .formatted(groupId, userId, d.getYear(), d.getMonthValue(), d.getDayOfMonth(), UUID.randomUUID(), ext);
+                .formatted(groupId, currentUserId, d.getYear(), d.getMonthValue(), d.getDayOfMonth(), UUID.randomUUID(), ext);
 
-        // ★ DB pending 저장
-        storageFileService.createPending(userId, "proof-shot", key, visibility, contentType);
-
+        storageFileService.createPending(currentUserId, "proof-shot", key, visibility, contentType);
         return makePutUrl(key, contentType);
     }
 
@@ -153,26 +143,21 @@ public class StorageController {
     )
     @PostMapping("/group-room/presign")
     public ResponseEntity<Map<String, String>> presignGroupRoomPut(
-            @Parameter(description = "채팅방 ID", required = true) @RequestParam Long roomId,
-            @Parameter(description = "사용자 ID", required = true) @RequestParam Long userId,
-            @Parameter(description = "MIME 타입", example = "image/jpeg")
+            @AuthenticationPrincipal(expression = "id") Long currentUserId,
+            @RequestParam Long roomId,
             @RequestParam(defaultValue = "image/jpeg") String contentType,
-            @Parameter(description = "파일명", example = "photo.jpg")
             @RequestParam(defaultValue = "photo.jpg") String filename,
-            @Parameter(description = "공개 범위", example = "PRIVATE")
-            @RequestParam(defaultValue = "PRIVATE") Visibility visibility // ★ 추가
+            @RequestParam(defaultValue = "PRIVATE") Visibility visibility
     ) {
         String ext = safeExt(filename);
-        if (!EXTS.contains(ext)) {
-            return ResponseEntity.badRequest().body(Map.of("error","ext must be jpg/jpeg/png/webp/heic/heif"));
-        }
+        if (!EXTS.contains(ext)) return ResponseEntity.badRequest().body(Map.of("error","ext must be jpg/jpeg/png/webp/heic/heif"));
+
+
         LocalDate d = LocalDate.now();
         String key = "group-rooms/%d/%d/%d/%02d/%02d/%s.%s"
-                .formatted(roomId, userId, d.getYear(), d.getMonthValue(), d.getDayOfMonth(), UUID.randomUUID(), ext);
+                .formatted(roomId, currentUserId, d.getYear(), d.getMonthValue(), d.getDayOfMonth(), UUID.randomUUID(), ext);
 
-        // ★ DB pending 저장
-        storageFileService.createPending(userId, "group-room", key, visibility, contentType);
-
+        storageFileService.createPending(currentUserId, "group-room", key, visibility, contentType);
         return makePutUrl(key, contentType);
     }
 
@@ -193,24 +178,22 @@ public class StorageController {
     )
     @GetMapping("/presign-get")
     public Map<String, String> presignGet(
-            @Parameter(description = "S3 객체 키", required = true, example = "users/1/profile/uuid.jpg")
             @RequestParam String key,
-            @Parameter(description = "다운로드 여부 (download|inline)", example = "inline")
             @RequestParam(required = false) String as,
-            @AuthenticationPrincipal(expression = "id") Long currentUserId // ★ PRIVATE이면 소유자만 허용
+            @AuthenticationPrincipal(expression = "id") Long currentUserId // null 허용
     ) {
         boolean download = "download".equalsIgnoreCase(as);
 
-        // ★ PUBLIC/PRIVATE 권한 체크 (DELETED, PRIVATE 소유자 확인 등)
-        storageFileService.getAndCheckViewPermission(currentUserId, key);
+        var meta = storageFileService.getAndCheckViewPermission(currentUserId, key);
 
         GetObjectRequest gor = GetObjectRequest.builder()
                 .bucket(bucket)
                 .key(key)
                 .responseContentDisposition(download ? "attachment" : "inline")
+                .responseContentType(meta.getContentType() != null ? meta.getContentType() : "application/octet-stream")
                 .build();
 
-        PresignedGetObjectRequest req = presigner.presignGetObject(b -> b
+        var req = presigner.presignGetObject(b -> b
                 .signatureDuration(Duration.ofMinutes(expMin))
                 .getObjectRequest(gor));
 
