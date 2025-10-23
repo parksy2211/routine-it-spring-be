@@ -1,6 +1,5 @@
 package com.goormi.routine.domain.group.service;
 
-import com.goormi.routine.domain.calendar.service.CalendarIntegrationService;
 import com.goormi.routine.domain.chat.entity.ChatMessage;
 import com.goormi.routine.domain.chat.repository.ChatMessageRepository;
 import com.goormi.routine.domain.group.dto.request.GroupJoinRequest;
@@ -32,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -187,7 +187,8 @@ public class GroupMemberServiceImpl implements GroupMemberService {
                 .orElseThrow(()->new IllegalArgumentException("Group not found"));
         List<GroupMember> groupMembers = groupMemberRepository.findAllByGroupAndStatus(group, GroupMemberStatus.JOINED);
         List<UserActivity> completedActivities = userActivityRepository.
-                findByGroupMemberInAndActivityTypeAndActivityDate(groupMembers, ActivityType.GROUP_AUTH_COMPLETE, LocalDate.now());
+                findByGroupMemberInAndActivityTypeAndActivityDate(
+                        groupMembers, ActivityType.GROUP_AUTH_COMPLETE, LocalDate.now(ZoneId.of("Asia/Seoul")));
 
         Set<Long> completedMemberIds = completedActivities.stream()
                 .map(activity -> activity.getGroupMember().getMemberId())
