@@ -3,9 +3,11 @@ package com.goormi.routine.domain.ranking.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,8 +25,14 @@ public interface RankingRepository extends JpaRepository<Ranking, Long> {
 	@Query("SELECT r FROM Ranking r WHERE r.groupId = :groupId AND r.userId IS NOT NULL ORDER BY r.score DESC")
 	List<Ranking> findAllUsersByGroupIdOrderByScore(@Param("groupId") Long groupId);
 
-	@Query(value = "SELECT r.user_id, r.score FROM rankings r WHERE r.month_year = :monthYear AND r.group_id IS NOT NULL ORDER BY r.score DESC",
-		countQuery = "SELECT COUNT(*) FROM rankings r WHERE r.month_year = :monthYear AND r.group_id IS NOT NULL",
+	@Query(value = "SELECT r.user_id, SUM(r.score) as total_score " +
+		"FROM rankings r " +
+		"WHERE r.month_year LIKE CONCAT(:monthYear, '%') AND r.group_id IS NOT NULL " +
+		"GROUP BY r.user_id " +
+		"ORDER BY total_score DESC",
+		countQuery = "SELECT COUNT(DISTINCT r.user_id) " +
+			"FROM rankings r " +
+			"WHERE r.month_year LIKE CONCAT(:monthYear, '%') AND r.group_id IS NOT NULL",
 		nativeQuery = true)
 	Page<Object[]> findPersonalRankingsByMonth(@Param("monthYear") String monthYear, Pageable pageable);
 
@@ -45,4 +53,10 @@ public interface RankingRepository extends JpaRepository<Ranking, Long> {
 	@Query("SELECT r FROM Ranking r WHERE r.groupId = :groupId AND r.monthYear = :monthYear ORDER BY r.score DESC")
 	List<Ranking> findAllUsersByGroupIdAndMonthOrderByScore(@Param("groupId") Long groupId, @Param("monthYear") String monthYear);
 
+	@Modifying
+	@Transactional
+	@Query("UPDATE Ranking r " +
+		"SET r.monthYear = :currentMonth, r.score = 0, r.updatedAt = CURRENT_TIMESTAMP " +
+		"WHERE r.monthYear <> :currentMonth")
+	int resetMonthlyRankings(@Param("currentMonth") String currentMonth);
 }
