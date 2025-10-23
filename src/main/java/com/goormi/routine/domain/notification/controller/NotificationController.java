@@ -33,8 +33,8 @@ public class NotificationController {
     })
     public ResponseEntity<SseEmitter> subscribe(
             @AuthenticationPrincipal Long userId,
-            @RequestHeader(value = "Last-Event-ID", required = false, defaultValue = "") String lastEventId) {
-        return ResponseEntity.ok(sseEmitterService.subscribe(userId, lastEventId));
+            @RequestHeader(value = "Last-Event-ID", required = false, defaultValue = "") String lastEmitterId) {
+        return ResponseEntity.ok(sseEmitterService.subscribe(userId, lastEmitterId));
     }
 
     @GetMapping()

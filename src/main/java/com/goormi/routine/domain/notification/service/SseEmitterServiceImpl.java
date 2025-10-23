@@ -21,7 +21,7 @@ public class SseEmitterServiceImpl implements SseEmitterService {
     private final SseEmitterRepository sseEmitterRepository;
 
     @Override
-    public SseEmitter subscribe(Long userId, String lastEventId) {
+    public SseEmitter subscribe(Long userId, String lastEmitterId) {
         String emitterId = makeTimeIncludeId(userId);
         SseEmitter emitter = sseEmitterRepository.save(emitterId, new SseEmitter(DEFAULT_TIMEOUT));
 
@@ -32,8 +32,8 @@ public class SseEmitterServiceImpl implements SseEmitterService {
         sendToClient(emitter, emitterId, "EventStream Created. [userId=" + userId + "]");
 
         // 클라이언트가 미수신한 Event 목록이 존재할 경우 전송하여 Event 유실을 예방
-        if (hasLostData(lastEventId)) {
-            sendLostData(lastEventId, userId, emitter);
+        if (hasLostData(lastEmitterId)) {
+            sendLostData(lastEmitterId, userId, emitter);
         }
 
         return emitter;
@@ -74,14 +74,14 @@ public class SseEmitterServiceImpl implements SseEmitterService {
         }
     }
 
-    private boolean hasLostData(String lastEventId) {
-        return !lastEventId.isEmpty();
+    private boolean hasLostData(String lastEmitterId) {
+        return !lastEmitterId.isEmpty();
     }
 
-    private void sendLostData(String lastEventId, Long userId, SseEmitter emitter) {
+    private void sendLostData(String lastEmitterId, Long userId, SseEmitter emitter) {
         Map<String, Object> events = sseEmitterRepository.findAllEventCacheStartWithByMemberId(String.valueOf(userId));
         events.entrySet().stream()
-                .filter(entry -> lastEventId.compareTo(entry.getKey()) < 0)
+                .filter(entry -> lastEmitterId.compareTo(entry.getKey()) < 0)
                 .forEach(entry -> sendToClient(emitter, entry.getKey(), entry.getValue()));
     }
 }
