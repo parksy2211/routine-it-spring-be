@@ -4,6 +4,7 @@ import com.goormi.routine.domain.group.entity.Group;
 import com.goormi.routine.domain.group.entity.GroupMember;
 import com.goormi.routine.domain.group.repository.GroupMemberRepository;
 import com.goormi.routine.domain.group.repository.GroupRepository;
+import com.goormi.routine.domain.ranking.service.RankingService;
 import com.goormi.routine.domain.user.entity.User;
 import com.goormi.routine.domain.user.repository.UserRepository;
 import com.goormi.routine.domain.userActivity.dto.MonthlyAttendanceDashboardResponse;
@@ -37,6 +38,7 @@ public class UserActivityServiceImpl implements UserActivityService{
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
     private final PersonalRoutineRepository personalRoutineRepository;
+    private final RankingService rankingService;
 
     @Override
     public UserActivityResponse create(Long userId, UserActivityRequest request) {
@@ -76,7 +78,30 @@ public class UserActivityServiceImpl implements UserActivityService{
         }
 
         UserActivity saved = userActivityRepository.save(userActivity);
+
+        int monthlyAuthCount = calculateMonthlyAuthCount(userId);
+        rankingService.updateRankingScore(userId, request.getGroupId(), monthlyAuthCount);
+
         return convertToResponse(saved);
+    }
+
+
+    private int calculateMonthlyAuthCount(Long userId) {
+        try {
+            // 현재 월을 yyyy-MM 형식으로 가져옴
+            LocalDate startDate = LocalDate.now().withDayOfMonth(1);
+            LocalDate endDate = startDate.plusMonths(1).minusDays(1);
+
+            return (int) userActivityRepository
+                .countByUserIdAndActivityTypeAndCreatedAtBetween(
+                    userId,
+                    ActivityType.GROUP_AUTH_COMPLETE,
+                    startDate.atStartOfDay(),
+                    endDate.atTime(23, 59, 59)
+                );
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     @Override

@@ -270,11 +270,8 @@ public class CalendarServiceImpl implements CalendarService {
             }
 
             GroupMember groupMember = groupMemberRepository.findByGroupAndUser(group, user).orElse(null);
-            Integer[] reminders = new Integer[]{5,5};
-            if (groupMember != null && !groupMember.getIsAlarm()) {
-                reminders = new Integer[]{null, null};
-            }
-            UpdateEventRequest request = buildUpdateEventRequest(group, actualEventId, calendarId, startAt, reminders);
+
+            UpdateEventRequest request = buildUpdateEventRequest(group, actualEventId, calendarId, startAt, groupMember);
             log.debug("일정 수정 요청 생성 완료: actualEventId={}, calendarId={}", actualEventId, calendarId);
             
             // 카카오 API 호출 전 최종 검증 로그
@@ -505,10 +502,12 @@ public class CalendarServiceImpl implements CalendarService {
         log.debug("- endTime: {}", endTime);
         log.debug("- recurRule: {}", recurRule);
         log.debug("- authDays: {}", group.getAuthDays());
+
         Integer[] reminders = new Integer[]{5,5};
         if (!group.getIsAlarm()){
-            reminders = new Integer[]{null, null};
+            reminders = null;
         }
+
         EventCreate eventCreate = EventCreate.builder()
                 .title(group.getGroupName())
                 .description(group.getDescription())
@@ -536,7 +535,7 @@ public class CalendarServiceImpl implements CalendarService {
     /**
      * 그룹 정보를 바탕으로 일정 수정 요청 빌드
      */
-    private UpdateEventRequest buildUpdateEventRequest(Group group, String eventId, String calendarId, String startDate, Integer[] reminders) {
+    private UpdateEventRequest buildUpdateEventRequest(Group group, String eventId, String calendarId, String startDate, GroupMember groupMember) {
         log.debug("UpdateEventRequest 빌드 시작: groupName={}, eventId={}, calendarId={}",
                 group.getGroupName(), eventId, calendarId);
 
@@ -547,6 +546,11 @@ public class CalendarServiceImpl implements CalendarService {
         log.debug("- startTime: {}", time.startAt());
         log.debug("- endTime: {}", time.endAt());
         log.debug("- recurRule: {}", recurRule);
+
+        Integer[] reminders = new Integer[]{5,5};
+        if (groupMember != null && !groupMember.getIsAlarm()) {
+            reminders = null;
+        }
 
         EventUpdate eventUpdate = EventUpdate.builder()
                 .title(group.getGroupName())

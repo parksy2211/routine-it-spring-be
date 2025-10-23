@@ -39,7 +39,7 @@ public class GroupMemberResponse {
                 .updatedAt(groupMember.getUpdatedAt())
                 .build();
     }
-    public static  GroupMemberResponse from(GroupMember groupMember,Boolean isAuthToday) {
+    public static  GroupMemberResponse from(GroupMember groupMember,boolean isAuthToday) {
         return GroupMemberResponse.builder()
                 .userId(groupMember.getUser().getId())
                 .groupMemberId(groupMember.getMemberId())
@@ -47,7 +47,7 @@ public class GroupMemberResponse {
                 .memberName(groupMember.getUser().getNickname())
                 .status(groupMember.getStatus())
                 .role(groupMember.getRole())
-                .message(isAuthToday == true ? "인증" : "미인증")
+                .message(isAuthToday ? "인증" : "미인증")
                 .isAlarm(groupMember.getIsAlarm())
                 .createdAt(groupMember.getCreatedAt())
                 .updatedAt(groupMember.getUpdatedAt())

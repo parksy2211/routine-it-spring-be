@@ -73,6 +73,7 @@ public class GroupMemberServiceTest {
                 .groupDescription("test description")
                 .groupType(GroupType.REQUIRED)
                 .maxMembers(3)
+                .isAlarm(false)
                 .build();
 
         GroupResponse groupResponse = groupService.createGroup(leader.getId(), groupCreateRequest);
@@ -148,6 +149,15 @@ public class GroupMemberServiceTest {
         //when & then
         assertThatThrownBy(() -> groupMemberService.addMember(leaderId, savedGroup.getGroupId(), request))
                 .isInstanceOf(IllegalArgumentException.class).hasMessage("이미 참여 중이거나 대기 중입니다.");
+    }
+
+    @Test
+    @DisplayName("그룹멤버의 알람 변경")
+    public void updateIsAlarm() {
+        //when
+        groupMemberService.updateIsAlarm(savedGroup.getGroupId(), userId, true);
+        //then
+        assertThat(savedGroupMember.getIsAlarm()).isEqualTo(true);
     }
 
     @Test

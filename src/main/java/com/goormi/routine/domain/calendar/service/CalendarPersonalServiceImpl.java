@@ -196,9 +196,9 @@ public class CalendarPersonalServiceImpl implements CalendarPersonalService {
             // 카카오 API는 UTC 기준의 RFC3339 형식을 요구합니다.
             DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT;
 
-            // 현재 시각과 8일 후 시각을 UTC 기준으로 포맷팅합니다.
+            // 현재 시각과 14일 후 시각을 UTC 기준으로 포맷팅합니다.
             String from = formatter.format(Instant.now());
-            String to = formatter.format(Instant.now().plus(8, ChronoUnit.DAYS));
+            String to = formatter.format(Instant.now().plus(14, ChronoUnit.DAYS));
 
             GetEventsRequest request = GetEventsRequest.builder()
                     .calendarId("primary")
@@ -250,10 +250,12 @@ public class CalendarPersonalServiceImpl implements CalendarPersonalService {
         log.debug("- endTime: {}", endTime);
         log.debug("- recurRule: {}", recurRule);
         log.debug("- authDays: {}", personalRoutine.getRepeatDays());
+
         Integer[] reminders = new Integer[]{5,5};
         if (!personalRoutine.getIsAlarmOn()){
-            reminders = new Integer[]{null, null};
+            reminders = null;
         }
+
         EventCreate eventCreate = EventCreate.builder()
                 .title(personalRoutine.getRoutineName())
                 .description(personalRoutine.getDescription())
@@ -295,7 +297,7 @@ public class CalendarPersonalServiceImpl implements CalendarPersonalService {
 
         Integer[] reminders = new Integer[]{5,5};
         if (!personalRoutine.getIsAlarmOn()){
-            reminders = new Integer[]{null, null};
+            reminders = null;
         }
 
         EventUpdate eventUpdate = EventUpdate.builder()
