@@ -7,6 +7,9 @@ import com.goormi.routine.domain.personal_routines.dto.PersonalRoutineUpdateRequ
 import com.goormi.routine.domain.personal_routines.repository.PersonalRoutineRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +34,7 @@ public class PersonalRoutineService {
                 .userId(req.getUserId())
                 .routineName(req.getRoutineName())
                 .description(req.getDescription())
+                .category(req.getCategory())
                 .startTime(req.getStartTime())
                 .repeatDays(req.getRepeatDays())
                 .startDate(req.getStartDate())
@@ -44,9 +48,10 @@ public class PersonalRoutineService {
     }
 
     @Transactional(readOnly = true)
-    public List<PersonalRoutineResponse> listByUser(Integer userId) {
-        return repository.findByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(userId)
-                .stream().map(this::toResponse).toList();
+    public Page<PersonalRoutineResponse> listByUser(Integer userId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size); // Pageable 타입
+        return repository.findByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(userId, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
@@ -66,6 +71,7 @@ public class PersonalRoutineService {
         if (req.getRepeatDays() != null) entity.setRepeatDays(req.getRepeatDays());
         if (req.getStartDate() != null) entity.setStartDate(req.getStartDate());
         if (req.getEndDate() != null) entity.setEndDate(req.getEndDate());
+        if (req.getCategory() != null) entity.setCategory(req.getCategory());
         if (req.getIsAlarmOn() != null) entity.setIsAlarmOn(req.getIsAlarmOn());
         if (req.getIsPublic() != null) entity.setIsPublic(req.getIsPublic());
 
@@ -108,6 +114,7 @@ public class PersonalRoutineService {
                 .userId(e.getUserId())
                 .routineName(e.getRoutineName())
                 .description(e.getDescription())
+                .category(e.getCategory())
                 .startTime(e.getStartTime())
                 .repeatDays(e.getRepeatDays())
                 .startDate(e.getStartDate())

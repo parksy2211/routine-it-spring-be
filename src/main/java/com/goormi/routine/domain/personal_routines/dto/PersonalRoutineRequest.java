@@ -33,6 +33,9 @@ public class PersonalRoutineRequest {
     @NotNull
     private LocalDate endDate;
 
+    @NotBlank
+    private String category;
+
     private Boolean isAlarmOn = Boolean.TRUE;
     private Boolean isPublic = Boolean.TRUE;
 }

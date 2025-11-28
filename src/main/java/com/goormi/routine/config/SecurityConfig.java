@@ -35,6 +35,7 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
+                .securityMatcher("/api/**")
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
@@ -48,6 +49,7 @@ public class SecurityConfig {
                     "/api/auth/check-nickname",
                     "/api/auth/refresh",
                     "/ws/**",
+                    "/api/personal-routines/**",
                     "/api/admin/**",
                         "/groups","/api/rankings/personal","api/chat/rooms/%7BroomId%7D/messages"
                 ).permitAll()

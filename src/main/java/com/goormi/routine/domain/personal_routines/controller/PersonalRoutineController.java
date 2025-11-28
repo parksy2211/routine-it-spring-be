@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,11 +36,13 @@ public class PersonalRoutineController {
         return ResponseEntity.ok(service.create(req));
     }
 
-    @Operation(summary = "사용자별 루틴 조회", description = "특정 사용자의 모든 개인 루틴 목록을 조회합니다.")
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<PersonalRoutineResponse>> listByUser(
-            @Parameter(description = "사용자 ID", required = true) @PathVariable Integer userId) {
-        return ResponseEntity.ok(service.listByUser(userId));
+    public ResponseEntity<Page<PersonalRoutineResponse>> listByUser(
+            @PathVariable Integer userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(service.listByUser(userId, page, size));
     }
 
     @Operation(summary = "루틴 단건 조회", description = "루틴 ID로 개인 루틴을 조회합니다.")

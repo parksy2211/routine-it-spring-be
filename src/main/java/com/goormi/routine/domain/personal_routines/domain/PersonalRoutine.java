@@ -25,6 +25,8 @@ public class PersonalRoutine {
     @Column(name = "user_id", nullable = false)
     private Integer userId;
 
+
+
     @Column(name = "routine_name", length = 100, nullable = false)
     private String routineName;
 
@@ -45,6 +47,9 @@ public class PersonalRoutine {
 
     @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
+
+    @Column(name = "category", length = 50, nullable = false)
+    private String category;
 
     @Column(name = "is_alarm_on", nullable = false)
     private Boolean isAlarmOn = Boolean.TRUE;
